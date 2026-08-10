@@ -19,8 +19,9 @@ export default function WorkSection() {
   const [isHovered, setIsHovered] = useState(false);
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
 
-  const targetPos = useRef({ x: 0, y: 0 });
-  const currentPos = useRef({ x: 0, y: 0 });
+  // Set initial position tracking as uninitialized (null)
+  const targetPos = useRef<{ x: number; y: number } | null>(null);
+  const currentPos = useRef<{ x: number; y: number } | null>(null);
   const animFrameId = useRef<number | null>(null);
 
   const defaultBgImage =
@@ -72,22 +73,24 @@ export default function WorkSection() {
     const boxHeight = 216;
 
     const render = () => {
-      // Increased ease (0.08) makes mouse tracking noticeably faster while keeping smooth interpolation
-      const ease = 0.08;
-      currentPos.current.x += (targetPos.current.x - currentPos.current.x) * ease;
-      currentPos.current.y += (targetPos.current.y - currentPos.current.y) * ease;
+      // Only transform HUD elements if mouse position has been captured
+      if (targetPos.current && currentPos.current) {
+        const ease = 0.12; // Increased ease slightly for faster initial lock-on
+        currentPos.current.x += (targetPos.current.x - currentPos.current.x) * ease;
+        currentPos.current.y += (targetPos.current.y - currentPos.current.y) * ease;
 
-      const top = currentPos.current.y - boxHeight / 2;
-      const left = currentPos.current.x - boxWidth / 2;
+        const top = currentPos.current.y - boxHeight / 2;
+        const left = currentPos.current.x - boxWidth / 2;
 
-      if (hudFrameRef.current) {
-        hudFrameRef.current.style.transform = `translate3d(${left}px, ${top}px, 0px)`;
-        hudFrameRef.current.style.width = `${boxWidth}px`;
-        hudFrameRef.current.style.height = `${boxHeight}px`;
-      }
+        if (hudFrameRef.current) {
+          hudFrameRef.current.style.transform = `translate3d(${left}px, ${top}px, 0px)`;
+          hudFrameRef.current.style.width = `${boxWidth}px`;
+          hudFrameRef.current.style.height = `${boxHeight}px`;
+        }
 
-      if (spotlightInnerRef.current) {
-        spotlightInnerRef.current.style.transform = `translate3d(${-left}px, ${-top}px, 0px)`;
+        if (spotlightInnerRef.current) {
+          spotlightInnerRef.current.style.transform = `translate3d(${-left}px, ${-top}px, 0px)`;
+        }
       }
 
       animFrameId.current = requestAnimationFrame(render);
@@ -100,13 +103,47 @@ export default function WorkSection() {
     };
   }, []);
 
+  // Global mousemove listener to detect cursor location immediately on mount
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+
+      const isInside =
+        e.clientX >= rect.left &&
+        e.clientX <= rect.right &&
+        e.clientY >= rect.top &&
+        e.clientY <= rect.bottom;
+
+      if (isInside) {
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        targetPos.current = { x, y };
+
+        // Snap currentPos immediately if it hasn't been set yet
+        if (!currentPos.current) {
+          currentPos.current = { x, y };
+        }
+
+        setIsHovered(true);
+      }
+    };
+
+    window.addEventListener('mousemove', handleGlobalMouseMove, { once: false });
+    return () => window.removeEventListener('mousemove', handleGlobalMouseMove);
+  }, []);
+
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    targetPos.current = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    };
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    targetPos.current = { x, y };
+    if (!currentPos.current) {
+      currentPos.current = { x, y };
+    }
   };
 
   const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -128,7 +165,7 @@ export default function WorkSection() {
       onMouseLeave={() => setIsHovered(false)}
       className="relative flex min-h-screen w-full flex-col justify-center overflow-hidden bg-black px-6 uppercase selection:bg-white selection:text-black md:px-16"
     >
-
+      {/* 1. Background Layers */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
           className={`absolute inset-0 bg-cover bg-center transition-opacity duration-[1800ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
@@ -159,11 +196,11 @@ export default function WorkSection() {
       {/* 2. Global Dark Overlay */}
       <div className="absolute inset-0 bg-black/80 z-10 pointer-events-none" />
 
-     
+      {/* 3. Moving Spotlight HUD Frame */}
       <div
         ref={hudFrameRef}
         className={`pointer-events-none absolute left-0 top-0 z-20 overflow-hidden rounded border border-white/20 transition-opacity duration-300 ease-out ${
-          isHovered ? 'opacity-100' : 'opacity-0'
+          isHovered && currentPos.current ? 'opacity-100' : 'opacity-0'
         }`}
       >
         <div
