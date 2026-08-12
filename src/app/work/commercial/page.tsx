@@ -542,7 +542,7 @@ export default function CommercialPage() {
                 key={`main-track-${project.id}-${idx}`}
                 className="w-full h-screen flex-shrink-0 flex items-center justify-center"
                 style={{
-                  padding: "24px 40px",
+                  padding: "24px 20px",
                 }}
               >
                 {/* CLICKABLE CENTER FRAME */}
@@ -550,18 +550,18 @@ export default function CommercialPage() {
                 <Link
                   href={`/work/commercial/${project.id}`}
                   className="
-                      relative
-                      w-full
-                      aspect-[16/10]
-                      pointer-events-auto
-                      group
-                      block
-                      cursor-pointer
-                    "
+                    relative
+                    w-full
+                    aspect-[16/10]
+                    pointer-events-auto
+                    group
+                    block
+                    cursor-pointer
+                  "
                 >
                   {/* ==================================
-                        GLOW
-                        ================================== */}
+                      GLOW
+                      ================================== */}
 
                   <div
                     className="
@@ -579,8 +579,8 @@ export default function CommercialPage() {
                   />
 
                   {/* ==================================
-                        BARREL FRAME
-                        ================================== */}
+                      BARREL FRAME
+                      ================================== */}
 
                   <div
                     className="
@@ -644,7 +644,7 @@ export default function CommercialPage() {
       <div
         className="h-full w-full grid grid-cols-12 items-center relative z-20 pointer-events-none"
         style={{
-          padding: "0 10%",
+          padding: "0 4%",
         }}
       >
         {/* ==================================================
@@ -670,7 +670,7 @@ export default function CommercialPage() {
               uppercase
             "
           >
-            BACK
+            
           </Link>
 
           {/* TITLE */}
@@ -768,23 +768,23 @@ export default function CommercialPage() {
                   data-index={idx}
                   onClick={() => handleThumbnailClick(idx, realIndex)}
                   className={`
-                      relative
-                      w-28
-                      md:w-36
-                      aspect-[16/10]
-                      flex-shrink-0
-                      overflow-hidden
-                      snap-center
-                      transition-all
-                      duration-300
-                      ease-out
-                      cursor-pointer
-                      ${
-                        isSelected
-                          ? "opacity-100 scale-105"
-                          : "opacity-30 hover:opacity-70"
-                      }
-                    `}
+                    relative
+                    w-28
+                    md:w-36
+                    aspect-[16/10]
+                    flex-shrink-0
+                    overflow-hidden
+                    snap-center
+                    transition-all
+                    duration-300
+                    ease-out
+                    cursor-pointer
+                    ${
+                      isSelected
+                        ? "opacity-100 scale-105"
+                        : "opacity-30 hover:opacity-70"
+                    }
+                  `}
                 >
                   <img
                     src={project.thumbnail}
@@ -808,14 +808,24 @@ export default function CommercialPage() {
           STYLES
           ================================================== */}
 
-      <style jsx>{`
+      <style jsx global>{`
+        /* Universal scrollbar hiding for both Chrome/Safari/Edge and Firefox */
+        * {
+          scrollbar-width: none !important;
+        }
+        *::-webkit-scrollbar {
+          display: none !important;
+          width: 0 !important;
+          height: 0 !important;
+        }
+
         .no-scrollbar::-webkit-scrollbar {
-          display: none;
+          display: none !important;
         }
 
         .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
+          -ms-overflow-style: none !important;
+          scrollbar-width: none !important;
         }
 
         @keyframes titleIn {
