@@ -13,23 +13,6 @@ interface Project {
   vimeoId: string;
 }
 
-/*
-|--------------------------------------------------------------------------
-| PROJECT DATA
-|--------------------------------------------------------------------------
-|
-| Put your preview videos inside:
-|
-| public/showreel/
-|
-| Example:
-|
-| public/showreel/street-is-not-a-home.webm
-| public/showreel/toad-short-film.webm
-| public/showreel/desert-silhouette.webm
-|
-*/
-
 const COMMERCIAL_PROJECTS: Project[] = [
   {
     id: "1",
@@ -40,7 +23,6 @@ const COMMERCIAL_PROJECTS: Project[] = [
     preview: "/showreel/sample-5s.webm",
     vimeoId: "76979871",
   },
-
   {
     id: "2",
     title: "TOAD SHORT FILM",
@@ -50,7 +32,6 @@ const COMMERCIAL_PROJECTS: Project[] = [
     preview: "/showreel/sample-5s.webm",
     vimeoId: "76979871",
   },
-
   {
     id: "3",
     title: "DESERT SILHOUETTE",
@@ -60,7 +41,6 @@ const COMMERCIAL_PROJECTS: Project[] = [
     preview: "/showreel/sample-5s.webm",
     vimeoId: "76979871",
   },
-
   {
     id: "4",
     title: "EQUESTRIAN SHOW",
@@ -70,7 +50,6 @@ const COMMERCIAL_PROJECTS: Project[] = [
     preview: "/showreel/sample-5s.webm",
     vimeoId: "76979871",
   },
-
   {
     id: "5",
     title: "RED BULL ATHLETE",
@@ -80,7 +59,6 @@ const COMMERCIAL_PROJECTS: Project[] = [
     preview: "/showreel/sample-5s.webm",
     vimeoId: "76979871",
   },
-
   {
     id: "6",
     title: "CYCLING STAFF PICK",
@@ -90,7 +68,6 @@ const COMMERCIAL_PROJECTS: Project[] = [
     preview: "/showreel/sample-5s.webm",
     vimeoId: "76979871",
   },
-
   {
     id: "7",
     title: "URBAN ECHOES",
@@ -104,30 +81,11 @@ const COMMERCIAL_PROJECTS: Project[] = [
 
 const N = COMMERCIAL_PROJECTS.length;
 
-/*
-|--------------------------------------------------------------------------
-| EXTENDED MAIN TRACK
-|--------------------------------------------------------------------------
-|
-| Previous last item
-| All projects
-| First item
-|
-| This allows the existing infinite vertical animation.
-|
-*/
-
 const EXTENDED_PROJECTS: Project[] = [
   COMMERCIAL_PROJECTS[N - 1],
   ...COMMERCIAL_PROJECTS,
   COMMERCIAL_PROJECTS[0],
 ];
-
-/*
-|--------------------------------------------------------------------------
-| INFINITE SIDEBAR
-|--------------------------------------------------------------------------
-*/
 
 const SIDEBAR_COPIES = 7;
 
@@ -140,71 +98,31 @@ const SIDEBAR_MIDDLE_START = Math.floor(SIDEBAR_COPIES / 2) * N;
 
 const TRANSITION_MS = 700;
 
-/*
-|--------------------------------------------------------------------------
-| PAGE
-|--------------------------------------------------------------------------
-*/
-
 export default function CommercialPage() {
-  /*
-   * Main vertical track.
-   *
-   * 1 = first real project
-   * 2 = second real project
-   * etc.
-   */
-
   const [trackIndex, setTrackIndex] = useState(1);
-
   const [transitionEnabled, setTransitionEnabled] = useState(true);
-
-  /*
-   * Sidebar currently selected item.
-   */
-
   const [sidebarPos, setSidebarPos] = useState(SIDEBAR_MIDDLE_START);
-
-  /*
-   * Title displayed on the left.
-   */
-
-  const [displayedTitleIndex, setDisplayedTitleIndex] = useState(0);
+  const [, setDisplayedTitleIndex] = useState(0);
 
   const sidebarRef = useRef<HTMLDivElement>(null);
-
   const isScrollingRef = useRef(false);
-
   const isProgrammaticScrollRef = useRef(false);
-
-  /*
-   * Currently selected project.
-   *
-   * IMPORTANT:
-   *
-   * This is the project that gets rendered in the
-   * center BarrelVideo.
-   */
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const selectedIndex = (((trackIndex - 1) % N) + N) % N;
-
   const activeProject = COMMERCIAL_PROJECTS[selectedIndex];
 
   /*
    * --------------------------------------------------------
-   * GO TO NEXT / PREVIOUS
+   * GO TO NEXT / PREVIOUS (via wheel / keyboard)
    * --------------------------------------------------------
    */
-
   const goTo = useCallback((direction: 1 | -1) => {
     if (isScrollingRef.current) return;
-
     isScrollingRef.current = true;
 
     setTransitionEnabled(true);
-
     setTrackIndex((prev) => prev + direction);
-
     setSidebarPos((prev) => prev + direction);
 
     window.setTimeout(() => {
@@ -217,28 +135,16 @@ export default function CommercialPage() {
    * MAIN TRACK LOOP
    * --------------------------------------------------------
    */
-
   const handleTransitionEnd = () => {
     let nextIndex = trackIndex - 1;
 
-    /*
-     * Went above first real project.
-     */
-
     if (trackIndex === 0) {
       setTransitionEnabled(false);
-
       setTrackIndex(N);
-
       nextIndex = N - 1;
     } else if (trackIndex === N + 1) {
-      /*
-       * Went below last real project.
-       */
       setTransitionEnabled(false);
-
       setTrackIndex(1);
-
       nextIndex = 0;
     }
 
@@ -247,20 +153,14 @@ export default function CommercialPage() {
 
   /*
    * --------------------------------------------------------
-   * MOUSE WHEEL
+   * MOUSE WHEEL FOR MAIN WINDOW
    * --------------------------------------------------------
    */
-
   useEffect(() => {
     let wheelDeltaAccumulator = 0;
-
     let resetTimer: ReturnType<typeof setTimeout>;
 
     const handleWheel = (e: WheelEvent) => {
-      /*
-       * Let sidebar scroll normally.
-       */
-
       if (
         sidebarRef.current &&
         e.target instanceof Node &&
@@ -270,31 +170,25 @@ export default function CommercialPage() {
       }
 
       e.preventDefault();
-
       if (isScrollingRef.current) return;
 
       wheelDeltaAccumulator += e.deltaY;
-
       const threshold = 30;
 
       if (Math.abs(wheelDeltaAccumulator) >= threshold) {
         goTo(wheelDeltaAccumulator > 0 ? 1 : -1);
-
         wheelDeltaAccumulator = 0;
       }
 
       clearTimeout(resetTimer);
-
       resetTimer = setTimeout(() => {
         wheelDeltaAccumulator = 0;
       }, 150);
     };
 
     window.addEventListener("wheel", handleWheel, { passive: false });
-
     return () => {
       window.removeEventListener("wheel", handleWheel);
-
       clearTimeout(resetTimer);
     };
   }, [goTo]);
@@ -304,46 +198,31 @@ export default function CommercialPage() {
    * KEYBOARD
    * --------------------------------------------------------
    */
-
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowDown") {
-        goTo(1);
-      }
-
-      if (e.key === "ArrowUp") {
-        goTo(-1);
-      }
+      if (e.key === "ArrowDown") goTo(1);
+      if (e.key === "ArrowUp") goTo(-1);
     };
 
     window.addEventListener("keydown", handleKey);
-
-    return () => {
-      window.removeEventListener("keydown", handleKey);
-    };
+    return () => window.removeEventListener("keydown", handleKey);
   }, [goTo]);
 
   /*
    * --------------------------------------------------------
-   * MOVE SIDEBAR TO SELECTED PROJECT
+   * AUTO-SCROLL SIDEBAR WHEN NAVIGATING MAIN TRACK
    * --------------------------------------------------------
    */
-
   useEffect(() => {
-    if (isProgrammaticScrollRef.current) {
-      return;
-    }
+    if (isProgrammaticScrollRef.current) return;
 
     const container = sidebarRef.current;
-
     if (!container) return;
 
     const element = container.children[sidebarPos] as HTMLElement | undefined;
-
     if (!element) return;
 
     isProgrammaticScrollRef.current = true;
-
     element.scrollIntoView({
       behavior: "smooth",
       block: "center",
@@ -353,109 +232,72 @@ export default function CommercialPage() {
       isProgrammaticScrollRef.current = false;
     }, TRANSITION_MS);
 
-    return () => {
-      window.clearTimeout(timeout);
-    };
+    return () => window.clearTimeout(timeout);
   }, [sidebarPos]);
 
   /*
    * --------------------------------------------------------
-   * SIDEBAR INTERSECTION OBSERVER
+   * DEBOUNCED SIDEBAR SELECTION ON SCROLL STOP
    * --------------------------------------------------------
    */
-
-  useEffect(() => {
-    const container = sidebarRef.current;
-
-    if (!container) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (isProgrammaticScrollRef.current) {
-          return;
-        }
-
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-
-          const index = Number(entry.target.getAttribute("data-index"));
-
-          if (Number.isNaN(index)) return;
-
-          if (index === sidebarPos) {
-            return;
-          }
-
-          const realIndex = index % N;
-
-          setSidebarPos(index);
-
-          setTransitionEnabled(true);
-
-          setTrackIndex(realIndex + 1);
-
-          setDisplayedTitleIndex(realIndex);
-        });
-      },
-      {
-        root: container,
-
-        rootMargin: "-45% 0px -45% 0px",
-
-        threshold: 0,
-      },
-    );
-
-    Array.from(container.children).forEach((child) => {
-      observer.observe(child);
-    });
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [sidebarPos]);
-
-  /*
-   * --------------------------------------------------------
-   * INFINITE SIDEBAR
-   * --------------------------------------------------------
-   */
-
   const handleSidebarScroll = () => {
     const container = sidebarRef.current;
-
     if (!container) return;
 
     const { scrollTop, scrollHeight, clientHeight } = container;
-
     const singleSetHeight = scrollHeight / SIDEBAR_COPIES;
-
     const threshold = singleSetHeight * 1.5;
 
-    /*
-     * User reached upper side.
-     */
-
+    // Infinite boundary jump
     if (scrollTop < threshold) {
       isProgrammaticScrollRef.current = true;
-
       container.scrollTop += singleSetHeight * 2;
-
       window.setTimeout(() => {
         isProgrammaticScrollRef.current = false;
       }, 50);
+      return;
     } else if (scrollTop + clientHeight > scrollHeight - threshold) {
-      /*
-       * User reached lower side.
-       */
       isProgrammaticScrollRef.current = true;
-
       container.scrollTop -= singleSetHeight * 2;
-
       window.setTimeout(() => {
         isProgrammaticScrollRef.current = false;
       }, 50);
+      return;
     }
+
+    if (isProgrammaticScrollRef.current) return;
+
+    // Clear active timeout while user is actively scrolling
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+
+    // Set a debounced callback that fires 150ms after scrolling stops
+    scrollTimeoutRef.current = setTimeout(() => {
+      const containerCenter =
+        container.getBoundingClientRect().top + clientHeight / 2;
+      let closestIndex = sidebarPos;
+      let minDistance = Infinity;
+
+      Array.from(container.children).forEach((child) => {
+        const rect = child.getBoundingClientRect();
+        const childCenter = rect.top + rect.height / 2;
+        const distance = Math.abs(containerCenter - childCenter);
+
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestIndex = Number(child.getAttribute("data-index"));
+        }
+      });
+
+      if (!Number.isNaN(closestIndex) && closestIndex !== sidebarPos) {
+        const realIndex = closestIndex % N;
+        setSidebarPos(closestIndex);
+        setTransitionEnabled(true);
+        setTrackIndex(realIndex + 1);
+        setDisplayedTitleIndex(realIndex);
+      }
+    }, 150);
   };
 
   /*
@@ -463,20 +305,13 @@ export default function CommercialPage() {
    * SIDEBAR THUMBNAIL CLICK
    * --------------------------------------------------------
    */
-
   const handleThumbnailClick = (clickedAbsIndex: number, realIndex: number) => {
-    if (isScrollingRef.current) {
-      return;
-    }
+    if (isScrollingRef.current) return;
 
     isScrollingRef.current = true;
-
     setTransitionEnabled(true);
-
     setTrackIndex(realIndex + 1);
-
     setSidebarPos(clickedAbsIndex);
-
     setDisplayedTitleIndex(realIndex);
 
     window.setTimeout(() => {
@@ -484,69 +319,33 @@ export default function CommercialPage() {
     }, TRANSITION_MS + 20);
   };
 
-  /*
-   * --------------------------------------------------------
-   * RENDER
-   * --------------------------------------------------------
-   */
-
   return (
     <main className="relative h-screen w-full overflow-hidden bg-black text-white select-none">
       {/* ==================================================
           MAIN CENTER BARREL VIDEO TRACK
           ================================================== */}
-
       <div className="absolute inset-0 flex justify-center items-center pointer-events-none z-10">
         <div
           className="w-full max-w-xl md:max-w-2xl h-screen flex flex-col items-center"
           onTransitionEnd={handleTransitionEnd}
           style={{
             transform: `translateY(-${trackIndex * 100}vh)`,
-
             transition: transitionEnabled
               ? `transform ${TRANSITION_MS}ms cubic-bezier(0.76, 0, 0.24, 1)`
               : "none",
-
             willChange: "transform",
           }}
         >
           {EXTENDED_PROJECTS.map((project, idx) => {
-            /*
-             * Convert extended-track index
-             * back to the real project index.
-             *
-             * EXTENDED:
-             *
-             * 0 = last project
-             * 1 = first project
-             * 2 = second project
-             * ...
-             * N = last project
-             * N+1 = first project
-             */
-
             const projectRealIndex = (((idx - 1) % N) + N) % N;
-
-            /*
-             * ONLY the active project gets
-             * the WebGL BarrelVideo.
-             *
-             * This prevents 9+ WebGL contexts
-             * from being created simultaneously.
-             */
-
             const isActive = projectRealIndex === selectedIndex;
 
             return (
               <div
                 key={`main-track-${project.id}-${idx}`}
                 className="w-full h-screen flex-shrink-0 flex items-center justify-center"
-                style={{
-                  padding: "24px 20px",
-                }}
+                style={{ padding: "24px 20px" }}
               >
-                {/* CLICKABLE CENTER FRAME */}
-
                 <Link
                   href={`/work/commercial/${project.id}`}
                   className="
@@ -559,45 +358,23 @@ export default function CommercialPage() {
                     cursor-pointer
                   "
                 >
-                  {/* ==================================
-                      GLOW
-                      ================================== */}
-
                   <div
                     className="
-                        absolute
-                        inset-[-8%]
-                        rounded-[40%]
-                        bg-white/20
-                        blur-[70px]
-                        opacity-30
-                        group-hover:opacity-50
-                        transition-opacity
-                        duration-500
-                        pointer-events-none
-                      "
+                      absolute
+                      inset-[-8%]
+                      rounded-[40%]
+                      bg-white/20
+                      blur-[70px]
+                      opacity-30
+                      group-hover:opacity-50
+                      transition-opacity
+                      duration-500
+                      pointer-events-none
+                    "
                   />
 
-                  {/* ==================================
-                      BARREL FRAME
-                      ================================== */}
-
-                  <div
-                    className="
-                        relative
-                        w-full
-                        h-full
-                        overflow-hidden
-                      "
-                  >
+                  <div className="relative w-full h-full overflow-hidden">
                     {isActive ? (
-                      /*
-                       * ACTIVE PROJECT
-                       *
-                       * This is the ONLY WebGL
-                       * BarrelVideo mounted.
-                       */
-
                       <BarrelVideo
                         src={project.preview}
                         distortion={0.85}
@@ -606,26 +383,18 @@ export default function CommercialPage() {
                         glow={false}
                       />
                     ) : (
-                      /*
-                       * INACTIVE PROJECTS
-                       *
-                       * Use thumbnails instead of
-                       * creating additional WebGL
-                       * contexts.
-                       */
-
                       <img
                         src={project.thumbnail}
                         alt={project.title}
                         className="
-                            absolute
-                            inset-0
-                            w-full
-                            h-full
-                            object-cover
-                            scale-110
-                            pointer-events-none
-                          "
+                          absolute
+                          inset-0
+                          w-full
+                          h-full
+                          object-cover
+                          scale-110
+                          pointer-events-none
+                        "
                         draggable={false}
                       />
                     )}
@@ -640,23 +409,14 @@ export default function CommercialPage() {
       {/* ==================================================
           GRID OVERLAY CONTROLS
           ================================================== */}
-
       <div
         className="h-full w-full grid grid-cols-12 items-center relative z-20 pointer-events-none"
-        style={{
-          padding: "0 4%",
-        }}
+        style={{ padding: "0 4%" }}
       >
-        {/* ==================================================
-            LEFT SIDE INFO
-            ================================================== */}
-
+        {/* LEFT SIDE INFO */}
         <div
           className="col-span-3 flex flex-col justify-between h-full pointer-events-auto"
-          style={{
-            paddingTop: "10%",
-            paddingBottom: "10%",
-          }}
+          style={{ paddingTop: "10%", paddingBottom: "10%" }}
         >
           <Link
             href="/work"
@@ -669,11 +429,7 @@ export default function CommercialPage() {
               transition-colors
               uppercase
             "
-          >
-            
-          </Link>
-
-          {/* TITLE */}
+          />
 
           <div className="max-w-xs overflow-hidden">
             <h1
@@ -709,19 +465,12 @@ export default function CommercialPage() {
           <div />
         </div>
 
-        {/* ==================================================
-            EMPTY CENTER
-            ================================================== */}
-
+        {/* EMPTY CENTER */}
         <div className="col-span-6" />
 
-        {/* ==================================================
-            RIGHT SIDEBAR RAIL
-            ================================================== */}
-
+        {/* RIGHT SIDEBAR RAIL */}
         <div className="col-span-3 h-full flex items-center justify-end gap-6 pointer-events-auto">
           {/* NUMBER */}
-
           <div className="flex flex-col items-center font-mono text-zinc-400 select-none">
             <span className="text-3xl md:text-4xl font-bold text-white tracking-tighter transition-all duration-300">
               {selectedIndex + 1 < 10
@@ -736,10 +485,7 @@ export default function CommercialPage() {
             </span>
           </div>
 
-          {/* ==================================================
-              THUMBNAIL RAIL
-              ================================================== */}
-
+          {/* THUMBNAIL RAIL */}
           <div
             ref={sidebarRef}
             onScroll={handleSidebarScroll}
@@ -758,7 +504,6 @@ export default function CommercialPage() {
           >
             {INFINITE_SIDEBAR_PROJECTS.map((project, idx) => {
               const realIndex = idx % N;
-
               const isSelected = idx === sidebarPos;
 
               return (
@@ -790,11 +535,11 @@ export default function CommercialPage() {
                     src={project.thumbnail}
                     alt={project.title}
                     className="
-                        w-full
-                        h-full
-                        object-cover
-                        pointer-events-none
-                      "
+                      w-full
+                      h-full
+                      object-cover
+                      pointer-events-none
+                    "
                     draggable={false}
                   />
                 </button>
@@ -804,12 +549,7 @@ export default function CommercialPage() {
         </div>
       </div>
 
-      {/* ==================================================
-          STYLES
-          ================================================== */}
-
       <style jsx global>{`
-        /* Universal scrollbar hiding for both Chrome/Safari/Edge and Firefox */
         * {
           scrollbar-width: none !important;
         }
@@ -833,7 +573,6 @@ export default function CommercialPage() {
             opacity: 0;
             transform: translateY(12px);
           }
-
           to {
             opacity: 1;
             transform: translateY(0);
