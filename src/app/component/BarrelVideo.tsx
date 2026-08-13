@@ -18,7 +18,7 @@ export default function BarrelVideo({
   edgeSoftness = 0.02,
   zoom = 0.85,
   glow = true,
-  glowOpacity = 0.3,
+  glowOpacity = 0.5,
   glowBlur = 70,
 }: BarrelVideoProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -473,9 +473,9 @@ export default function BarrelVideo({
         <div
           className="absolute pointer-events-none"
           style={{
-            inset: "-8%",
-            borderRadius: "40%",
-            background: "rgba(255,255,255,0.2)",
+            inset: "2%",
+            borderRadius: "25%",
+            background: "rgba(255, 255, 255, 0.3)",
             filter: `blur(${glowBlur}px)`,
             opacity: glowOpacity,
           }}
