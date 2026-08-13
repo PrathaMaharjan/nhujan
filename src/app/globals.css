@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@900&display=swap");
 @import "tailwindcss";
 
 :root {
@@ -23,4 +24,129 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ── Navigation links (WORK / CONTACT / BRANDS) ── */
+.nav-link {
+  font-family: "Inter", sans-serif;
+  font-weight: 900;
+  font-size: clamp(28px, 2.5vw, 36px);
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #ffffff;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  display: block;
+}
+
+.nav-link:hover {
+  opacity: 0.45;
+}
+
+/* ── Butter-Smooth GPU-Accelerated CRT TV Turn-On ── */
+@keyframes crtTurnOn {
+  0% {
+    transform: translate(-50%, -50%) scale(0.001, 0.004);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.3, 0.004);
+  }
+  30% {
+    transform: translate(-50%, -50%) scale(1, 0.006);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1, 0.08);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1, 1);
+    opacity: 1;
+  }
+}
+
+@keyframes crtTurnOnCentered {
+  0% {
+    transform: scale(0.001, 0.004);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+    transform: scale(0.3, 0.004);
+  }
+  30% {
+    transform: scale(1, 0.006);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1, 0.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1, 1);
+    opacity: 1;
+  }
+}
+
+@keyframes tvFlash {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.85;
+  }
+  45% {
+    opacity: 0.45;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes signalFadeIn {
+  0% {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0px);
+    transform: translateY(0);
+  }
+}
+
+.animate-crt-turn-on {
+  animation: crtTurnOn 0.9s cubic-bezier(0.19, 1, 0.22, 1) both;
+}
+
+.animate-crt-turn-on-centered {
+  animation: crtTurnOnCentered 0.9s cubic-bezier(0.19, 1, 0.22, 1) both;
+}
+
+.animate-tv-flash {
+  animation: tvFlash 0.9s ease-out both;
+}
+
+.animate-signal-1 {
+  opacity: 0;
+  animation: signalFadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.85s forwards;
+}
+
+.animate-signal-2 {
+  opacity: 0;
+  animation: signalFadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.98s forwards;
+}
+
+.animate-signal-3 {
+  opacity: 0;
+  animation: signalFadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 1.1s forwards;
+}
+
+.animate-signal-ui {
+  opacity: 0;
+  animation: signalFadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.95s forwards;
 }

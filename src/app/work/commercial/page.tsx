@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import BarrelVideo from "@/app/component/BarrelVideo";
+import MeshText from "@/app/component/MeshText";
 
 interface Project {
   id: string;
@@ -99,68 +100,70 @@ const SIDEBAR_MIDDLE_START = Math.floor(SIDEBAR_COPIES / 2) * N;
 const TRANSITION_MS = 700;
 
 export default function CommercialPage() {
+  const [mounted, setMounted] = useState(false);
   const [trackIndex, setTrackIndex] = useState(1);
   const [transitionEnabled, setTransitionEnabled] = useState(true);
   const [sidebarPos, setSidebarPos] = useState(SIDEBAR_MIDDLE_START);
-  const [, setDisplayedTitleIndex] = useState(0);
+
+  // FIX 3: video only renders after the CSS transition fully settles
+  const [isSettled, setIsSettled] = useState(true);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const isScrollingRef = useRef(false);
   const isProgrammaticScrollRef = useRef(false);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // FIX 1: throttle by wall-clock time instead of a binary lock
+  const lastScrollTimeRef = useRef<number>(0);
 
   const selectedIndex = (((trackIndex - 1) % N) + N) % N;
   const activeProject = COMMERCIAL_PROJECTS[selectedIndex];
 
   /*
    * --------------------------------------------------------
-   * GO TO NEXT / PREVIOUS (via wheel / keyboard)
+   * GO TO NEXT / PREVIOUS
    * --------------------------------------------------------
    */
   const goTo = useCallback((direction: 1 | -1) => {
-    if (isScrollingRef.current) return;
-    isScrollingRef.current = true;
+    const now = Date.now();
+    // Hard throttle — ignore events arriving before the previous animation finishes
+    if (now - lastScrollTimeRef.current < TRANSITION_MS + 50) return;
+    lastScrollTimeRef.current = now;
 
+    setIsSettled(false); // hide video while animating
     setTransitionEnabled(true);
     setTrackIndex((prev) => prev + direction);
     setSidebarPos((prev) => prev + direction);
-
-    window.setTimeout(() => {
-      isScrollingRef.current = false;
-    }, TRANSITION_MS + 20);
   }, []);
 
   /*
    * --------------------------------------------------------
-   * MAIN TRACK LOOP
+   * MAIN TRACK LOOP (infinite clone jump)
    * --------------------------------------------------------
    */
   const handleTransitionEnd = () => {
-    let nextIndex = trackIndex - 1;
-
     if (trackIndex === 0) {
       setTransitionEnabled(false);
       setTrackIndex(N);
-      nextIndex = N - 1;
     } else if (trackIndex === N + 1) {
       setTransitionEnabled(false);
       setTrackIndex(1);
-      nextIndex = 0;
     }
-
-    setDisplayedTitleIndex(((nextIndex % N) + N) % N);
+    // FIX 3: animation done — allow video to start playing
+    setIsSettled(true);
   };
 
   /*
    * --------------------------------------------------------
-   * MOUSE WHEEL FOR MAIN WINDOW
+   * MOUSE WHEEL — main window only (FIX 1 + FIX 2)
    * --------------------------------------------------------
    */
   useEffect(() => {
-    let wheelDeltaAccumulator = 0;
-    let resetTimer: ReturnType<typeof setTimeout>;
-
     const handleWheel = (e: WheelEvent) => {
+      // FIX 2: if the event target is inside the sidebar, let it scroll freely
       if (
         sidebarRef.current &&
         e.target instanceof Node &&
@@ -170,27 +173,15 @@ export default function CommercialPage() {
       }
 
       e.preventDefault();
-      if (isScrollingRef.current) return;
 
-      wheelDeltaAccumulator += e.deltaY;
-      const threshold = 30;
+      const threshold = 40; // minimum delta before registering a step
+      if (Math.abs(e.deltaY) < threshold) return;
 
-      if (Math.abs(wheelDeltaAccumulator) >= threshold) {
-        goTo(wheelDeltaAccumulator > 0 ? 1 : -1);
-        wheelDeltaAccumulator = 0;
-      }
-
-      clearTimeout(resetTimer);
-      resetTimer = setTimeout(() => {
-        wheelDeltaAccumulator = 0;
-      }, 150);
+      goTo(e.deltaY > 0 ? 1 : -1);
     };
 
     window.addEventListener("wheel", handleWheel, { passive: false });
-    return () => {
-      window.removeEventListener("wheel", handleWheel);
-      clearTimeout(resetTimer);
-    };
+    return () => window.removeEventListener("wheel", handleWheel);
   }, [goTo]);
 
   /*
@@ -203,14 +194,13 @@ export default function CommercialPage() {
       if (e.key === "ArrowDown") goTo(1);
       if (e.key === "ArrowUp") goTo(-1);
     };
-
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [goTo]);
 
   /*
    * --------------------------------------------------------
-   * AUTO-SCROLL SIDEBAR WHEN NAVIGATING MAIN TRACK
+   * AUTO-SCROLL SIDEBAR when main track changes
    * --------------------------------------------------------
    */
   useEffect(() => {
@@ -223,10 +213,7 @@ export default function CommercialPage() {
     if (!element) return;
 
     isProgrammaticScrollRef.current = true;
-    element.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-    });
+    element.scrollIntoView({ behavior: "smooth", block: "center" });
 
     const timeout = window.setTimeout(() => {
       isProgrammaticScrollRef.current = false;
@@ -237,7 +224,7 @@ export default function CommercialPage() {
 
   /*
    * --------------------------------------------------------
-   * DEBOUNCED SIDEBAR SELECTION ON SCROLL STOP
+   * SIDEBAR SCROLL — debounced snap-to-closest (FIX 2)
    * --------------------------------------------------------
    */
   const handleSidebarScroll = () => {
@@ -252,27 +239,20 @@ export default function CommercialPage() {
     if (scrollTop < threshold) {
       isProgrammaticScrollRef.current = true;
       container.scrollTop += singleSetHeight * 2;
-      window.setTimeout(() => {
-        isProgrammaticScrollRef.current = false;
-      }, 50);
+      window.setTimeout(() => { isProgrammaticScrollRef.current = false; }, 50);
       return;
     } else if (scrollTop + clientHeight > scrollHeight - threshold) {
       isProgrammaticScrollRef.current = true;
       container.scrollTop -= singleSetHeight * 2;
-      window.setTimeout(() => {
-        isProgrammaticScrollRef.current = false;
-      }, 50);
+      window.setTimeout(() => { isProgrammaticScrollRef.current = false; }, 50);
       return;
     }
 
     if (isProgrammaticScrollRef.current) return;
 
-    // Clear active timeout while user is actively scrolling
-    if (scrollTimeoutRef.current) {
-      clearTimeout(scrollTimeoutRef.current);
-    }
+    // Debounce: fire 180ms after scrolling stops
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
 
-    // Set a debounced callback that fires 150ms after scrolling stops
     scrollTimeoutRef.current = setTimeout(() => {
       const containerCenter =
         container.getBoundingClientRect().top + clientHeight / 2;
@@ -293,11 +273,14 @@ export default function CommercialPage() {
       if (!Number.isNaN(closestIndex) && closestIndex !== sidebarPos) {
         const realIndex = closestIndex % N;
         setSidebarPos(closestIndex);
+        setIsSettled(false); // hide video while new item animates in
         setTransitionEnabled(true);
         setTrackIndex(realIndex + 1);
-        setDisplayedTitleIndex(realIndex);
+
+        // Re-settle after transition
+        window.setTimeout(() => setIsSettled(true), TRANSITION_MS + 50);
       }
-    }, 150);
+    }, 180);
   };
 
   /*
@@ -306,17 +289,16 @@ export default function CommercialPage() {
    * --------------------------------------------------------
    */
   const handleThumbnailClick = (clickedAbsIndex: number, realIndex: number) => {
-    if (isScrollingRef.current) return;
+    const now = Date.now();
+    if (now - lastScrollTimeRef.current < TRANSITION_MS + 50) return;
+    lastScrollTimeRef.current = now;
 
-    isScrollingRef.current = true;
+    setIsSettled(false);
     setTransitionEnabled(true);
     setTrackIndex(realIndex + 1);
     setSidebarPos(clickedAbsIndex);
-    setDisplayedTitleIndex(realIndex);
 
-    window.setTimeout(() => {
-      isScrollingRef.current = false;
-    }, TRANSITION_MS + 20);
+    window.setTimeout(() => setIsSettled(true), TRANSITION_MS + 50);
   };
 
   return (
@@ -324,85 +306,98 @@ export default function CommercialPage() {
       {/* ==================================================
           MAIN CENTER BARREL VIDEO TRACK
           ================================================== */}
-      <div className="absolute inset-0 flex justify-center items-center pointer-events-none z-10">
+      <div className="absolute inset-0 flex justify-center items-center pointer-events-none z-10 overflow-hidden">
         <div
-          className="w-full max-w-xl md:max-w-2xl h-screen flex flex-col items-center"
-          onTransitionEnd={handleTransitionEnd}
-          style={{
-            transform: `translateY(-${trackIndex * 100}vh)`,
-            transition: transitionEnabled
-              ? `transform ${TRANSITION_MS}ms cubic-bezier(0.76, 0, 0.24, 1)`
-              : "none",
-            willChange: "transform",
-          }}
+          className={`w-full max-w-xl md:max-w-2xl h-screen flex flex-col items-center origin-center relative overflow-hidden ${
+            mounted ? "animate-crt-turn-on-centered" : "opacity-0 scale-0"
+          }`}
         >
-          {EXTENDED_PROJECTS.map((project, idx) => {
-            const projectRealIndex = (((idx - 1) % N) + N) % N;
-            const isActive = projectRealIndex === selectedIndex;
+          <div
+            className="w-full h-screen flex flex-col items-center"
+            onTransitionEnd={handleTransitionEnd}
+            style={{
+              transform: `translateY(-${trackIndex * 100}vh)`,
+              transition: transitionEnabled
+                ? `transform ${TRANSITION_MS}ms cubic-bezier(0.76, 0, 0.24, 1)`
+                : "none",
+              willChange: "transform",
+            }}
+          >
+            {EXTENDED_PROJECTS.map((project, idx) => {
+              const projectRealIndex = (((idx - 1) % N) + N) % N;
+              const isActive = projectRealIndex === selectedIndex;
 
-            return (
-              <div
-                key={`main-track-${project.id}-${idx}`}
-                className="w-full h-screen flex-shrink-0 flex items-center justify-center"
-                style={{ padding: "24px 20px" }}
-              >
-                <Link
-                  href={`/work/commercial/${project.id}`}
-                  className="
-                    relative
-                    w-full
-                    aspect-[16/10]
-                    pointer-events-auto
-                    group
-                    block
-                    cursor-pointer
-                  "
+              return (
+                <div
+                  key={`main-track-${project.id}-${idx}`}
+                  className="w-full h-screen flex-shrink-0 flex items-center justify-center"
+                  style={{ padding: "24px 20px" }}
                 >
-                  <div
+                  <Link
+                    href={`/work/commercial/${project.id}`}
                     className="
-                      absolute
-                      inset-[-8%]
-                      rounded-[40%]
-                      bg-white/20
-                      blur-[70px]
-                      opacity-30
-                      group-hover:opacity-50
-                      transition-opacity
-                      duration-500
-                      pointer-events-none
+                      relative
+                      w-full
+                      aspect-[16/10]
+                      pointer-events-auto
+                      group
+                      block
+                      cursor-pointer
                     "
-                  />
+                  >
+                    {/* Glow halo */}
+                    <div
+                      className="
+                        absolute
+                        inset-[-8%]
+                        rounded-[40%]
+                        bg-white/20
+                        blur-[70px]
+                        opacity-30
+                        group-hover:opacity-50
+                        transition-opacity
+                        duration-500
+                        pointer-events-none
+                      "
+                    />
 
-                  <div className="relative w-full h-full overflow-hidden">
-                    {isActive ? (
-                      <BarrelVideo
-                        src={project.preview}
-                        distortion={0.85}
-                        edgeSoftness={0.02}
-                        zoom={0.85}
-                        glow={false}
-                      />
-                    ) : (
-                      <img
-                        src={project.thumbnail}
-                        alt={project.title}
-                        className="
-                          absolute
-                          inset-0
-                          w-full
-                          h-full
-                          object-cover
-                          scale-110
-                          pointer-events-none
-                        "
-                        draggable={false}
-                      />
-                    )}
-                  </div>
-                </Link>
-              </div>
-            );
-          })}
+                    <div className="relative w-full h-full overflow-hidden">
+                      {/* FIX 3: only mount BarrelVideo after animation fully settles */}
+                      {isActive && isSettled ? (
+                        <BarrelVideo
+                          src={project.preview}
+                          distortion={0.85}
+                          edgeSoftness={0.02}
+                          zoom={0.85}
+                          glow={false}
+                        />
+                      ) : (
+                        <img
+                          src={project.thumbnail}
+                          alt={project.title}
+                          className="
+                            absolute
+                            inset-0
+                            w-full
+                            h-full
+                            object-cover
+                            scale-110
+                            pointer-events-none
+                          "
+                          draggable={false}
+                        />
+                      )}
+                    </div>
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* TV Power-on flash layer */}
+          {mounted && (
+            <div className="absolute inset-0 bg-white/20 blur-xl pointer-events-none animate-tv-flash mix-blend-screen" />
+          )}
         </div>
       </div>
 
@@ -415,42 +410,36 @@ export default function CommercialPage() {
       >
         {/* LEFT SIDE INFO */}
         <div
-          className="col-span-3 flex flex-col justify-between h-full pointer-events-auto"
+          className="col-span-3 flex flex-col justify-between h-full pointer-events-auto animate-signal-ui"
           style={{ paddingTop: "10%", paddingBottom: "10%" }}
         >
-          <Link
-            href="/work"
-            className="
-              text-xs
-              font-mono
-              tracking-widest
-              text-zinc-400
-              hover:text-white
-              transition-colors
-              uppercase
-            "
-          />
+          <div />
 
-          <div className="max-w-xs overflow-hidden">
-            <h1
-              key={activeProject.id}
-              className="
-                text-4xl
-                md:text-5xl
-                font-black
-                uppercase
-                tracking-tight
-                leading-[0.9]
-                text-white
-                animate-title-in
-              "
-            >
-              {activeProject.title}
-            </h1>
+          <div className="max-w-xs md:max-w-sm w-full">
+            <div key={activeProject.id} className="animate-title-in">
+              <MeshText
+                text={activeProject.title}
+                color="#ffffff"
+                font={{
+                  fontFamily: "Inter",
+                  fontWeight: 900,
+                  fontSize: 26,
+                  lineHeight: "1.05em",
+                  letterSpacing: "0.01em",
+                  textAlign: "left",
+                }}
+                glitchMode={false}
+                enableHover={true}
+                hoverIntensity={2.5}
+                baseIntensity={0}
+                fuzzRange={12}
+                fps={60}
+              />
+            </div>
 
             <p
               className="
-                mt-4
+                mt-3
                 text-[10px]
                 font-mono
                 tracking-[0.25em]
@@ -469,7 +458,7 @@ export default function CommercialPage() {
         <div className="col-span-6" />
 
         {/* RIGHT SIDEBAR RAIL */}
-        <div className="col-span-3 h-full flex items-center justify-end gap-6 pointer-events-auto">
+        <div className="col-span-3 h-full flex items-center justify-end gap-6 pointer-events-auto animate-signal-ui">
           {/* NUMBER */}
           <div className="flex flex-col items-center font-mono text-zinc-400 select-none">
             <span className="text-3xl md:text-4xl font-bold text-white tracking-tighter transition-all duration-300">
@@ -485,10 +474,11 @@ export default function CommercialPage() {
             </span>
           </div>
 
-          {/* THUMBNAIL RAIL */}
+          {/* THUMBNAIL RAIL — FIX 2: stopPropagation so this scrolls independently */}
           <div
             ref={sidebarRef}
             onScroll={handleSidebarScroll}
+            onWheel={(e) => e.stopPropagation()}
             className="
               h-[80vh]
               flex
