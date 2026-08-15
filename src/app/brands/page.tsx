@@ -69,9 +69,7 @@ function GlitterWrap(incomingProps: Partial<GlitterProps>) {
   };
 
   const containerRef = useRef<HTMLDivElement | null>(null);
-
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
   const rafRef = useRef<number | null>(null);
 
   const sizeRef = useRef({
@@ -81,7 +79,6 @@ function GlitterWrap(incomingProps: Partial<GlitterProps>) {
   });
 
   const propsRef = useRef(props);
-
   propsRef.current = props;
 
   const mouseRef = useRef({
@@ -95,11 +92,15 @@ function GlitterWrap(incomingProps: Partial<GlitterProps>) {
     const container = containerRef.current;
     const canvas = canvasRef.current;
 
-    if (!container || !canvas) return;
+    if (!container || !canvas) {
+      return;
+    }
 
     const ctx = canvas.getContext("2d");
 
-    if (!ctx) return;
+    if (!ctx) {
+      return;
+    }
 
     type Star = {
       x: number;
@@ -131,17 +132,11 @@ function GlitterWrap(incomingProps: Partial<GlitterProps>) {
       return {
         x: Math.random() * 2 - 1,
         y: Math.random() * 2 - 1,
-
         depth: 0.25 + Math.random() * 0.75,
-
         size: 0.35 + Math.random() * (p.starSize * 0.08),
-
         alpha: 0.2 + Math.random() * 0.8,
-
         phase: Math.random() * Math.PI * 2,
-
         phaseSpeed: 0.15 + Math.random() * 0.35,
-
         color: `rgb(${color[0]}, ${color[1]}, ${color[2]})`,
       };
     };
@@ -164,7 +159,6 @@ function GlitterWrap(incomingProps: Partial<GlitterProps>) {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
       const w = Math.max(1, Math.floor(rect.width));
-
       const h = Math.max(1, Math.floor(rect.height));
 
       if (
@@ -199,7 +193,6 @@ function GlitterWrap(incomingProps: Partial<GlitterProps>) {
 
     const handleMouseMove = (e: MouseEvent) => {
       mouseRef.current.targetX = e.clientX / window.innerWidth - 0.5;
-
       mouseRef.current.targetY = e.clientY / window.innerHeight - 0.5;
     };
 
@@ -220,16 +213,11 @@ function GlitterWrap(incomingProps: Partial<GlitterProps>) {
       const mouse = mouseRef.current;
 
       mouse.x += (mouse.targetX - mouse.x) * Math.min(1, delta * 3);
-
       mouse.y += (mouse.targetY - mouse.y) * Math.min(1, delta * 3);
 
       ctx.clearRect(0, 0, w, h);
 
-      /*
-       * Extremely subtle ambient drift.
-       */
       const driftX = Math.sin(elapsed * 0.18 * speed) * 0.006;
-
       const driftY = Math.cos(elapsed * 0.15 * speed) * 0.006;
 
       ctx.globalCompositeOperation = "source-over";
@@ -251,7 +239,6 @@ function GlitterWrap(incomingProps: Partial<GlitterProps>) {
         const y = star.y + floatY + driftY + mouse.y * parallax * 0.025;
 
         const screenX = (x + 0.5) * w;
-
         const screenY = (y + 0.5) * h;
 
         const breathe =
@@ -260,7 +247,6 @@ function GlitterWrap(incomingProps: Partial<GlitterProps>) {
         const alpha = star.alpha * breathe * (brightness / 100);
 
         ctx.globalAlpha = alpha;
-
         ctx.fillStyle = star.color;
 
         ctx.beginPath();
@@ -325,7 +311,7 @@ function GlitterWrap(incomingProps: Partial<GlitterProps>) {
    BRANDS
 ========================================================= */
 
-const BRANDS = [
+const BRAND_LOGOS = [
   {
     name: "ADIDAS",
     image: "/Adidas_Logo 2.png",
@@ -342,32 +328,23 @@ const BRANDS = [
     name: "ESEWA",
     image: "/esewa.png",
   },
-
-  /*
-   * Add more brand logos here.
-   *
-   * Example:
-   *
-   * {
-   *   name: "BRAND NAME",
-   *   image: "/brand-logo.png",
-   * },
-   */
 ];
 
 /*
- * The exact credit-style row structure.
+ * 40 test brand credits.
  *
- * 3
- * 4
- * 4
- * 3
- * 2
- *
- * If you add more logos above, they will be
- * distributed into these rows.
+ * These can later be replaced with the
+ * real 40 brands without changing the layout.
  */
-const BRAND_ROWS = [3, 4, 4, 3, 2];
+
+const BRANDS = Array.from({ length: 30 }, (_, index) => {
+  const logo = BRAND_LOGOS[index % BRAND_LOGOS.length];
+
+  return {
+    name: `${logo.name}-${index + 1}`,
+    image: logo.image,
+  };
+});
 
 /* =========================================================
    ARTISTS
@@ -376,42 +353,91 @@ const BRAND_ROWS = [3, 4, 4, 3, 2];
 const ARTISTS = [
   "Shushant KC",
   "Ujjan Shakya",
-  "Artist 3",
-  "Artist 4",
-  "Artist 5",
-  "Artist 6",
+  "Sajjan Raj Vaidya",
+  "Sushant Ghimire",
+  "Nabin K Bhattarai",
+  "Albatross",
+  "Rohit John Chettri",
+  "Bartika Eam Rai",
+  "Phosphenes",
+  "The Elements",
+  "Kutumba",
+  "Mingma Sherpa",
+  "Yabesh Thapa",
+  "Swoopna Suman",
+  "Rachana Dahal",
+  "Vek",
+  "Prabesh Kumar Shrestha",
+  "Diwas Gurung",
+  "Bipul Chettri",
+  "1974 AD",
 ];
 
 /* =========================================================
-   CREDIT ROW BUILDER
+   DYNAMIC ASYMMETRIC ROW BUILDER
 ========================================================= */
 
-function buildBrandRows() {
-  const rows: (typeof BRANDS)[] = [];
+/*
+ * Creates an editorial / asymmetric distribution.
+ *
+ * IMPORTANT:
+ *
+ * This does NOT use a fixed [5,5,5,5...] structure.
+ *
+ * The number of items in each row is calculated
+ * from the total number of items.
+ *
+ * For 40 items it intentionally produces something
+ * closer to:
+ *
+ *       4
+ *     6
+ *   5
+ *      6
+ *    4
+ *      5
+ *     6
+ *
+ * The exact pattern adapts to the item count.
+ */
+
+function buildAsymmetricRows<T>(items: T[]) {
+  if (items.length === 0) {
+    return [];
+  }
+
+  const pattern = [4, 5, 6, 8, 7, 5, 4, 3];
+
+  const rows: T[][] = [];
 
   let cursor = 0;
+  let patternIndex = 0;
 
-  for (const rowSize of BRAND_ROWS) {
-    const row = BRANDS.slice(cursor, cursor + rowSize);
+  while (cursor < items.length) {
+    const remaining = items.length - cursor;
+
+    let size = pattern[patternIndex % pattern.length];
+
+    /*
+     * Don't exceed the number of remaining items.
+     */
+    size = Math.min(size, remaining);
+
+    /*
+     * Avoid leaving a single logo for the final row.
+     */
+    if (remaining - size === 1 && size > 2) {
+      size--;
+    }
+
+    const row = items.slice(cursor, cursor + size);
 
     if (row.length > 0) {
       rows.push(row);
     }
 
-    cursor += rowSize;
-  }
-
-  /*
-   * If there are more brands than the
-   * predefined rows, put the remainder
-   * into additional centered rows.
-   */
-  if (cursor < BRANDS.length) {
-    const remainder = BRANDS.slice(cursor);
-
-    for (let i = 0; i < remainder.length; i += 4) {
-      rows.push(remainder.slice(i, i + 4));
-    }
+    cursor += size;
+    patternIndex++;
   }
 
   return rows;
@@ -422,7 +448,7 @@ function buildBrandRows() {
 ========================================================= */
 
 export default function BrandsPage() {
-  const brandRows = buildBrandRows();
+  const brandRows = buildAsymmetricRows(BRANDS);
 
   return (
     <main
@@ -449,7 +475,7 @@ export default function BrandsPage() {
         "
       >
         <GlitterWrap
-          particleCount={500}
+          particleCount={2500}
           color1="#ffffff"
           color2="#ffffff"
           color3="#ffffff"
@@ -502,260 +528,249 @@ export default function BrandsPage() {
 
       <div
         className="
-          absolute
-          inset-0
-          z-10
-          flex
-          flex-col
-          items-center
-          justify-center
-          overflow-hidden
-          px-5
-          py-6
-          sm:px-8
-          md:px-12
-        "
+    absolute
+    inset-0
+    z-10
+    overflow-y-auto
+    overflow-x-hidden
+  "
       >
-        {/* ===================================================
-            MAIN TITLE
-        =================================================== */}
-
-        <header
-          className="
-            mb-7
-            shrink-0
-            text-center
-            sm:mb-8
-            md:mb-10
-          "
-        >
-          <h1
-            className="
-              font-sans
-              text-[clamp(2rem,5vw,4.5rem)]
-              font-black
-              uppercase
-              leading-none
-              tracking-[-0.045em]
-              text-white
-            "
-            style={{
-              textShadow: "0 0 24px rgba(255,255,255,0.12)",
-            }}
-          >
-            Collaborations.
-          </h1>
-        </header>
-
-        {/* ===================================================
-            CREDITS BODY
-        =================================================== */}
-
         <div
           className="
-            flex
-            w-full
-            max-w-[900px]
-            min-h-0
-            flex-col
-            items-center
-          "
+      flex
+      min-h-full
+      w-full
+      flex-col
+      items-center
+      justify-center
+      px-4
+      py-15
+      sm:px-6
+      md:px-10
+    "
         >
-          {/* =================================================
+          <div
+            className="
+        flex
+        w-full
+        max-w-[1000px]
+        flex-col
+        items-center
+      "
+          >
+            {/* =================================================
               BRANDS
           ================================================= */}
 
-          <section
-            className="
+            <section
+              className="
               flex
               w-full
               flex-col
               items-center
             "
-          >
-            <h2
-              className="
-                mb-4
-                font-mono
-                text-[9px]
-                font-medium
-                uppercase
-                tracking-[0.35em]
-                text-white/45
-                sm:mb-5
-                sm:text-[10px]
-              "
             >
-              Brands
-            </h2>
+              <h2
+                className="
+                mb-4
+                font-sans
+                text-[10px]
+                font-bold
+                uppercase
+                tracking-[0.28em]
+                text-white/55
+                sm:mb-5
+                sm:text-[11px]
+              "
+              >
+                Brands
+              </h2>
 
-            {/* ===============================================
-                LOGO ROWS
+              {/* ===============================================
+                ASYMMETRIC BRAND ROWS
             =============================================== */}
 
-            <div
-              className="
+              <div
+                className="
                 flex
                 w-full
                 flex-col
                 items-center
-                gap-2
-                sm:gap-3
-                md:gap-3.5
+                gap-1
+                sm:gap-1.5
+                md:gap-2
               "
-            >
-              {brandRows.map((row, rowIndex) => (
-                <div
-                  key={`brand-row-${rowIndex}`}
-                  className="
+              >
+                {brandRows.map((row, rowIndex) => {
+                  /*
+                   * Alternate the visual density slightly.
+                   *
+                   * Every row stays centered, but the different
+                   * number of logos naturally creates the
+                   * asymmetric silhouette.
+                   */
+                  const isWideRow = row.length >= 6;
+
+                  return (
+                    <div
+                      key={`brand-row-${rowIndex}`}
+                      className={`
                       flex
-                      w-full
                       items-center
                       justify-center
-                      gap-4
-                      sm:gap-7
-                      md:gap-10
-                    "
-                >
-                  {row.map((brand, index) => (
-                    <div
-                      key={`${brand.name}-${rowIndex}-${index}`}
-                      className="
-                            flex
-                            h-10
-                            w-16
-                            items-center
-                            justify-center
-                            sm:h-12
-                            sm:w-20
-                            md:h-14
-                            md:w-24
-                          "
+                      gap-2
+                      sm:gap-4
+                      md:gap-5
+                      ${isWideRow ? "scale-[0.98]" : "scale-[1]"}
+                    `}
                     >
-                      <img
-                        src={brand.image}
-                        alt={brand.name}
-                        draggable={false}
-                        className="
-                              block
-                              max-h-full
-                              max-w-full
-                              object-contain
-                              brightness-0
-                              invert
-                              opacity-90
-                            "
-                      />
+                      {row.map((brand, index) => (
+                        <div
+                          key={`${brand.name}-${rowIndex}-${index}`}
+                          className="
+                          flex
+                          h-11
+                          w-20
+                          shrink-0
+                          items-center
+                          justify-center
+                          sm:h-13
+                          sm:w-24
+                          md:h-15
+                          md:w-28
+                        "
+                        >
+                          <img
+                            src={brand.image}
+                            alt={brand.name}
+                            draggable={false}
+                            className="
+                            block
+                            max-h-full
+                            max-w-full
+                            object-contain
+                            brightness-0
+                            invert
+                            opacity-90
+                          "
+                          />
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </section>
+                  );
+                })}
+              </div>
+            </section>
 
-          {/* =================================================
+            {/* =================================================
               DIVIDER
           ================================================= */}
 
-          <div
-            className="
-              my-6
+            <div
+              className="
+              my-5
               h-px
-              w-24
+              w-20
               shrink-0
               bg-white/10
-              sm:my-7
-              md:my-8
+              sm:my-6
+              md:my-7
             "
-          />
+            />
 
-          {/* =================================================
+            {/* =================================================
               ARTISTS
           ================================================= */}
 
-          <section
-            className="
+            <section
+              className="
               flex
               w-full
               flex-col
               items-center
             "
-          >
-            <h2
-              className="
-                mb-4
-                font-mono
-                text-[9px]
-                font-medium
-                uppercase
-                tracking-[0.35em]
-                text-white/45
-                sm:mb-5
-                sm:text-[10px]
-              "
             >
-              Artists
-            </h2>
+              <h2
+                className="
+                mb-3
+                font-sans
+                text-[10px]
+                font-bold
+                uppercase
+                tracking-[0.28em]
+                text-white/55
+                sm:mb-4
+                sm:text-[11px]
+              "
+              >
+                Artists
+              </h2>
 
-            {/* ===============================================
-                ARTIST CREDIT LINES
+              {/* ===============================================
+                ARTIST CREDITS
             =============================================== */}
 
-            <div
-              className="
-                flex
-                w-full
-                flex-wrap
-                items-center
-                justify-center
-                gap-x-2
-                gap-y-1.5
-                px-3
-                text-center
-                sm:gap-x-3
-                sm:gap-y-2
-              "
-            >
-              {ARTISTS.map((artist, index) => (
-                <div
-                  key={artist}
-                  className="
-                      flex
-                      items-center
-                      whitespace-nowrap
-                    "
-                >
-                  <span
+              <div
+                className="
+    flex
+    w-full
+    max-w-[850px]
+    flex-wrap
+    items-center
+    justify-center
+    gap-x-2
+    gap-y-3
+    px-2
+    text-center
+    sm:gap-x-3
+    sm:gap-y-4
+    md:max-w-[900px]
+    md:gap-x-4
+  "
+              >
+                {ARTISTS.map((artist, index) => (
+                  <div
+                    key={`${artist}-${index}`}
                     className="
-                        font-sans
-                        text-[10px]
-                        font-medium
-                        tracking-[0.01em]
-                        text-white/80
-                        sm:text-xs
-                        md:text-sm
-                      "
+                    flex
+                    items-center
+                    whitespace-nowrap
+                  "
                   >
-                    {artist}
-                  </span>
-
-                  {index < ARTISTS.length - 1 && (
                     <span
                       className="
-                          ml-2
-                          text-[8px]
-                          text-white/25
-                          sm:ml-3
-                          sm:text-[9px]
-                        "
+                      font-sans
+                      text-[14px]
+                      font-bold
+                      leading-none
+                      tracking-[-0.015em]
+                      text-white/90
+                      sm:text-[16px]
+                      md:text-[18px]
+                    "
                     >
-                      •
+                      {artist}
                     </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
+
+                    {index < ARTISTS.length - 1 && (
+                      <span
+                        className="
+                        ml-2
+                        text-[9px]
+                        leading-none
+                        text-white/20
+                        sm:ml-2.5
+                        sm:text-[10px]
+                      "
+                      >
+                        •
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
         </div>
       </div>
 
