@@ -1,7 +1,7 @@
 "use client";
 
 import FullscreenVideo from "@/app/component/FullscreenVideo";
-import Navigation from "@/app/component/Navigation";
+import Navigation from "@/app/component/Nav";
 import { useState } from "react";
 
 export default function HomePage() {
@@ -26,7 +26,7 @@ export default function HomePage() {
           NAVIGATION
       ================================================= */}
 
-      {!isFullscreen && <Navigation />}
+      {/* {!isFullscreen && <Navigation />} */}
 
       {/* =================================================
           SHOWREEL PREVIEW
@@ -39,7 +39,7 @@ export default function HomePage() {
           onClick={openFullscreen}
         >
           <video
-            src="/showreel/Showreel Draft.mp4"
+            src="/showreel/sample-5s.webm"
             autoPlay
             muted
             loop

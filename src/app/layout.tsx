@@ -14,9 +14,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-black text-white antialiased">
-       
-<Nav/>
-        {children}  
+        <Nav />
+        {children}
       </body>
     </html>
   );
