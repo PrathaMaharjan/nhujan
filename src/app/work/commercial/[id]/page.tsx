@@ -145,39 +145,14 @@ export default function ProjectDetailPage() {
         <div className="w-full h-[1px] bg-white/[0.05]" />
       </div>
 
-      {/* ══════════════════════════════════════════════
-          CREDITS — horizontal strip
-      ══════════════════════════════════════════════ */}
-      <div
-        className={`${W} py-7 transition-all duration-700 delay-250 ${revealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-      >
-        <div className="flex flex-wrap gap-x-10 gap-y-4 md:gap-x-14 items-start">
-          {PROJECT.credits.map((c, i) => (
-            <div key={c.role} className="flex items-center gap-3">
-              {i > 0 && (
-                <span className="hidden md:block w-[1px] h-4 bg-white/10 -ml-4" />
-              )}
-              <div>
-                <p className="font-mono text-[8px] tracking-[0.35em] text-zinc-600 uppercase mb-0.5">
-                  {c.role}
-                </p>
-                <p className="font-sans text-xs font-medium text-zinc-300">
-                  {c.name}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+
 
       {/* thin rule */}
       <div className={`${W} transition-opacity duration-700 delay-300 ${revealed ? "opacity-100" : "opacity-0"}`}>
         <div className="w-full h-[1px] bg-white/[0.05]" />
       </div>
 
-      {/* ══════════════════════════════════════════════
-          GALLERY — editorial scattered layout
-      ══════════════════════════════════════════════ */}
+
       <section className={`${W} pt-12 pb-32`}>
         {/* gallery header */}
         <div className="flex items-center gap-4 mb-8">

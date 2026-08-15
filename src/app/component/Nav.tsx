@@ -29,7 +29,7 @@ export default function Nav() {
   }, [pathname]);
 
   /*
-   * Lock scrolling while mobile/side menu is open.
+   * Lock scrolling while dome menu is open.
    */
   useEffect(() => {
     if (isOpen) {
@@ -45,9 +45,6 @@ export default function Nav() {
 
   /*
    * Landing-page navigation transition.
-   *
-   * The links first slide toward the center and disappear.
-   * Then navigation happens.
    */
   const navigateFromLanding = (
     event: React.MouseEvent<HTMLAnchorElement>,
@@ -65,6 +62,19 @@ export default function Nav() {
   };
 
   /*
+   * Escape key to close menu.
+   */
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) {
+        setIsOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen]);
+
+  /*
    * Hamburger
    */
   const toggleMenu = () => {
@@ -73,12 +83,9 @@ export default function Nav() {
 
   return (
     <>
-      {/* =========================================================
-          GLOBAL NAV
-      ========================================================= */}
-
+      {/* GLOBAL NAV */}
       <header
-        className={`
+        className="
           fixed
           inset-x-0
           top-0
@@ -88,13 +95,10 @@ export default function Nav() {
           md:px-8
           py-5
           md:py-6
-        `}
+        "
       >
         <div className="relative w-full h-full">
-          {/* =====================================================
-              NAME
-          ===================================================== */}
-
+          {/* NAME */}
           <Link
             href="/"
             onClick={(event) => {
@@ -132,10 +136,7 @@ export default function Nav() {
             NHUJAN DONGOL
           </Link>
 
-          {/* =====================================================
-              DESKTOP LANDING NAV
-          ===================================================== */}
-
+          {/* DESKTOP LANDING NAV */}
           {isLanding && (
             <nav
               className={`
@@ -151,10 +152,9 @@ export default function Nav() {
                 transition-all
                 duration-[450ms]
                 ease-[cubic-bezier(0.76,0,0.24,1)]
-                ${
-                  isLeavingLanding
-                    ? "translate-x-[120%] opacity-0"
-                    : "translate-x-0 opacity-100"
+                ${isLeavingLanding
+                  ? "translate-x-[120%] opacity-0"
+                  : "translate-x-0 opacity-100"
                 }
               `}
             >
@@ -178,10 +178,9 @@ export default function Nav() {
                       transition-all
                       duration-300
                       group
-                      ${
-                        isActive
-                          ? "text-white"
-                          : "text-white/55 hover:text-white"
+                      ${isActive
+                        ? "text-white"
+                        : "text-white/55 hover:text-white"
                       }
                     `}
                   >
@@ -206,10 +205,7 @@ export default function Nav() {
             </nav>
           )}
 
-          {/* =====================================================
-              NON-LANDING BACK BUTTON
-          ===================================================== */}
-
+          {/* NON-LANDING BACK BUTTON */}
           {!isLanding && (
             <button
               onClick={() => router.back()}
@@ -233,13 +229,7 @@ export default function Nav() {
             </button>
           )}
 
-          {/* =====================================================
-              HAMBURGER
-              - Always available on mobile
-              - Always available on non-landing pages
-              - Appears during landing transition
-          ===================================================== */}
-
+          {/* HAMBURGER */}
           <button
             onClick={toggleMenu}
             aria-label={isOpen ? "Close menu" : "Open menu"}
@@ -251,78 +241,65 @@ export default function Nav() {
               z-[110]
               flex
               h-8
-              w-9
+              w-8
               flex-col
-              items-end
+              items-center
               justify-center
-              gap-[5px]
+              gap-[6px]
               cursor-pointer
-              group
               transition-all
               duration-[450ms]
               ease-[cubic-bezier(0.76,0,0.24,1)]
-              ${
-                isLanding
-                  ? "md:opacity-0 md:pointer-events-none"
-                  : "opacity-100"
+              ${isLanding
+                ? "md:opacity-0 md:pointer-events-none"
+                : "opacity-100"
               }
               ${isLeavingLanding ? "md:opacity-100 md:pointer-events-auto" : ""}
             `}
           >
-            {/* Top */}
             <span
               className={`
                 block
                 h-[1.5px]
+                w-6
                 bg-white
-                transition-all
+                transition-transform
                 duration-400
                 ease-[cubic-bezier(0.76,0,0.24,1)]
-                ${
-                  isOpen
-                    ? "w-6 translate-y-[6.5px] rotate-45"
-                    : "w-6 group-hover:w-8"
-                }
+                origin-center
+                ${isOpen ? "translate-y-[7.5px] rotate-45" : ""}
               `}
             />
-
-            {/* Middle */}
             <span
               className={`
                 block
                 h-[1.5px]
+                w-6
                 bg-white
                 transition-all
-                duration-400
+                duration-300
                 ease-[cubic-bezier(0.76,0,0.24,1)]
-                ${isOpen ? "w-0 opacity-0" : "w-5 group-hover:w-8"}
+                ${isOpen ? "opacity-0 scale-x-0" : "opacity-100 scale-x-100"}
               `}
             />
-
-            {/* Bottom */}
             <span
               className={`
                 block
                 h-[1.5px]
+                w-6
                 bg-white
-                transition-all
+                transition-transform
                 duration-400
                 ease-[cubic-bezier(0.76,0,0.24,1)]
-                ${
-                  isOpen
-                    ? "w-6 -translate-y-[6.5px] -rotate-45"
-                    : "w-4 group-hover:w-8"
-                }
+                origin-center
+                ${isOpen ? "-translate-y-[7.5px] -rotate-45" : ""}
               `}
             />
           </button>
         </div>
       </header>
 
-      {/* =========================================================
-          MOBILE TOP NAV
-      ========================================================= */}
-
+      {/* MOBILE TOP NAV (LANDING) */}
       {isLanding && (
         <div
           className="
@@ -344,260 +321,181 @@ export default function Nav() {
               relative
               flex
               h-8
-              w-9
+              w-8
               flex-col
+              items-center
               justify-center
-              items-end
-              gap-[5px]
+              gap-[6px]
             "
           >
             <span
               className={`
-                block h-[1.5px] bg-white transition-all duration-400
-                ${isOpen ? "w-6 rotate-45 translate-y-[6.5px]" : "w-6"}
+                block h-[1.5px] w-6 bg-white transition-transform duration-400 ease-[cubic-bezier(0.76,0,0.24,1)] origin-center
+                ${isOpen ? "translate-y-[7.5px] rotate-45" : ""}
               `}
             />
-
             <span
               className={`
-                block h-[1.5px] bg-white transition-all duration-400
-                ${isOpen ? "w-0 opacity-0" : "w-5"}
+                block h-[1.5px] w-6 bg-white transition-all duration-300 ease-[cubic-bezier(0.76,0,0.24,1)]
+                ${isOpen ? "opacity-0 scale-x-0" : "opacity-100 scale-x-100"}
               `}
             />
-
             <span
               className={`
-                block h-[1.5px] bg-white transition-all duration-400
-                ${isOpen ? "w-6 -rotate-45 -translate-y-[6.5px]" : "w-4"}
+                block h-[1.5px] w-6 bg-white transition-transform duration-400 ease-[cubic-bezier(0.76,0,0.24,1)] origin-center
+                ${isOpen ? "-translate-y-[7.5px] -rotate-45" : ""}
               `}
             />
           </button>
         </div>
       )}
 
-      {/* =========================================================
-          BACKDROP
-      ========================================================= */}
-
+      {/* BACKDROP OVERLAY */}
       <div
         onClick={() => setIsOpen(false)}
+        aria-hidden="true"
         className={`
           fixed
           inset-0
           z-[105]
-          bg-black/80
+          bg-black/50
           backdrop-blur-[2px]
           transition-opacity
           duration-500
-          ${
-            isOpen
-              ? "opacity-100 pointer-events-auto"
-              : "opacity-0 pointer-events-none"
-          }
+          ease-[cubic-bezier(0.76,0,0.24,1)]
+          ${isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}
         `}
       />
 
-      {/* =========================================================
-          MENU PANEL
-      ========================================================= */}
-
+      {/* DOME MENU */}
       <div
         className={`
           fixed
-          top-0
+          top-1/2
           right-0
-          z-[108]
-          h-dvh
-          w-[min(400px,85vw)]
+          -translate-y-1/2
+          z-[106]
+          h-[min(800px,100vh)]
+          w-[min(380px,94vw)]
           bg-black
           border-l
-          border-white/[0.08]
+          border-y
+          border-white/[0.12]
+          shadow-[-25px_0_60px_rgba(0,0,0,0.9)]
+          rounded-l-[9999px]
           flex
           flex-col
-          justify-between
-          px-10
-          pt-32
-          pb-12
+          justify-center
+          items-start
+          gap-10
+          pl-14
+          pr-10
+          md:pl-20
+          md:pr-14
+          overflow-hidden
           transition-transform
-          duration-500
+          duration-[600ms]
           ease-[cubic-bezier(0.76,0,0.24,1)]
-          ${isOpen ? "translate-x-0" : "translate-x-full"}
+          ${isOpen ? "translate-x-0 pointer-events-auto" : "translate-x-[110%] pointer-events-none"}
         `}
       >
-        {/* RED ACCENT */}
+        <div className="flex flex-col gap-10 w-full min-w-[280px]">
+          {/* LINKS */}
+          <nav className="flex flex-col gap-6">
+            {mainNavLinks.map((link, index) => {
+              const isActive = pathname === link.href;
 
-        <div
-          className={`
-            absolute
-            left-0
-            top-[15%]
-            w-[1px]
-            bg-red-600
-            transition-all
-            duration-700
-            ease-[cubic-bezier(0.76,0,0.24,1)]
-            ${isOpen ? "h-[40%] opacity-100" : "h-0 opacity-0"}
-          `}
-        />
-
-        {/* =====================================================
-            LINKS
-        ===================================================== */}
-
-        <nav className="flex flex-col gap-6">
-          {mainNavLinks.map((link, index) => {
-            const isActive = pathname === link.href;
-
-            return (
-              <div key={link.href} className="overflow-hidden py-1">
-                <Link
-                  href={link.href}
-                  onClick={() => setIsOpen(false)}
-                  className={`
-                    group
-                    flex
-                    items-center
-                    gap-3
-                    font-sans
-                    font-extrabold
-                    text-[clamp(1.75rem,4.5vw,2.5rem)]
-                    leading-none
-                    tracking-tight
-                    transition-all
-                    duration-300
-                    hover:translate-x-2
-                    ${
-                      isActive
-                        ? "text-white translate-x-2"
-                        : "text-zinc-600 hover:text-white"
-                    }
-                    ${
-                      isOpen
-                        ? "translate-y-0 opacity-100"
-                        : "translate-y-10 opacity-0"
-                    }
-                  `}
-                  style={{
-                    transitionDelay: `${isOpen ? 80 + index * 55 : 0}ms`,
-                  }}
-                >
-                  <span
+              return (
+                <div key={link.href} className="overflow-hidden py-1">
+                  <Link
+                    href={link.href}
+                    onClick={() => setIsOpen(false)}
                     className={`
-                      w-1.5
-                      h-1.5
-                      rounded-full
-                      bg-red-600
+                      group
+                      flex
+                      items-center
+                      gap-3
+                      font-sans
+                      font-extrabold
+                      text-[clamp(1.75rem,4.5vw,2.5rem)]
+                      leading-none
+                      tracking-tight
                       transition-all
                       duration-300
-                      ${
-                        isActive
-                          ? "opacity-100 scale-100"
-                          : "opacity-0 scale-0 group-hover:opacity-100 group-hover:scale-100"
+                      hover:translate-x-2
+                      whitespace-nowrap
+                      ${isActive
+                        ? "text-white translate-x-2"
+                        : "text-zinc-600 hover:text-white"
+                      }
+                      ${isOpen
+                        ? "translate-y-0 opacity-100"
+                        : "translate-y-10 opacity-0"
                       }
                     `}
-                  />
+                    style={{
+                      transitionDelay: `${isOpen ? 200 + index * 60 : 0}ms`,
+                    }}
+                  >
+                    <span
+                      className={`
+                        w-1.5
+                        h-1.5
+                        rounded-full
+                        bg-white
+                        transition-all
+                        duration-300
+                        ${isActive
+                          ? "opacity-100 scale-100"
+                          : "opacity-0 scale-0 group-hover:opacity-100 group-hover:scale-100"
+                        }
+                      `}
+                    />
 
-                  <span>{link.name}</span>
-                </Link>
-              </div>
-            );
-          })}
-        </nav>
+                    <span>{link.name}</span>
+                  </Link>
+                </div>
+              );
+            })}
+          </nav>
 
-        {/* =====================================================
-            BOTTOM META
-        ===================================================== */}
+          {/* BOTTOM META */}
+          <div
+            className={`
+              flex
+              flex-col
+              gap-6
+              transition-all
+              duration-500
+              ${isOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}
+            `}
+            style={{
+              transitionDelay: isOpen ? "450ms" : "0ms",
+            }}
+          >
 
-        <div
-          className={`
-            flex
-            flex-col
-            gap-6
-            transition-all
-            duration-500
-            ${isOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}
-          `}
-          style={{
-            transitionDelay: isOpen ? "350ms" : "0ms",
-          }}
-        >
-          <div className="flex gap-5 items-center">
-            {/* Instagram */}
+            <hr className=" text-slate-300" />
 
-            <a
-              href="https://instagram.com"
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Instagram"
-              className="
-                text-white/80
-                hover:text-white
-                transition-all
-                hover:scale-110
-              "
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                className="w-5 h-5"
-              >
-                <rect x="3" y="3" width="18" height="18" rx="5" />
-                <circle cx="12" cy="12" r="4" />
-                <circle
-                  cx="17.5"
-                  cy="6.5"
-                  r="1"
-                  fill="currentColor"
-                  stroke="none"
-                />
-              </svg>
-            </a>
 
-            {/* LinkedIn */}
+            <div className="flex flex-col gap-1.5">
+              <p className="font-mono text-[9px] tracking-[0.3em] text-zinc-400 uppercase whitespace-nowrap">
+                Film Maker, Creative Director &amp; Editor
+              </p>
 
-            <a
-              href="https://linkedin.com"
-              target="_blank"
-              rel="noreferrer"
-              aria-label="LinkedIn"
-              className="
-                text-white/80
-                hover:text-white
-                transition-all
-                hover:scale-110
-              "
-            >
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                <path d="M5.2 3.5A2.2 2.2 0 1 1 5.2 7.9 2.2 2.2 0 0 1 5.2 3.5ZM3.3 9h3.8v11.5H3.3V9Zm6.1 0h3.6v1.6h.1c.5-.9 1.7-1.9 3.5-1.9 3.8 0 4.5 2.5 4.5 5.7v6.1h-3.8V15c0-1.3 0-3-1.9-3s-2.2 1.4-2.2 2.9v5.6H9.4V9Z" />
-              </svg>
-            </a>
-          </div>
-
-          <div className="w-8 h-[1px] bg-white/10" />
-
-          <div className="flex flex-col gap-1.5">
-            <p className="font-mono text-[9px] tracking-[0.3em] text-zinc-400 uppercase">
-              Director &amp; Cinematographer
-            </p>
-
-            <p className="font-mono text-[9px] tracking-[0.3em] text-zinc-600 uppercase">
-              Kathmandu, Nepal
-            </p>
+              <p className="font-mono text-[9px] tracking-[0.3em] text-zinc-600 uppercase whitespace-nowrap">
+                Kathmandu, Nepal
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* =========================================================
-          LANDING BOTTOM CORNER
-      ========================================================= */}
-
-      <>
-        {/* DEVELOPERS */}
-
-        <div
-          className="
+      {/* LANDING BOTTOM CORNER */}
+      {isLanding && (
+        <>
+          {/* DEVELOPERS */}
+          <div
+            className="
               fixed
               bottom-6
               left-6
@@ -611,14 +509,13 @@ export default function Nav() {
               uppercase
               pointer-events-none
             "
-        >
-          DEVELOPERS
-        </div>
+          >
+            DEVELOPERS
+          </div>
 
-        {/* SOCIAL ICONS */}
-
-        <div
-          className="
+          {/* SOCIAL ICONS */}
+          <div
+            className="
               fixed
               bottom-5
               right-6
@@ -629,66 +526,57 @@ export default function Nav() {
               gap-5
               pointer-events-auto
             "
-        >
-          {/* Instagram */}
-
-          <a
-            href="https://instagram.com"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Instagram"
-            className="
+          >
+            {/* Instagram */}
+            <a
+              href="https://instagram.com"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Instagram"
+              className="
                 text-white/85
                 hover:text-white
                 transition-all
                 hover:scale-110
               "
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              className="w-5 h-5 md:w-6 md:h-6"
             >
-              <rect x="3" y="3" width="18" height="18" rx="5" />
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                className="w-5 h-5 md:w-6 md:h-6"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="5" />
+                <circle cx="12" cy="12" r="4" />
+                <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+              </svg>
+            </a>
 
-              <circle cx="12" cy="12" r="4" />
-
-              <circle
-                cx="17.5"
-                cy="6.5"
-                r="1"
+            {/* LinkedIn */}
+            <a
+              href="https://linkedin.com"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="LinkedIn"
+              className="
+                text-white/85
+                hover:text-white
+                transition-all
+                hover:scale-110
+              "
+            >
+              <svg
+                viewBox="0 0 24 24"
                 fill="currentColor"
-                stroke="none"
-              />
-            </svg>
-          </a>
-
-          {/* LinkedIn */}
-
-          <a
-            href="https://linkedin.com"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="LinkedIn"
-            className="
-                text-white/85
-                hover:text-white
-                transition-all
-                hover:scale-110
-              "
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="w-5 h-5 md:w-6 md:h-6"
-            >
-              <path d="M5.2 3.5A2.2 2.2 0 1 1 5.2 7.9 2.2 2.2 0 0 1 5.2 3.5ZM3.3 9h3.8v11.5H3.3V9Zm6.1 0h3.6v1.6h.1c.5-.9 1.7-1.9 3.5-1.9 3.8 0 4.5 2.5 4.5 5.7v6.1h-3.8V15c0-1.3 0-3-1.9-3s-2.2 1.4-2.2 2.9v5.6H9.4V9Z" />
-            </svg>
-          </a>
-        </div>
-      </>
+                className="w-5 h-5 md:w-6 md:h-6"
+              >
+                <path d="M5.2 3.5A2.2 2.2 0 1 1 5.2 7.9 2.2 2.2 0 0 1 5.2 3.5ZM3.3 9h3.8v11.5H3.3V9Zm6.1 0h3.6v1.6h.1c.5-.9 1.7-1.9 3.5-1.9 3.8 0 4.5 2.5 4.5 5.7v6.1h-3.8V15c0-1.3 0-3-1.9-3s-2.2 1.4-2.2 2.9v5.6H9.4V9Z" />
+              </svg>
+            </a>
+          </div>
+        </>
+      )}
     </>
   );
 }
