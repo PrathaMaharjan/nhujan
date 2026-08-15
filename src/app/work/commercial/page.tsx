@@ -239,12 +239,16 @@ export default function CommercialPage() {
     if (scrollTop < threshold) {
       isProgrammaticScrollRef.current = true;
       container.scrollTop += singleSetHeight * 2;
-      window.setTimeout(() => { isProgrammaticScrollRef.current = false; }, 50);
+      window.setTimeout(() => {
+        isProgrammaticScrollRef.current = false;
+      }, 50);
       return;
     } else if (scrollTop + clientHeight > scrollHeight - threshold) {
       isProgrammaticScrollRef.current = true;
       container.scrollTop -= singleSetHeight * 2;
-      window.setTimeout(() => { isProgrammaticScrollRef.current = false; }, 50);
+      window.setTimeout(() => {
+        isProgrammaticScrollRef.current = false;
+      }, 50);
       return;
     }
 
@@ -308,9 +312,8 @@ export default function CommercialPage() {
           ================================================== */}
       <div className="absolute inset-0 flex justify-center items-center pointer-events-none z-10 overflow-hidden">
         <div
-          className={`w-full max-w-xl md:max-w-2xl h-screen flex flex-col items-center origin-center relative overflow-hidden ${
-            mounted ? "animate-crt-turn-on-centered" : "opacity-0 scale-0"
-          }`}
+          className={`w-full max-w-xl md:max-w-2xl h-screen flex flex-col items-center origin-center relative overflow-hidden ${mounted ? "animate-crt-turn-on-centered" : "opacity-0 scale-0"
+            }`}
         >
           <div
             className="w-full h-screen flex flex-col items-center"
@@ -366,9 +369,9 @@ export default function CommercialPage() {
                       {isActive && isSettled ? (
                         <BarrelVideo
                           src={project.preview}
-                          distortion={0.85}
-                          edgeSoftness={0.02}
-                          zoom={0.85}
+                          distortion={0}
+                          edgeSoftness={0.001}
+                          zoom={1}
                           glow={false}
                         />
                       ) : (
@@ -474,16 +477,18 @@ export default function CommercialPage() {
             </span>
           </div>
 
-          {/* THUMBNAIL RAIL — FIX 2: stopPropagation so this scrolls independently */}
+          {/* THUMBNAIL RAIL */}
           <div
             ref={sidebarRef}
             onScroll={handleSidebarScroll}
             onWheel={(e) => e.stopPropagation()}
             className="
               h-[80vh]
+              w-32 md:w-36
               flex
               flex-col
-              gap-4
+              items-center
+              gap-5
               overflow-y-auto
               no-scrollbar
               py-32
@@ -504,20 +509,19 @@ export default function CommercialPage() {
                   onClick={() => handleThumbnailClick(idx, realIndex)}
                   className={`
                     relative
-                    w-28
-                    md:w-36
+                    w-full
                     aspect-[16/10]
                     flex-shrink-0
+                    rounded-sm
                     overflow-hidden
                     snap-center
                     transition-all
-                    duration-300
+                    duration-500
                     ease-out
                     cursor-pointer
-                    ${
-                      isSelected
-                        ? "opacity-100 scale-105"
-                        : "opacity-30 hover:opacity-70"
+                    ${isSelected
+                      ? "opacity-100 scale-135 z-10 shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_15px_rgba(255,255,255,0.15)] ring-1 ring-white/40"
+                      : "opacity-35 scale-90 hover:opacity-75 hover:scale-95 grayscale-[30%]"
                     }
                   `}
                 >

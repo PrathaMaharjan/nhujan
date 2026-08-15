@@ -780,10 +780,10 @@ export default function BrandsPage() {
           REDUCED MOTION
       ===================================================== */}
 
-      <style jsx global>{`
+      <style>{`
         @media (prefers-reduced-motion: reduce) {
           canvas {
-            display: none;
+            display: none !important;
           }
         }
       `}</style>
