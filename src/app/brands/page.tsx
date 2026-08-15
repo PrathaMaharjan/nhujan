@@ -1,870 +1,792 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import { CSSProperties, useEffect, useRef } from "react";
 
-interface Brand {
-  id: number;
-  name: string;
-  logo: string;
-  x: number;
-  y: number;
+/* =========================================================
+   GLITTER / STAR FIELD
+========================================================= */
+
+type GlitterProps = {
+  particleCount: number;
+  color1: string;
+  color2: string;
+  color3: string;
+  speed: number;
+  density: number;
+  starSize: number;
+  brightness: number;
+  mouseInfluence: number;
+  style?: CSSProperties;
+};
+
+const GLITTER_DEFAULTS: GlitterProps = {
+  particleCount: 500,
+  color1: "#ffffff",
+  color2: "#ffffff",
+  color3: "#ffffff",
+  speed: 0.5,
+  density: 100,
+  starSize: 7,
+  brightness: 55,
+  mouseInfluence: 0.35,
+};
+
+function parseColor(input: string): [number, number, number] {
+  if (!input) return [255, 255, 255];
+
+  const s = input.trim();
+
+  if (s.startsWith("#")) {
+    let hex = s.slice(1);
+
+    if (hex.length === 3) {
+      hex = hex
+        .split("")
+        .map((c) => c + c)
+        .join("");
+    }
+
+    const num = parseInt(hex, 16);
+
+    return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+  }
+
+  const match = s.match(/rgba?\(([^)]+)\)/i);
+
+  if (match) {
+    const parts = match[1].split(",").map((p) => parseFloat(p.trim()));
+
+    return [parts[0] ?? 255, parts[1] ?? 255, parts[2] ?? 255];
+  }
+
+  return [255, 255, 255];
 }
 
-/*
-|--------------------------------------------------------------------------
-| BRAND DATA
-|--------------------------------------------------------------------------
-|
-| Add as many brands as you want.
-|
-| x / y = initial position as percentage of viewport
-|
-*/
+function GlitterWrap(incomingProps: Partial<GlitterProps>) {
+  const props = {
+    ...GLITTER_DEFAULTS,
+    ...incomingProps,
+  };
 
-const BRANDS: Brand[] = [
-  {
-    id: 1,
-    name: "Brand One",
-    logo: "/brands/brand-1.svg",
-    x: 8,
-    y: 17,
-  },
-  {
-    id: 2,
-    name: "Brand Two",
-    logo: "/brands/brand-2.svg",
-    x: 22,
-    y: 11,
-  },
-  {
-    id: 3,
-    name: "Brand Three",
-    logo: "/brands/brand-3.svg",
-    x: 38,
-    y: 18,
-  },
-  {
-    id: 4,
-    name: "Brand Four",
-    logo: "/brands/brand-4.svg",
-    x: 56,
-    y: 12,
-  },
-  {
-    id: 5,
-    name: "Brand Five",
-    logo: "/brands/brand-5.svg",
-    x: 73,
-    y: 19,
-  },
-  {
-    id: 6,
-    name: "Brand Six",
-    logo: "/brands/brand-6.svg",
-    x: 91,
-    y: 13,
-  },
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
-  {
-    id: 7,
-    name: "Brand Seven",
-    logo: "/brands/brand-7.svg",
-    x: 13,
-    y: 32,
-  },
-  {
-    id: 8,
-    name: "Brand Eight",
-    logo: "/brands/brand-8.svg",
-    x: 29,
-    y: 28,
-  },
-  {
-    id: 9,
-    name: "Brand Nine",
-    logo: "/brands/brand-9.svg",
-    x: 48,
-    y: 34,
-  },
-  {
-    id: 10,
-    name: "Brand Ten",
-    logo: "/brands/brand-10.svg",
-    x: 66,
-    y: 29,
-  },
-  {
-    id: 11,
-    name: "Brand Eleven",
-    logo: "/brands/brand-11.svg",
-    x: 83,
-    y: 35,
-  },
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  {
-    id: 12,
-    name: "Brand Twelve",
-    logo: "/brands/brand-12.svg",
-    x: 7,
-    y: 49,
-  },
-  {
-    id: 13,
-    name: "Brand Thirteen",
-    logo: "/brands/brand-13.svg",
-    x: 24,
-    y: 45,
-  },
-  {
-    id: 14,
-    name: "Brand Fourteen",
-    logo: "/brands/brand-14.svg",
-    x: 42,
-    y: 50,
-  },
-  {
-    id: 15,
-    name: "Brand Fifteen",
-    logo: "/brands/brand-15.svg",
-    x: 60,
-    y: 44,
-  },
-  {
-    id: 16,
-    name: "Brand Sixteen",
-    logo: "/brands/brand-16.svg",
-    x: 77,
-    y: 51,
-  },
-  {
-    id: 17,
-    name: "Brand Seventeen",
-    logo: "/brands/brand-17.svg",
-    x: 94,
-    y: 47,
-  },
+  const rafRef = useRef<number | null>(null);
 
-  {
-    id: 18,
-    name: "Brand Eighteen",
-    logo: "/brands/brand-18.svg",
-    x: 12,
-    y: 64,
-  },
-  {
-    id: 19,
-    name: "Brand Nineteen",
-    logo: "/brands/brand-19.svg",
-    x: 31,
-    y: 60,
-  },
-  {
-    id: 20,
-    name: "Brand Twenty",
-    logo: "/brands/brand-20.svg",
-    x: 50,
-    y: 66,
-  },
-  {
-    id: 21,
-    name: "Brand Twenty One",
-    logo: "/brands/brand-21.svg",
-    x: 69,
-    y: 61,
-  },
-  {
-    id: 22,
-    name: "Brand Twenty Two",
-    logo: "/brands/brand-22.svg",
-    x: 87,
-    y: 68,
-  },
+  const sizeRef = useRef({
+    w: 0,
+    h: 0,
+    dpr: 1,
+  });
 
-  {
-    id: 23,
-    name: "Brand Twenty Three",
-    logo: "/brands/brand-23.svg",
-    x: 6,
-    y: 82,
-  },
-  {
-    id: 24,
-    name: "Brand Twenty Four",
-    logo: "/brands/brand-24.svg",
-    x: 20,
-    y: 76,
-  },
-  {
-    id: 25,
-    name: "Brand Twenty Five",
-    logo: "/brands/brand-25.svg",
-    x: 37,
-    y: 84,
-  },
-  {
-    id: 26,
-    name: "Brand Twenty Six",
-    logo: "/brands/brand-26.svg",
-    x: 54,
-    y: 78,
-  },
-  {
-    id: 27,
-    name: "Brand Twenty Seven",
-    logo: "/brands/brand-27.svg",
-    x: 72,
-    y: 85,
-  },
-  {
-    id: 28,
-    name: "Brand Twenty Eight",
-    logo: "/brands/brand-28.svg",
-    x: 91,
-    y: 79,
-  },
+  const propsRef = useRef(props);
 
+  propsRef.current = props;
+
+  const mouseRef = useRef({
+    targetX: 0,
+    targetY: 0,
+    x: 0,
+    y: 0,
+  });
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const canvas = canvasRef.current;
+
+    if (!container || !canvas) return;
+
+    const ctx = canvas.getContext("2d");
+
+    if (!ctx) return;
+
+    type Star = {
+      x: number;
+      y: number;
+      depth: number;
+      size: number;
+      alpha: number;
+      phase: number;
+      phaseSpeed: number;
+      color: string;
+    };
+
+    const stars: Star[] = [];
+
+    let elapsed = 0;
+    let lastTime = performance.now();
+
+    const colors = [
+      parseColor(propsRef.current.color1),
+      parseColor(propsRef.current.color2),
+      parseColor(propsRef.current.color3),
+    ];
+
+    const createStar = (): Star => {
+      const p = propsRef.current;
+
+      const color = colors[Math.floor(Math.random() * colors.length)];
+
+      return {
+        x: Math.random() * 2 - 1,
+        y: Math.random() * 2 - 1,
+
+        depth: 0.25 + Math.random() * 0.75,
+
+        size: 0.35 + Math.random() * (p.starSize * 0.08),
+
+        alpha: 0.2 + Math.random() * 0.8,
+
+        phase: Math.random() * Math.PI * 2,
+
+        phaseSpeed: 0.15 + Math.random() * 0.35,
+
+        color: `rgb(${color[0]}, ${color[1]}, ${color[2]})`,
+      };
+    };
+
+    const syncStars = () => {
+      const count = Math.max(1, Math.floor(propsRef.current.particleCount));
+
+      while (stars.length < count) {
+        stars.push(createStar());
+      }
+
+      if (stars.length > count) {
+        stars.length = count;
+      }
+    };
+
+    const resize = () => {
+      const rect = container.getBoundingClientRect();
+
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      const w = Math.max(1, Math.floor(rect.width));
+
+      const h = Math.max(1, Math.floor(rect.height));
+
+      if (
+        sizeRef.current.w === w &&
+        sizeRef.current.h === h &&
+        sizeRef.current.dpr === dpr
+      ) {
+        return;
+      }
+
+      sizeRef.current = {
+        w,
+        h,
+        dpr,
+      };
+
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+
+    syncStars();
+    resize();
+
+    const resizeObserver = new ResizeObserver(resize);
+
+    resizeObserver.observe(container);
+
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseRef.current.targetX = e.clientX / window.innerWidth - 0.5;
+
+      mouseRef.current.targetY = e.clientY / window.innerHeight - 0.5;
+    };
+
+    window.addEventListener("mousemove", handleMouseMove, {
+      passive: true,
+    });
+
+    const draw = (time: number) => {
+      const delta = Math.min(0.05, Math.max(0.001, (time - lastTime) / 1000));
+
+      lastTime = time;
+      elapsed += delta;
+
+      const { speed, brightness, mouseInfluence } = propsRef.current;
+
+      const { w, h } = sizeRef.current;
+
+      const mouse = mouseRef.current;
+
+      mouse.x += (mouse.targetX - mouse.x) * Math.min(1, delta * 3);
+
+      mouse.y += (mouse.targetY - mouse.y) * Math.min(1, delta * 3);
+
+      ctx.clearRect(0, 0, w, h);
+
+      /*
+       * Extremely subtle ambient drift.
+       */
+      const driftX = Math.sin(elapsed * 0.18 * speed) * 0.006;
+
+      const driftY = Math.cos(elapsed * 0.15 * speed) * 0.006;
+
+      ctx.globalCompositeOperation = "source-over";
+
+      for (let i = 0; i < stars.length; i++) {
+        const star = stars[i];
+
+        const floatX =
+          Math.sin(elapsed * star.phaseSpeed * speed + star.phase) * 0.004;
+
+        const floatY =
+          Math.cos(elapsed * star.phaseSpeed * speed * 0.82 + star.phase) *
+          0.004;
+
+        const parallax = mouseInfluence * star.depth;
+
+        const x = star.x + floatX + driftX + mouse.x * parallax * 0.025;
+
+        const y = star.y + floatY + driftY + mouse.y * parallax * 0.025;
+
+        const screenX = (x + 0.5) * w;
+
+        const screenY = (y + 0.5) * h;
+
+        const breathe =
+          0.82 + Math.sin(elapsed * star.phaseSpeed * 1.5 + star.phase) * 0.18;
+
+        const alpha = star.alpha * breathe * (brightness / 100);
+
+        ctx.globalAlpha = alpha;
+
+        ctx.fillStyle = star.color;
+
+        ctx.beginPath();
+
+        ctx.arc(
+          screenX,
+          screenY,
+          star.size * (0.7 + star.depth * 0.5),
+          0,
+          Math.PI * 2,
+        );
+
+        ctx.fill();
+      }
+
+      ctx.globalAlpha = 1;
+
+      rafRef.current = requestAnimationFrame(draw);
+    };
+
+    rafRef.current = requestAnimationFrame(draw);
+
+    return () => {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+      }
+
+      resizeObserver.disconnect();
+
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      className="
+        pointer-events-none
+        absolute
+        inset-0
+        overflow-hidden
+      "
+      style={{
+        ...props.style,
+      }}
+    >
+      <canvas
+        ref={canvasRef}
+        className="
+          absolute
+          inset-0
+          block
+          h-full
+          w-full
+        "
+      />
+    </div>
+  );
+}
+
+/* =========================================================
+   BRANDS
+========================================================= */
+
+const BRANDS = [
   {
-    id: 29,
-    name: "Brand Twenty Nine",
-    logo: "/brands/brand-29.svg",
-    x: 16,
-    y: 24,
+    name: "ADIDAS",
+    image: "/Adidas_Logo 2.png",
   },
   {
-    id: 30,
-    name: "Brand Thirty",
-    logo: "/brands/brand-30.svg",
-    x: 44,
-    y: 23,
+    name: "CLOSEUP",
+    image: "/Closeup logo.png",
   },
   {
-    id: 31,
-    name: "Brand Thirty One",
-    logo: "/brands/brand-31.svg",
-    x: 81,
-    y: 26,
+    name: "DARAZ",
+    image: "/Daraz_Logo.png",
   },
   {
-    id: 32,
-    name: "Brand Thirty Two",
-    logo: "/brands/brand-32.svg",
-    x: 35,
-    y: 40,
-  },
-  {
-    id: 33,
-    name: "Brand Thirty Three",
-    logo: "/brands/brand-33.svg",
-    x: 74,
-    y: 41,
-  },
-  {
-    id: 34,
-    name: "Brand Thirty Four",
-    logo: "/brands/brand-34.svg",
-    x: 18,
-    y: 56,
-  },
-  {
-    id: 35,
-    name: "Brand Thirty Five",
-    logo: "/brands/brand-35.svg",
-    x: 57,
-    y: 57,
-  },
-  {
-    id: 36,
-    name: "Brand Thirty Six",
-    logo: "/brands/brand-36.svg",
-    x: 84,
-    y: 56,
-  },
-  {
-    id: 37,
-    name: "Brand Thirty Seven",
-    logo: "/brands/brand-37.svg",
-    x: 28,
-    y: 70,
-  },
-  {
-    id: 38,
-    name: "Brand Thirty Eight",
-    logo: "/brands/brand-38.svg",
-    x: 46,
-    y: 73,
-  },
-  {
-    id: 39,
-    name: "Brand Thirty Nine",
-    logo: "/brands/brand-39.svg",
-    x: 65,
-    y: 70,
-  },
-  {
-    id: 40,
-    name: "Brand Forty",
-    logo: "/brands/brand-40.svg",
-    x: 78,
-    y: 76,
+    name: "ESEWA",
+    image: "/esewa.png",
   },
 
-  {
-    id: 41,
-    name: "Brand Forty One",
-    logo: "/brands/brand-41.svg",
-    x: 4,
-    y: 39,
-  },
-  {
-    id: 42,
-    name: "Brand Forty Two",
-    logo: "/brands/brand-42.svg",
-    x: 52,
-    y: 39,
-  },
-  {
-    id: 43,
-    name: "Brand Forty Three",
-    logo: "/brands/brand-43.svg",
-    x: 96,
-    y: 39,
-  },
-  {
-    id: 44,
-    name: "Brand Forty Four",
-    logo: "/brands/brand-44.svg",
-    x: 4,
-    y: 70,
-  },
-  {
-    id: 45,
-    name: "Brand Forty Five",
-    logo: "/brands/brand-45.svg",
-    x: 49,
-    y: 89,
-  },
-  {
-    id: 46,
-    name: "Brand Forty Six",
-    logo: "/brands/brand-46.svg",
-    x: 96,
-    y: 88,
-  },
+  /*
+   * Add more brand logos here.
+   *
+   * Example:
+   *
+   * {
+   *   name: "BRAND NAME",
+   *   image: "/brand-logo.png",
+   * },
+   */
 ];
 
 /*
-|--------------------------------------------------------------------------
-| PAGE
-|--------------------------------------------------------------------------
-*/
+ * The exact credit-style row structure.
+ *
+ * 3
+ * 4
+ * 4
+ * 3
+ * 2
+ *
+ * If you add more logos above, they will be
+ * distributed into these rows.
+ */
+const BRAND_ROWS = [3, 4, 4, 3, 2];
 
-export default function BrandsPage() {
-  const [brands, setBrands] = useState<Brand[]>(BRANDS);
+/* =========================================================
+   ARTISTS
+========================================================= */
 
-  /*
-   * ID of currently grabbed logo.
-   */
-  const [draggingId, setDraggingId] = useState<number | null>(null);
+const ARTISTS = [
+  "Shushant KC",
+  "Ujjan Shakya",
+  "Artist 3",
+  "Artist 4",
+  "Artist 5",
+  "Artist 6",
+];
 
-  const containerRef = useRef<HTMLDivElement>(null);
+/* =========================================================
+   CREDIT ROW BUILDER
+========================================================= */
 
-  /*
-  |--------------------------------------------------------------------------
-  | ACTIVE BRAND
-  |--------------------------------------------------------------------------
-  */
+function buildBrandRows() {
+  const rows: (typeof BRANDS)[] = [];
 
-  const activeBrand =
-    draggingId !== null
-      ? brands.find((brand) => brand.id === draggingId)
-      : null;
+  let cursor = 0;
 
-  /*
-  |--------------------------------------------------------------------------
-  | POINTER DOWN
-  |--------------------------------------------------------------------------
-  */
+  for (const rowSize of BRAND_ROWS) {
+    const row = BRANDS.slice(cursor, cursor + rowSize);
 
-  const handlePointerDown = (
-    e: React.PointerEvent<HTMLDivElement>,
-    id: number,
-  ) => {
-    e.preventDefault();
-
-    setDraggingId(id);
-
-    e.currentTarget.setPointerCapture(e.pointerId);
-  };
-
-  /*
-  |--------------------------------------------------------------------------
-  | POINTER MOVE
-  |--------------------------------------------------------------------------
-  */
-
-  const handlePointerMove = (
-    e: React.PointerEvent<HTMLDivElement>,
-    id: number,
-  ) => {
-    if (draggingId !== id) return;
-
-    const container = containerRef.current;
-
-    if (!container) return;
-
-    const rect = container.getBoundingClientRect();
-
-    let x = ((e.clientX - rect.left) / rect.width) * 100;
-
-    let y = ((e.clientY - rect.top) / rect.height) * 100;
-
-    /*
-     * Keep logos inside the viewport.
-     */
-
-    x = Math.max(4, Math.min(96, x));
-
-    y = Math.max(10, Math.min(90, y));
-
-    setBrands((current) =>
-      current.map((brand) =>
-        brand.id === id
-          ? {
-              ...brand,
-              x,
-              y,
-            }
-          : brand,
-      ),
-    );
-  };
-
-  /*
-  |--------------------------------------------------------------------------
-  | POINTER UP
-  |--------------------------------------------------------------------------
-  */
-
-  const handlePointerUp = (e?: React.PointerEvent<HTMLDivElement>) => {
-    if (e) {
-      try {
-        e.currentTarget.releasePointerCapture(e.pointerId);
-      } catch {
-        // Pointer capture may already be released.
-      }
+    if (row.length > 0) {
+      rows.push(row);
     }
 
-    setDraggingId(null);
-  };
+    cursor += rowSize;
+  }
+
+  /*
+   * If there are more brands than the
+   * predefined rows, put the remainder
+   * into additional centered rows.
+   */
+  if (cursor < BRANDS.length) {
+    const remainder = BRANDS.slice(cursor);
+
+    for (let i = 0; i < remainder.length; i += 4) {
+      rows.push(remainder.slice(i, i + 4));
+    }
+  }
+
+  return rows;
+}
+
+/* =========================================================
+   PAGE
+========================================================= */
+
+export default function BrandsPage() {
+  const brandRows = buildBrandRows();
 
   return (
     <main
-      ref={containerRef}
       className="
         relative
         h-dvh
-        w-full
+        w-dvw
         overflow-hidden
-        bg-[#080808]
+        bg-black
         text-white
         select-none
       "
     >
-      {/* =========================================================
-          ANIMATIONS
-      ========================================================= */}
+      {/* =====================================================
+          GLITTER
+      ===================================================== */}
 
-      <style jsx>{`
-        /*
-        |--------------------------------------------------------------------------
-        | IOS-STYLE JIGGLE
-        |--------------------------------------------------------------------------
-        |
-        | ONLY the grabbed logo receives this animation.
-        |
-        | Other logos have NO animation at all.
-        |
-        | The animation lives on a separate wrapper so it never
-        | interferes with the logo's dragged left/top position.
-        |--------------------------------------------------------------------------
-        */
+      <div
+        className="
+          pointer-events-none
+          absolute
+          inset-0
+          z-0
+        "
+      >
+        <GlitterWrap
+          particleCount={500}
+          color1="#ffffff"
+          color2="#ffffff"
+          color3="#ffffff"
+          speed={0.5}
+          density={100}
+          starSize={7}
+          brightness={55}
+          mouseInfluence={0.35}
+        />
+      </div>
 
-        @keyframes iosJiggle {
-          0% {
-            transform: rotate(-2deg);
-          }
+      {/* =====================================================
+          ATMOSPHERE
+      ===================================================== */}
 
-          20% {
-            transform: rotate(1.8deg);
-          }
+      <div
+        className="
+          pointer-events-none
+          absolute
+          inset-0
+          z-[1]
+        "
+        style={{
+          background:
+            "radial-gradient(circle at 50% 45%, rgba(255,255,255,0.025), transparent 45%)",
+        }}
+      />
 
-          40% {
-            transform: rotate(-1.7deg);
-          }
+      {/* =====================================================
+          FILM GRAIN
+      ===================================================== */}
 
-          60% {
-            transform: rotate(1.7deg);
-          }
+      <div
+        className="
+          pointer-events-none
+          absolute
+          inset-0
+          z-[2]
+          opacity-[0.025]
+        "
+        style={{
+          backgroundImage:
+            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E\")",
+        }}
+      />
 
-          80% {
-            transform: rotate(-1.4deg);
-          }
+      {/* =====================================================
+          MAIN CREDIT COMPOSITION
+      ===================================================== */}
 
-          100% {
-            transform: rotate(-2deg);
-          }
-        }
+      <div
+        className="
+          absolute
+          inset-0
+          z-10
+          flex
+          flex-col
+          items-center
+          justify-center
+          overflow-hidden
+          px-5
+          py-6
+          sm:px-8
+          md:px-12
+        "
+      >
+        {/* ===================================================
+            MAIN TITLE
+        =================================================== */}
 
-        /*
-        |--------------------------------------------------------------------------
-        | CENTER TEXT ENTER
-        |--------------------------------------------------------------------------
-        */
+        <header
+          className="
+            mb-7
+            shrink-0
+            text-center
+            sm:mb-8
+            md:mb-10
+          "
+        >
+          <h1
+            className="
+              font-sans
+              text-[clamp(2rem,5vw,4.5rem)]
+              font-black
+              uppercase
+              leading-none
+              tracking-[-0.045em]
+              text-white
+            "
+            style={{
+              textShadow: "0 0 24px rgba(255,255,255,0.12)",
+            }}
+          >
+            Collaborations.
+          </h1>
+        </header>
 
-        @keyframes brandInfoIn {
-          from {
-            opacity: 0;
-            transform: translateY(7px);
-          }
+        {/* ===================================================
+            CREDITS BODY
+        =================================================== */}
 
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
+        <div
+          className="
+            flex
+            w-full
+            max-w-[900px]
+            min-h-0
+            flex-col
+            items-center
+          "
+        >
+          {/* =================================================
+              BRANDS
+          ================================================= */}
 
-        .ios-jiggle {
-          animation: iosJiggle 180ms ease-in-out infinite;
+          <section
+            className="
+              flex
+              w-full
+              flex-col
+              items-center
+            "
+          >
+            <h2
+              className="
+                mb-4
+                font-mono
+                text-[9px]
+                font-medium
+                uppercase
+                tracking-[0.35em]
+                text-white/45
+                sm:mb-5
+                sm:text-[10px]
+              "
+            >
+              Brands
+            </h2>
 
-          transform-origin: center center;
+            {/* ===============================================
+                LOGO ROWS
+            =============================================== */}
 
-          will-change: transform;
-        }
+            <div
+              className="
+                flex
+                w-full
+                flex-col
+                items-center
+                gap-2
+                sm:gap-3
+                md:gap-3.5
+              "
+            >
+              {brandRows.map((row, rowIndex) => (
+                <div
+                  key={`brand-row-${rowIndex}`}
+                  className="
+                      flex
+                      w-full
+                      items-center
+                      justify-center
+                      gap-4
+                      sm:gap-7
+                      md:gap-10
+                    "
+                >
+                  {row.map((brand, index) => (
+                    <div
+                      key={`${brand.name}-${rowIndex}-${index}`}
+                      className="
+                            flex
+                            h-10
+                            w-16
+                            items-center
+                            justify-center
+                            sm:h-12
+                            sm:w-20
+                            md:h-14
+                            md:w-24
+                          "
+                    >
+                      <img
+                        src={brand.image}
+                        alt={brand.name}
+                        draggable={false}
+                        className="
+                              block
+                              max-h-full
+                              max-w-full
+                              object-contain
+                              brightness-0
+                              invert
+                              opacity-90
+                            "
+                      />
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </section>
 
-        .brand-info-enter {
-          animation: brandInfoIn 300ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-        }
+          {/* =================================================
+              DIVIDER
+          ================================================= */}
 
+          <div
+            className="
+              my-6
+              h-px
+              w-24
+              shrink-0
+              bg-white/10
+              sm:my-7
+              md:my-8
+            "
+          />
+
+          {/* =================================================
+              ARTISTS
+          ================================================= */}
+
+          <section
+            className="
+              flex
+              w-full
+              flex-col
+              items-center
+            "
+          >
+            <h2
+              className="
+                mb-4
+                font-mono
+                text-[9px]
+                font-medium
+                uppercase
+                tracking-[0.35em]
+                text-white/45
+                sm:mb-5
+                sm:text-[10px]
+              "
+            >
+              Artists
+            </h2>
+
+            {/* ===============================================
+                ARTIST CREDIT LINES
+            =============================================== */}
+
+            <div
+              className="
+                flex
+                w-full
+                flex-wrap
+                items-center
+                justify-center
+                gap-x-2
+                gap-y-1.5
+                px-3
+                text-center
+                sm:gap-x-3
+                sm:gap-y-2
+              "
+            >
+              {ARTISTS.map((artist, index) => (
+                <div
+                  key={artist}
+                  className="
+                      flex
+                      items-center
+                      whitespace-nowrap
+                    "
+                >
+                  <span
+                    className="
+                        font-sans
+                        text-[10px]
+                        font-medium
+                        tracking-[0.01em]
+                        text-white/80
+                        sm:text-xs
+                        md:text-sm
+                      "
+                  >
+                    {artist}
+                  </span>
+
+                  {index < ARTISTS.length - 1 && (
+                    <span
+                      className="
+                          ml-2
+                          text-[8px]
+                          text-white/25
+                          sm:ml-3
+                          sm:text-[9px]
+                        "
+                    >
+                      •
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      </div>
+
+      {/* =====================================================
+          VERY SUBTLE VIGNETTE
+      ===================================================== */}
+
+      <div
+        className="
+          pointer-events-none
+          absolute
+          inset-0
+          z-20
+        "
+        style={{
+          background:
+            "radial-gradient(circle, transparent 48%, rgba(0,0,0,0.28) 100%)",
+        }}
+      />
+
+      {/* =====================================================
+          REDUCED MOTION
+      ===================================================== */}
+
+      <style jsx global>{`
         @media (prefers-reduced-motion: reduce) {
-          .ios-jiggle {
-            animation: none;
+          canvas {
+            display: none;
           }
         }
       `}</style>
-
-      {/* =========================================================
-          TOP LEFT
-      ========================================================= */}
-
-      <div
-        className="
-          pointer-events-none
-          absolute
-          left-[6vw]
-          top-[7vh]
-          z-[100]
-        "
-      >
-        <div className="flex items-center gap-3">
-          <span
-            className="
-              h-px
-              w-8
-              bg-white/30
-            "
-          />
-
-          <span
-            className="
-              font-mono
-              text-[9px]
-              uppercase
-              tracking-[0.28em]
-              text-white/40
-            "
-          >
-            Selected collaborations
-          </span>
-        </div>
-      </div>
-
-      {/* =========================================================
-          PAGE NUMBER
-      ========================================================= */}
-
-      <div
-        className="
-          pointer-events-none
-          absolute
-          right-[6vw]
-          top-[7vh]
-          z-[100]
-          font-mono
-          text-[9px]
-          tracking-[0.25em]
-          text-white/20
-        "
-      >
-        03 / 03
-      </div>
-
-      {/* =========================================================
-          CENTER STORY
-      ========================================================= */}
-
-      <div
-        className="
-          pointer-events-none
-          absolute
-          left-1/2
-          top-1/2
-          z-[90]
-          w-[260px]
-          -translate-x-1/2
-          -translate-y-1/2
-          text-center
-          md:w-[320px]
-        "
-      >
-        {/* -------------------------------------------------------
-            DEFAULT STATE
-        ------------------------------------------------------- */}
-
-        {!activeBrand && (
-          <div className="brand-info-enter">
-            <p
-              className="
-                font-serif
-                text-sm
-                italic
-                tracking-wide
-                text-white/[0.16]
-                md:text-base
-              "
-            >
-              names that became part of the work
-            </p>
-          </div>
-        )}
-
-        {/* -------------------------------------------------------
-            SELECTED BRAND
-        ------------------------------------------------------- */}
-
-        {activeBrand && (
-          <div key={activeBrand.id} className="brand-info-enter">
-            <div
-              className="
-                mb-3
-                font-mono
-                text-[8px]
-                uppercase
-                tracking-[0.3em]
-                text-white/30
-              "
-            >
-              Selected collaboration
-            </div>
-
-            <div
-              className="
-                font-sans
-                text-lg
-                font-medium
-                uppercase
-                tracking-[0.08em]
-                text-white/85
-                md:text-xl
-              "
-            >
-              {activeBrand.name}
-            </div>
-
-            <div
-              className="
-                mt-2
-                font-serif
-                text-xs
-                italic
-                text-white/30
-              "
-            >
-              part of the archive
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* =========================================================
-          BRANDS
-      ========================================================= */}
-
-      {brands.map((brand) => {
-        const isSelected = draggingId === brand.id;
-
-        return (
-          <div
-            key={brand.id}
-            className="
-              absolute
-              touch-none
-              select-none
-              cursor-grab
-              active:cursor-grabbing
-            "
-            style={{
-              /*
-               * =================================================
-               * POSITION LAYER
-               * =================================================
-               *
-               * This layer handles dragging.
-               *
-               * IMPORTANT:
-               * No rotation animation here.
-               */
-
-              left: `${brand.x}%`,
-              top: `${brand.y}%`,
-
-              transform: "translate(-50%, -50%)",
-
-              zIndex: isSelected ? 80 : 10,
-            }}
-            onPointerDown={(e) => handlePointerDown(e, brand.id)}
-            onPointerMove={(e) => handlePointerMove(e, brand.id)}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerUp}
-          >
-            {/* =================================================
-                IOS JIGGLE LAYER
-
-                ONLY ACTIVE LOGO JIGGLES.
-            ================================================= */}
-
-            <div className={isSelected ? "ios-jiggle" : ""}>
-              {/* ===============================================
-                  SCALE + SHADOW LAYER
-              =============================================== */}
-
-              <div
-                style={{
-                  transform: isSelected ? "scale(1.18)" : "scale(1)",
-
-                  transition: isSelected
-                    ? "transform 140ms ease-out"
-                    : "transform 250ms ease-out",
-
-                  filter: isSelected
-                    ? "drop-shadow(0 28px 40px rgba(0,0,0,.9))"
-                    : "drop-shadow(0 8px 16px rgba(0,0,0,.2))",
-                }}
-              >
-                {/* =============================================
-                    LOGO CONTAINER
-                ============================================= */}
-
-                <div
-                  className="
-                    flex
-                    h-[52px]
-                    w-[82px]
-                    items-center
-                    justify-center
-                    rounded-lg
-                    border
-                    border-white/[0.05]
-                    bg-white/[0.018]
-                    px-3
-                    py-2
-                    backdrop-blur-[2px]
-                    transition-colors
-                    duration-300
-                    hover:border-white/[0.1]
-                    hover:bg-white/[0.035]
-                    md:h-[58px]
-                    md:w-[94px]
-                  "
-                >
-                  <img
-                    src={brand.logo}
-                    alt={brand.name}
-                    draggable={false}
-                    className="
-                      pointer-events-none
-                      max-h-full
-                      max-w-full
-                      object-contain
-                      brightness-0
-                      invert
-                      opacity-60
-                      transition-opacity
-                      duration-300
-                    "
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })}
-
-      {/* =========================================================
-          BOTTOM LEFT
-      ========================================================= */}
-
-      <div
-        className="
-          pointer-events-none
-          absolute
-          bottom-[7vh]
-          left-[6vw]
-          z-[100]
-        "
-      >
-        <div className="flex items-center gap-3">
-          <span
-            className="
-              h-1
-              w-1
-              rounded-full
-              bg-white/30
-            "
-          />
-
-          <p
-            className="
-              font-mono
-              text-[8px]
-              uppercase
-              tracking-[0.2em]
-              text-white/25
-            "
-          >
-            drag through the archive
-          </p>
-        </div>
-      </div>
-
-      {/* =========================================================
-          BOTTOM RIGHT
-      ========================================================= */}
-
-      <div
-        className="
-          pointer-events-none
-          absolute
-          bottom-[7vh]
-          right-[6vw]
-          z-[100]
-          font-mono
-          text-[8px]
-          tracking-[0.2em]
-          text-white/20
-        "
-      >
-        {brands.length.toString().padStart(2, "0")} COLLABORATIONS
-      </div>
     </main>
   );
 }

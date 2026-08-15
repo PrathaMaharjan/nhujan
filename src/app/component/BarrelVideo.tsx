@@ -10,6 +10,7 @@ interface BarrelVideoProps {
   glow?: boolean;
   glowOpacity?: number;
   glowBlur?: number;
+  onClick?: () => void;
 }
 
 export default function BarrelVideo({
@@ -20,6 +21,7 @@ export default function BarrelVideo({
   glow = true,
   glowOpacity = 0.5,
   glowBlur = 70,
+  onClick,
 }: BarrelVideoProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -38,10 +40,6 @@ export default function BarrelVideo({
       return;
     }
 
-    // =====================================================
-    // VIDEO
-    // =====================================================
-
     const video = document.createElement("video");
 
     video.src = src;
@@ -53,16 +51,10 @@ export default function BarrelVideo({
     video.preload = "auto";
 
     const playVideo = () => {
-      void video.play().catch(() => {
-        // Browser may block autoplay until user interaction.
-      });
+      void video.play().catch(() => {});
     };
 
     video.addEventListener("loadeddata", playVideo);
-
-    // =====================================================
-    // SHADERS
-    // =====================================================
 
     const vertexShaderSource = `
       attribute vec2 a_position;
@@ -93,10 +85,6 @@ export default function BarrelVideo({
 
       void main() {
 
-        // ================================================
-        // BARREL FRAME
-        // ================================================
-
         vec2 centeredUV = v_uv - 0.5;
 
         float distanceFromCenter =
@@ -111,11 +99,6 @@ export default function BarrelVideo({
           );
 
         frameUV += 0.5;
-
-
-        // ================================================
-        // SOFT EDGES
-        // ================================================
 
         float left =
           smoothstep(
@@ -151,11 +134,6 @@ export default function BarrelVideo({
           top *
           bottom;
 
-
-        // ================================================
-        // VIDEO STAYS FLAT
-        // ================================================
-
         vec2 videoUV =
           vec2(
             v_uv.x,
@@ -167,21 +145,11 @@ export default function BarrelVideo({
           * u_zoom
           + 0.5;
 
-
-        // ================================================
-        // VIDEO
-        // ================================================
-
         vec4 color =
           texture2D(
             u_texture,
             videoUV
           );
-
-
-        // ================================================
-        // OUTPUT
-        // ================================================
 
         gl_FragColor =
           vec4(
@@ -191,28 +159,17 @@ export default function BarrelVideo({
       }
     `;
 
-    // =====================================================
-    // SHADER CREATION
-    // =====================================================
-
     const createShader = (type: number, source: string): WebGLShader | null => {
       const shader = gl.createShader(type);
 
-      if (!shader) {
-        console.error("Could not create shader.");
-        return null;
-      }
+      if (!shader) return null;
 
       gl.shaderSource(shader, source);
       gl.compileShader(shader);
 
-      const compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-
-      if (!compiled) {
-        console.error("Shader compilation error:", gl.getShaderInfoLog(shader));
-
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error(gl.getShaderInfoLog(shader));
         gl.deleteShader(shader);
-
         return null;
       }
 
@@ -226,44 +183,22 @@ export default function BarrelVideo({
       fragmentShaderSource,
     );
 
-    if (!vertexShader || !fragmentShader) {
-      return;
-    }
-
-    // =====================================================
-    // PROGRAM
-    // =====================================================
+    if (!vertexShader || !fragmentShader) return;
 
     const program = gl.createProgram();
 
-    if (!program) {
-      gl.deleteShader(vertexShader);
-      gl.deleteShader(fragmentShader);
-      return;
-    }
+    if (!program) return;
 
     gl.attachShader(program, vertexShader);
     gl.attachShader(program, fragmentShader);
-
     gl.linkProgram(program);
 
-    const linked = gl.getProgramParameter(program, gl.LINK_STATUS);
-
-    if (!linked) {
-      console.error("Program linking error:", gl.getProgramInfoLog(program));
-
-      gl.deleteProgram(program);
-      gl.deleteShader(vertexShader);
-      gl.deleteShader(fragmentShader);
-
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      console.error(gl.getProgramInfoLog(program));
       return;
     }
 
     gl.useProgram(program);
-
-    // =====================================================
-    // QUAD
-    // =====================================================
 
     const positions = new Float32Array([
       -1, -1, 1, -1, -1, 1,
@@ -277,72 +212,35 @@ export default function BarrelVideo({
       0, 1, 1, 0, 1, 1,
     ]);
 
-    // =====================================================
-    // POSITION BUFFER
-    // =====================================================
-
     const positionBuffer = gl.createBuffer();
 
-    if (!positionBuffer) {
-      gl.deleteProgram(program);
-      gl.deleteShader(vertexShader);
-      gl.deleteShader(fragmentShader);
-      return;
-    }
+    if (!positionBuffer) return;
 
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
     gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
 
     const positionLocation = gl.getAttribLocation(program, "a_position");
-
-    if (positionLocation === -1) {
-      console.error("a_position attribute not found.");
-      return;
-    }
 
     gl.enableVertexAttribArray(positionLocation);
 
     gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
 
-    // =====================================================
-    // UV BUFFER
-    // =====================================================
-
     const uvBuffer = gl.createBuffer();
 
-    if (!uvBuffer) {
-      gl.deleteBuffer(positionBuffer);
-      gl.deleteProgram(program);
-      gl.deleteShader(vertexShader);
-      gl.deleteShader(fragmentShader);
-      return;
-    }
+    if (!uvBuffer) return;
 
     gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
-
     gl.bufferData(gl.ARRAY_BUFFER, uvs, gl.STATIC_DRAW);
 
     const uvLocation = gl.getAttribLocation(program, "a_uv");
-
-    if (uvLocation === -1) {
-      console.error("a_uv attribute not found.");
-      return;
-    }
 
     gl.enableVertexAttribArray(uvLocation);
 
     gl.vertexAttribPointer(uvLocation, 2, gl.FLOAT, false, 0, 0);
 
-    // =====================================================
-    // TEXTURE
-    // =====================================================
-
     const texture = gl.createTexture();
 
-    if (!texture) {
-      return;
-    }
+    if (!texture) return;
 
     gl.bindTexture(gl.TEXTURE_2D, texture);
 
@@ -354,17 +252,9 @@ export default function BarrelVideo({
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
-    // =====================================================
-    // BLENDING
-    // =====================================================
-
     gl.enable(gl.BLEND);
 
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-
-    // =====================================================
-    // UNIFORMS
-    // =====================================================
 
     const distortionLocation = gl.getUniformLocation(program, "u_distortion");
 
@@ -372,21 +262,17 @@ export default function BarrelVideo({
 
     const zoomLocation = gl.getUniformLocation(program, "u_zoom");
 
-    if (distortionLocation !== null) {
+    if (distortionLocation) {
       gl.uniform1f(distortionLocation, distortion);
     }
 
-    if (softnessLocation !== null) {
+    if (softnessLocation) {
       gl.uniform1f(softnessLocation, edgeSoftness);
     }
 
-    if (zoomLocation !== null) {
+    if (zoomLocation) {
       gl.uniform1f(zoomLocation, zoom);
     }
-
-    // =====================================================
-    // RESIZE
-    // =====================================================
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -405,10 +291,6 @@ export default function BarrelVideo({
 
     window.addEventListener("resize", resize);
 
-    // =====================================================
-    // RENDER
-    // =====================================================
-
     let animationFrame = 0;
     let destroyed = false;
 
@@ -418,7 +300,6 @@ export default function BarrelVideo({
       animationFrame = requestAnimationFrame(render);
 
       gl.clearColor(0, 0, 0, 0);
-
       gl.clear(gl.COLOR_BUFFER_BIT);
 
       if (video.readyState >= video.HAVE_CURRENT_DATA) {
@@ -440,10 +321,6 @@ export default function BarrelVideo({
     };
 
     render();
-
-    // =====================================================
-    // CLEANUP
-    // =====================================================
 
     return () => {
       destroyed = true;
@@ -468,7 +345,7 @@ export default function BarrelVideo({
   }, [src, distortion, edgeSoftness, zoom]);
 
   return (
-    <div className="absolute inset-0">
+    <div className="absolute inset-0 cursor-pointer group" onClick={onClick}>
       {glow && (
         <div
           className="absolute pointer-events-none"
@@ -483,6 +360,29 @@ export default function BarrelVideo({
       )}
 
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
+
+      {/* PLAY */}
+
+      <div
+        className="
+          absolute
+          left-1/2
+          top-1/2
+          -translate-x-1/2
+          -translate-y-1/2
+          pointer-events-none
+          text-white
+          text-[11px]
+          tracking-[0.2em]
+          uppercase
+          opacity-0
+          group-hover:opacity-100
+          transition-opacity
+          duration-300
+        "
+      >
+        PLAY
+      </div>
     </div>
   );
 }
