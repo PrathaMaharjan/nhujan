@@ -177,11 +177,11 @@ export default function ContactPage() {
   return (
     <main className="relative h-screen w-screen bg-black text-white flex flex-col items-center justify-center select-none px-4 overflow-hidden">
       {/* Interactive particle background */}
-      {/* <canvas
+      <canvas
         ref={canvasRef}
         className="absolute inset-0 z-0 pointer-events-none"
         aria-hidden="true"
-      /> */}
+      />
 
       {/* Ambient center glow */}
       <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.04),transparent_65%)]" />

@@ -11,6 +11,10 @@ interface WorkCategory {
   image: string;
 }
 
+// Matches Nav's landing-page transition duration/easing exactly
+const REVEAL_MS = 450;
+const REVEAL_EASE = 'cubic-bezier(0.76,0,0.24,1)';
+
 export default function WorkSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const hudFrameRef = useRef<HTMLDivElement>(null);
@@ -18,6 +22,10 @@ export default function WorkSection() {
 
   const [isHovered, setIsHovered] = useState(false);
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
+
+  // Entrance transition state
+  const [revealed, setRevealed] = useState(false);
+  const [curtainMounted, setCurtainMounted] = useState(true);
 
   // Set initial position tracking as uninitialized (null)
   const targetPos = useRef<{ x: number; y: number } | null>(null);
@@ -67,6 +75,16 @@ export default function WorkSection() {
       setActiveIdx(newIdx);
     }
   };
+
+  // Kick off the entrance wipe on mount — timed to Nav's own transition duration
+  useEffect(() => {
+    const t = setTimeout(() => setRevealed(true), 40);
+    const t2 = window.setTimeout(() => setCurtainMounted(false), REVEAL_MS + 100);
+    return () => {
+      window.clearTimeout(t);
+      window.clearTimeout(t2);
+    };
+  }, []);
 
   useEffect(() => {
     const boxWidth = 384;
@@ -294,6 +312,18 @@ export default function WorkSection() {
           );
         })}
       </main>
+
+      {/* 5. ENTRANCE CURTAIN — wipes left→right on mount, matched to Nav's 450ms transition */}
+      {curtainMounted && (
+        <div
+          className="absolute inset-0 z-50 bg-black pointer-events-none"
+          style={{
+            transform: revealed ? 'translateX(100%)' : 'translateX(0%)',
+            transition: `transform ${REVEAL_MS}ms ${REVEAL_EASE}`,
+            willChange: 'transform',
+          }}
+        />
+      )}
     </section>
   );
 }

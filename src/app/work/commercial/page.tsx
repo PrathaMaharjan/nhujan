@@ -543,7 +543,7 @@ export default function CommercialPage() {
         </div>
       </div>
 
-      <style jsx global>{`
+      <style>{`
         * {
           scrollbar-width: none !important;
         }

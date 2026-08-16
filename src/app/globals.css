@@ -120,10 +120,14 @@ body {
 }
 
 .animate-crt-turn-on {
+  will-change: transform, opacity;
+  transform-origin: center center;
   animation: crtTurnOn 0.9s cubic-bezier(0.19, 1, 0.22, 1) both;
 }
 
 .animate-crt-turn-on-centered {
+  will-change: transform, opacity;
+  transform-origin: center center;
   animation: crtTurnOnCentered 0.9s cubic-bezier(0.19, 1, 0.22, 1) both;
 }
 
@@ -149,4 +153,24 @@ body {
 .animate-signal-ui {
   opacity: 0;
   animation: signalFadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.95s forwards;
+}
+
+/* ── Slit opening from middle to sides for [id] video media ── */
+@keyframes slitOpenMiddleToSides {
+  0% {
+    clip-path: inset(0% 50% 0% 50%);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  100% {
+    clip-path: inset(0% 0% 0% 0%);
+    opacity: 1;
+  }
+}
+
+.animate-slit-open {
+  will-change: clip-path, opacity;
+  animation: slitOpenMiddleToSides 1.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }

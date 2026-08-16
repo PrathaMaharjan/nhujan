@@ -361,7 +361,7 @@ export default function Nav() {
           fixed
           inset-0
           z-[105]
-          bg-black/50
+          bg-black/30
           backdrop-blur-[2px]
           transition-opacity
           duration-500
@@ -370,7 +370,7 @@ export default function Nav() {
         `}
       />
 
-      {/* DOME MENU */}
+      {/* HIGHLY TRANSLUCENT DOME MENU */}
       <div
         className={`
           fixed
@@ -380,11 +380,12 @@ export default function Nav() {
           z-[106]
           h-[min(800px,100vh)]
           w-[min(380px,94vw)]
-          bg-black
+          bg-black/35
+          backdrop-blur-2xl
           border-l
           border-y
-          border-white/[0.12]
-          shadow-[-25px_0_60px_rgba(0,0,0,0.9)]
+          border-white/20
+          shadow-[0_8px_32px_0_rgba(0,0,0,0.37)]
           rounded-l-[9999px]
           flex
           flex-col
@@ -482,11 +483,11 @@ export default function Nav() {
             <hr className=" text-slate-300" />
 
             <div className="flex flex-col gap-1.5">
-              <p className="font-mono text-[9px] tracking-[0.3em] text-zinc-400 uppercase whitespace-nowrap">
+              <p className="font-mono text-[9px] tracking-[0.3em] text-white/90 uppercase whitespace-nowrap drop-shadow-sm">
                 Film Maker, Creative Director &amp; Editor
               </p>
 
-              <p className="font-mono text-[9px] tracking-[0.3em] text-zinc-600 uppercase whitespace-nowrap">
+              <p className="font-mono text-[9px] tracking-[0.3em] text-white/70 uppercase whitespace-nowrap drop-shadow-sm">
                 Kathmandu, Nepal
               </p>
             </div>
