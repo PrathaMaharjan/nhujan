@@ -120,7 +120,7 @@ export default function HomePage() {
           {/* =================================================
               CURSOR REACTIVE LIGHT
           ================================================= */}
-
+          {/* 
           <div
             className="
               pointer-events-none
@@ -141,7 +141,7 @@ export default function HomePage() {
               `,
               mixBlendMode: "screen",
             }}
-          />
+          /> */}
 
           {/* =================================================
               STRONG VIGNETTE

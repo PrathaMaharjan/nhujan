@@ -515,7 +515,7 @@ export default function Nav() {
               pointer-events-none
             "
           >
-            DEVELOPED BY
+            DEVELOPED BY &lt;/&gt;
           </div>
 
           {/* SOCIAL ICONS */}
