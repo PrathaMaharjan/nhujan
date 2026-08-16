@@ -152,9 +152,10 @@ export default function Nav() {
                 transition-all
                 duration-[450ms]
                 ease-[cubic-bezier(0.76,0,0.24,1)]
-                ${isLeavingLanding
-                  ? "translate-x-[120%] opacity-0"
-                  : "translate-x-0 opacity-100"
+                ${
+                  isLeavingLanding
+                    ? "translate-x-[120%] opacity-0"
+                    : "translate-x-0 opacity-100"
                 }
               `}
             >
@@ -178,9 +179,10 @@ export default function Nav() {
                       transition-all
                       duration-300
                       group
-                      ${isActive
-                        ? "text-white"
-                        : "text-white/55 hover:text-white"
+                      ${
+                        isActive
+                          ? "text-white"
+                          : "text-white/55 hover:text-white"
                       }
                     `}
                   >
@@ -250,9 +252,10 @@ export default function Nav() {
               transition-all
               duration-[450ms]
               ease-[cubic-bezier(0.76,0,0.24,1)]
-              ${isLanding
-                ? "md:opacity-0 md:pointer-events-none"
-                : "opacity-100"
+              ${
+                isLanding
+                  ? "md:opacity-0 md:pointer-events-none"
+                  : "opacity-100"
               }
               ${isLeavingLanding ? "md:opacity-100 md:pointer-events-auto" : ""}
             `}
@@ -424,13 +427,15 @@ export default function Nav() {
                       duration-300
                       hover:translate-x-2
                       whitespace-nowrap
-                      ${isActive
-                        ? "text-white translate-x-2"
-                        : "text-zinc-600 hover:text-white"
+                      ${
+                        isActive
+                          ? "text-white translate-x-2"
+                          : "text-zinc-600 hover:text-white"
                       }
-                      ${isOpen
-                        ? "translate-y-0 opacity-100"
-                        : "translate-y-10 opacity-0"
+                      ${
+                        isOpen
+                          ? "translate-y-0 opacity-100"
+                          : "translate-y-10 opacity-0"
                       }
                     `}
                     style={{
@@ -445,9 +450,10 @@ export default function Nav() {
                         bg-white
                         transition-all
                         duration-300
-                        ${isActive
-                          ? "opacity-100 scale-100"
-                          : "opacity-0 scale-0 group-hover:opacity-100 group-hover:scale-100"
+                        ${
+                          isActive
+                            ? "opacity-100 scale-100"
+                            : "opacity-0 scale-0 group-hover:opacity-100 group-hover:scale-100"
                         }
                       `}
                     />
@@ -473,9 +479,7 @@ export default function Nav() {
               transitionDelay: isOpen ? "450ms" : "0ms",
             }}
           >
-
             <hr className=" text-slate-300" />
-
 
             <div className="flex flex-col gap-1.5">
               <p className="font-mono text-[9px] tracking-[0.3em] text-zinc-400 uppercase whitespace-nowrap">
@@ -510,7 +514,7 @@ export default function Nav() {
               pointer-events-none
             "
           >
-            DEVELOPERS
+            DEVELOPED BY
           </div>
 
           {/* SOCIAL ICONS */}
@@ -549,7 +553,13 @@ export default function Nav() {
               >
                 <rect x="3" y="3" width="18" height="18" rx="5" />
                 <circle cx="12" cy="12" r="4" />
-                <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+                <circle
+                  cx="17.5"
+                  cy="6.5"
+                  r="1"
+                  fill="currentColor"
+                  stroke="none"
+                />
               </svg>
             </a>
 

@@ -5,34 +5,40 @@ import { useCallback, useEffect, useRef, useState } from "react";
 interface FullscreenVideoProps {
   src: string;
   isOpen: boolean;
-  startTime: number;
-  wasPlaying: boolean;
-  volume?: number;
-
-  onClose: (currentTime: number, wasPlaying: boolean) => void;
+  startTime?: number;
+  wasPlaying?: boolean;
+  onClose: (currentTime: number, playing: boolean) => void;
 }
 
 export default function FullscreenVideo({
   src,
   isOpen,
-  startTime,
-  wasPlaying,
-  volume = 1,
+  startTime = 0,
+  wasPlaying = true,
   onClose,
 }: FullscreenVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [showControls, setShowControls] = useState(false);
   const [isPlaying, setIsPlaying] = useState(wasPlaying);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [currentTime, setCurrentTime] = useState(startTime);
-  const [videoVolume, setVideoVolume] = useState(volume);
+  const [volume, setVolume] = useState(1);
+  const [showControls, setShowControls] = useState(true);
 
-  // =====================================================
-  // CONTROLS VISIBILITY
-  // =====================================================
+  const [cursor, setCursor] = useState({
+    x: 0,
+    y: 0,
+  });
+
+  const [cursorVisible, setCursorVisible] = useState(false);
+
+  /*
+   * -------------------------------------------------------
+   * CONTROLS VISIBILITY
+   * -------------------------------------------------------
+   */
 
   const revealControls = useCallback(() => {
     setShowControls(true);
@@ -46,61 +52,127 @@ export default function FullscreenVideo({
     }, 2000);
   }, []);
 
-  // =====================================================
-  // OPEN / INITIALIZE
-  // =====================================================
+  /*
+   * -------------------------------------------------------
+   * MOUSE
+   * -------------------------------------------------------
+   */
 
   useEffect(() => {
     if (!isOpen) return;
 
-    const video = videoRef.current;
+    const handleMouseMove = (event: MouseEvent) => {
+      const video = videoRef.current;
 
-    if (!video) return;
+      /*
+       * Always synchronize the custom cursor with
+       * the ACTUAL video playback state.
+       */
+      if (video) {
+        setIsPlaying(!video.paused);
+      }
 
-    video.currentTime = startTime;
-    video.volume = videoVolume;
+      setCursor({
+        x: event.clientX,
+        y: event.clientY,
+      });
 
-    setCurrentTime(startTime);
-    setIsPlaying(wasPlaying);
+      setCursorVisible(true);
 
-    if (wasPlaying) {
-      void video.play().catch(() => {});
-    } else {
-      video.pause();
-    }
+      revealControls();
+    };
 
-    revealControls();
+    const handleMouseLeave = () => {
+      setCursorVisible(false);
+    };
 
-    document.body.style.overflow = "hidden";
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseleave", handleMouseLeave);
 
     return () => {
-      document.body.style.overflow = "";
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseleave", handleMouseLeave);
     };
+  }, [isOpen, revealControls]);
+
+  /*
+   * -------------------------------------------------------
+   * HIDE REAL CURSOR
+   * -------------------------------------------------------
+   */
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const previousCursor = document.body.style.cursor;
+
+    document.body.style.cursor = "none";
+
+    return () => {
+      document.body.style.cursor = previousCursor;
+    };
+  }, [isOpen]);
+
+  /*
+   * -------------------------------------------------------
+   * VIDEO OPEN
+   * -------------------------------------------------------
+   */
+
+  useEffect(() => {
+    const video = videoRef.current;
+
+    if (!video || !isOpen) return;
+
+    const start = async () => {
+      try {
+        video.currentTime = startTime;
+
+        if (wasPlaying) {
+          await video.play();
+
+          // Explicitly sync cursor state
+          setIsPlaying(true);
+        } else {
+          video.pause();
+
+          // Explicitly sync cursor state
+          setIsPlaying(false);
+        }
+      } catch {
+        /*
+         * Browser autoplay restriction.
+         * If playback failed, the video is not playing,
+         * so the cursor should show PLAY.
+         */
+        setIsPlaying(false);
+      }
+    };
+
+    start();
+
+    revealControls();
   }, [isOpen, startTime, wasPlaying, revealControls]);
 
-  // =====================================================
-  // VIDEO EVENTS
-  // =====================================================
+  /*
+   * -------------------------------------------------------
+   * VIDEO EVENTS
+   * -------------------------------------------------------
+   */
 
   useEffect(() => {
     const video = videoRef.current;
 
     if (!video) return;
 
-    const handleLoadedMetadata = () => {
+    const handleMetadata = () => {
       setDuration(video.duration || 0);
-
-      if (isOpen) {
-        video.currentTime = startTime;
-      }
     };
 
     const handleTimeUpdate = () => {
-      setCurrentTime(video.currentTime);
+      if (!video.duration) return;
 
-      if (video.duration) {
-        setProgress(video.currentTime / video.duration);
-      }
+      setProgress(video.currentTime / video.duration);
     };
 
     const handlePlay = () => {
@@ -111,28 +183,24 @@ export default function FullscreenVideo({
       setIsPlaying(false);
     };
 
-    const handleEnded = () => {
-      setIsPlaying(false);
-    };
-
-    video.addEventListener("loadedmetadata", handleLoadedMetadata);
+    video.addEventListener("loadedmetadata", handleMetadata);
     video.addEventListener("timeupdate", handleTimeUpdate);
     video.addEventListener("play", handlePlay);
     video.addEventListener("pause", handlePause);
-    video.addEventListener("ended", handleEnded);
 
     return () => {
-      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      video.removeEventListener("loadedmetadata", handleMetadata);
       video.removeEventListener("timeupdate", handleTimeUpdate);
       video.removeEventListener("play", handlePlay);
       video.removeEventListener("pause", handlePause);
-      video.removeEventListener("ended", handleEnded);
     };
-  }, [isOpen, startTime]);
+  }, []);
 
-  // =====================================================
-  // PLAY / PAUSE
-  // =====================================================
+  /*
+   * -------------------------------------------------------
+   * PLAY / PAUSE
+   * -------------------------------------------------------
+   */
 
   const togglePlayback = useCallback(() => {
     const video = videoRef.current;
@@ -140,17 +208,28 @@ export default function FullscreenVideo({
     if (!video) return;
 
     if (video.paused) {
-      void video.play().catch(() => {});
+      void video
+        .play()
+        .then(() => {
+          setIsPlaying(true);
+        })
+        .catch(() => {
+          setIsPlaying(false);
+        });
     } else {
       video.pause();
+
+      setIsPlaying(false);
     }
 
     revealControls();
   }, [revealControls]);
 
-  // =====================================================
-  // SEEK
-  // =====================================================
+  /*
+   * -------------------------------------------------------
+   * SEEK
+   * -------------------------------------------------------
+   */
 
   const seekVideo = (event: React.ChangeEvent<HTMLInputElement>) => {
     const video = videoRef.current;
@@ -162,19 +241,20 @@ export default function FullscreenVideo({
     video.currentTime = value * video.duration;
 
     setProgress(value);
-    setCurrentTime(video.currentTime);
 
     revealControls();
   };
 
-  // =====================================================
-  // VOLUME
-  // =====================================================
+  /*
+   * -------------------------------------------------------
+   * VOLUME
+   * -------------------------------------------------------
+   */
 
   const changeVolume = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = Number(event.target.value) / 100;
 
-    setVideoVolume(value);
+    setVolume(value);
 
     const video = videoRef.current;
 
@@ -185,40 +265,51 @@ export default function FullscreenVideo({
     revealControls();
   };
 
+  /*
+   * -------------------------------------------------------
+   * MUTE
+   * -------------------------------------------------------
+   */
+
   const toggleMute = () => {
     const video = videoRef.current;
 
     if (!video) return;
 
-    if (videoVolume === 0) {
-      setVideoVolume(1);
-      video.volume = 1;
-    } else {
-      setVideoVolume(0);
+    if (video.volume > 0) {
       video.volume = 0;
+      setVolume(0);
+    } else {
+      video.volume = 1;
+      setVolume(1);
     }
 
     revealControls();
   };
 
-  // =====================================================
-  // CLOSE
-  // =====================================================
+  /*
+   * -------------------------------------------------------
+   * CLOSE
+   * -------------------------------------------------------
+   */
 
-  const closeFullscreen = useCallback(() => {
+  const close = useCallback(() => {
     const video = videoRef.current;
 
-    if (!video) {
-      onClose(startTime, wasPlaying);
-      return;
+    if (!video) return;
+
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
     }
 
     onClose(video.currentTime, !video.paused);
-  }, [onClose, startTime, wasPlaying]);
+  }, [onClose]);
 
-  // =====================================================
-  // KEYBOARD
-  // =====================================================
+  /*
+   * -------------------------------------------------------
+   * KEYBOARD
+   * -------------------------------------------------------
+   */
 
   useEffect(() => {
     if (!isOpen) return;
@@ -230,7 +321,11 @@ export default function FullscreenVideo({
       }
 
       if (event.key === "Escape") {
-        closeFullscreen();
+        close();
+      }
+
+      if (event.key === "m") {
+        toggleMute();
       }
     };
 
@@ -239,54 +334,23 @@ export default function FullscreenVideo({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen, togglePlayback, closeFullscreen]);
-
-  // =====================================================
-  // TIME FORMAT
-  // =====================================================
-
-  const formatTime = (seconds: number) => {
-    if (!Number.isFinite(seconds)) return "0:00";
-
-    const minutes = Math.floor(seconds / 60);
-
-    const secs = Math.floor(seconds % 60)
-      .toString()
-      .padStart(2, "0");
-
-    return `${minutes}:${secs}`;
-  };
+  }, [isOpen, togglePlayback, close]);
 
   if (!isOpen) return null;
 
-  // =====================================================
-  // UI
-  // =====================================================
-
   return (
     <div
-      className="fixed inset-0 z-[99999] bg-black"
-      style={{
-        width: "100dvw",
-        height: "100dvh",
-      }}
-      onPointerMove={revealControls}
-      onPointerLeave={() => {
-        if (controlsTimeoutRef.current) {
-          clearTimeout(controlsTimeoutRef.current);
-        }
-
-        controlsTimeoutRef.current = setTimeout(() => {
-          setShowControls(false);
-        }, 2000);
-      }}
-      onClick={(event) => {
-        if ((event.target as HTMLElement).closest("[data-video-control]")) {
-          return;
-        }
-
-        togglePlayback();
-      }}
+      className="
+        fixed
+        inset-0
+        z-[9999]
+        h-[100dvh]
+        w-[100dvw]
+        overflow-hidden
+        bg-black
+        cursor-none
+      "
+      onMouseMove={revealControls}
     >
       {/* =================================================
           VIDEO
@@ -295,11 +359,115 @@ export default function FullscreenVideo({
       <video
         ref={videoRef}
         src={src}
-        className="absolute inset-0 block w-[100dvw] h-[100dvh] object-fit"
         playsInline
         loop
         preload="auto"
+        className="
+          absolute
+          inset-0
+          h-[100dvh]
+          w-[100dvw]
+          cursor-none
+        "
+        onClick={togglePlayback}
       />
+
+      {/* =================================================
+          STRONG VIGNETTE
+      ================================================= */}
+
+      <div
+        className="
+          pointer-events-none
+          absolute
+          inset-0
+          z-10
+        "
+        style={{
+          background: `
+            radial-gradient(
+              ellipse at center,
+              transparent 10%,
+              rgba(0,0,0,0.12) 35%,
+              rgba(0,0,0,0.42) 68%,
+              rgba(0,0,0,0.78) 100%
+            )
+          `,
+        }}
+      />
+
+      {/* =================================================
+          CUSTOM PLAY / PAUSE CURSOR
+      ================================================= */}
+
+      <div
+        className={`
+          pointer-events-none
+          fixed
+          z-[10000]
+          flex
+          flex-col
+          items-center
+          gap-2
+          text-white
+          mix-blend-difference
+          transition-opacity
+          duration-200
+          ${cursorVisible ? "opacity-100" : "opacity-0"}
+        `}
+        style={{
+          left: cursor.x,
+          top: cursor.y,
+          transform: "translate(-50%, -50%)",
+        }}
+      >
+        <div
+          className="
+            flex
+            h-12
+            w-12
+            items-center
+            justify-center
+            rounded-full
+            border
+            border-white/80
+            bg-black/10
+            backdrop-blur-sm
+          "
+        >
+          {isPlaying ? (
+            <svg
+              viewBox="0 0 24 24"
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+            >
+              <path d="M8 5v14" />
+              <path d="M16 5v14" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          )}
+        </div>
+
+        {/* TEXT BELOW ICON */}
+
+        <span
+          className="
+            whitespace-nowrap
+            font-mono
+            text-[8px]
+            tracking-[0.28em]
+            uppercase
+            text-white/90
+          "
+        >
+          {isPlaying ? "Pause" : "Play"}
+        </span>
+      </div>
 
       {/* =================================================
           CONTROLS
@@ -308,46 +476,50 @@ export default function FullscreenVideo({
       <div
         className={`
           absolute
+          bottom-0
           left-0
           right-0
-          bottom-0
-          z-20
-          px-6
+          z-[10001]
+          px-7
           pb-6
-          pt-12
+          pt-16
           transition-opacity
           duration-300
-          ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}
+          ${showControls ? "opacity-100" : "pointer-events-none opacity-0"}
         `}
-        data-video-control
         onClick={(event) => event.stopPropagation()}
+        onMouseMove={revealControls}
       >
-        {/* PROGRESS BAR */}
+        {/* =================================================
+            PROGRESS
+        ================================================= */}
 
         <input
-          data-video-control
           type="range"
           min="0"
           max="1000"
           step="1"
           value={Math.round(progress * 1000)}
           onChange={seekVideo}
-          className="video-progress"
+          className="fullscreen-progress"
           aria-label="Video progress"
         />
 
-        {/* CONTROL ROW */}
+        {/* =================================================
+            CONTROL ROW
+        ================================================= */}
 
-        <div className="mt-4 flex items-center justify-between text-white">
+        <div className="mt-4 flex items-center justify-between">
+          {/* LEFT */}
+
           <div className="flex items-center gap-5">
-            {/* PLAY / PAUSE */}
+            {/* PLAY */}
 
             <button
-              data-video-control
               type="button"
-              className="video-control"
               onClick={togglePlayback}
-              aria-label={isPlaying ? "Pause" : "Play"}
+              className="fullscreen-control"
+              aria-label={isPlaying ? "Pause video" : "Play video"}
             >
               {isPlaying ? (
                 <svg
@@ -356,7 +528,8 @@ export default function FullscreenVideo({
                   stroke="currentColor"
                   strokeWidth="1.7"
                 >
-                  <path d="M8 5v14M16 5v14" />
+                  <path d="M8 5v14" />
+                  <path d="M16 5v14" />
                 </svg>
               ) : (
                 <svg viewBox="0 0 24 24" fill="currentColor">
@@ -368,13 +541,12 @@ export default function FullscreenVideo({
             {/* VOLUME */}
 
             <button
-              data-video-control
               type="button"
-              className="video-control"
               onClick={toggleMute}
-              aria-label="Toggle volume"
+              className="fullscreen-control"
+              aria-label="Toggle sound"
             >
-              {videoVolume === 0 ? (
+              {volume === 0 ? (
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"
@@ -382,7 +554,8 @@ export default function FullscreenVideo({
                   strokeWidth="1.5"
                 >
                   <path d="M4 9v6h4l5 4V5L8 9H4z" />
-                  <path d="M17 9l4 6M21 9l-4 6" />
+                  <path d="M17 9l4 6" />
+                  <path d="M21 9l-4 6" />
                 </svg>
               ) : (
                 <svg
@@ -398,50 +571,62 @@ export default function FullscreenVideo({
               )}
             </button>
 
+            {/* VOLUME SLIDER */}
+
             <input
-              data-video-control
               type="range"
               min="0"
               max="100"
-              value={videoVolume * 100}
+              value={volume * 100}
               onChange={changeVolume}
-              className="volume-slider"
+              className="fullscreen-volume"
               aria-label="Volume"
             />
 
             {/* TIME */}
 
-            <span className="text-[11px] tracking-[0.08em] opacity-70">
-              {formatTime(currentTime)} / {formatTime(duration)}
+            <span
+              className="
+                font-mono
+                text-[9px]
+                tracking-[0.15em]
+                text-white/70
+              "
+            >
+              {formatTime(progress * duration)}
+              {" / "}
+              {formatTime(duration)}
             </span>
           </div>
 
-          {/* MINIMIZE */}
+          {/* =================================================
+              CLOSE
+          ================================================= */}
 
           <button
-            data-video-control
             type="button"
-            className="video-control"
-            onClick={closeFullscreen}
-            aria-label="Return to barrel video"
+            onClick={close}
+            className="
+              font-mono
+              text-[9px]
+              tracking-[0.25em]
+              uppercase
+              text-white/70
+              transition-colors
+              hover:text-white
+            "
           >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            >
-              <path d="M8 3v5H3" />
-              <path d="M3 8l6-6" />
-              <path d="M16 21v-5h5" />
-              <path d="M21 16l-6 6" />
-            </svg>
+            Close
           </button>
         </div>
       </div>
 
+      {/* =================================================
+          STYLES
+      ================================================= */}
+
       <style jsx global>{`
-        .video-progress {
+        .fullscreen-progress {
           width: 100%;
           height: 3px;
           appearance: none;
@@ -449,11 +634,11 @@ export default function FullscreenVideo({
           background: #555;
           border-radius: 999px;
           outline: none;
-          cursor: pointer;
+          cursor: none;
           display: block;
         }
 
-        .video-progress::-webkit-slider-runnable-track {
+        .fullscreen-progress::-webkit-slider-runnable-track {
           height: 3px;
           background: linear-gradient(
             to right,
@@ -465,19 +650,19 @@ export default function FullscreenVideo({
           border-radius: 999px;
         }
 
-        .video-progress::-moz-range-track {
+        .fullscreen-progress::-moz-range-track {
           height: 3px;
           background: #555;
           border-radius: 999px;
         }
 
-        .video-progress::-moz-range-progress {
+        .fullscreen-progress::-moz-range-progress {
           height: 3px;
           background: #fff;
           border-radius: 999px;
         }
 
-        .video-progress::-webkit-slider-thumb {
+        .fullscreen-progress::-webkit-slider-thumb {
           appearance: none;
           -webkit-appearance: none;
           width: 8px;
@@ -486,27 +671,30 @@ export default function FullscreenVideo({
           border-radius: 50%;
           background: #fff;
           border: none;
+          cursor: none;
         }
 
-        .video-progress::-moz-range-thumb {
+        .fullscreen-progress::-moz-range-thumb {
           width: 8px;
           height: 8px;
           border-radius: 50%;
           background: #fff;
           border: none;
+          cursor: none;
         }
 
-        .volume-slider {
-          width: 65px;
+        .fullscreen-volume {
+          width: 60px;
           height: 2px;
           appearance: none;
           -webkit-appearance: none;
           background: #555;
           border-radius: 999px;
-          cursor: pointer;
+          outline: none;
+          cursor: none;
         }
 
-        .volume-slider::-webkit-slider-thumb {
+        .fullscreen-volume::-webkit-slider-thumb {
           appearance: none;
           -webkit-appearance: none;
           width: 7px;
@@ -516,7 +704,7 @@ export default function FullscreenVideo({
           border: none;
         }
 
-        .volume-slider::-moz-range-thumb {
+        .fullscreen-volume::-moz-range-thumb {
           width: 7px;
           height: 7px;
           border-radius: 50%;
@@ -524,29 +712,29 @@ export default function FullscreenVideo({
           border: none;
         }
 
-        .video-control {
+        .fullscreen-control {
           width: 24px;
           height: 24px;
           padding: 0;
           border: 0;
           background: transparent;
           color: white;
-          cursor: pointer;
+          cursor: none;
           display: flex;
           align-items: center;
           justify-content: center;
-          opacity: 0.85;
+          opacity: 0.8;
           transition:
             opacity 150ms ease,
             transform 150ms ease;
         }
 
-        .video-control:hover {
+        .fullscreen-control:hover {
           opacity: 1;
           transform: scale(1.08);
         }
 
-        .video-control svg {
+        .fullscreen-control svg {
           width: 18px;
           height: 18px;
           display: block;
@@ -554,4 +742,18 @@ export default function FullscreenVideo({
       `}</style>
     </div>
   );
+}
+
+function formatTime(seconds: number) {
+  if (!Number.isFinite(seconds)) {
+    return "0:00";
+  }
+
+  const minutes = Math.floor(seconds / 60);
+
+  const secs = Math.floor(seconds % 60)
+    .toString()
+    .padStart(2, "0");
+
+  return `${minutes}:${secs}`;
 }
