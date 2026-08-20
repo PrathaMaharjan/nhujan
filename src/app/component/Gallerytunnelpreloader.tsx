@@ -17,7 +17,7 @@ const DEFAULT_IMAGES = [
 ];
 
 const DEFAULTS = {
-  background: "#000000",
+  background: "#0B0B0B",
   lineColor: "#B0B0B0",
   lineOpacity: 0,
   colors: ["#666666"],

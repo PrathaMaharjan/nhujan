@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -19,6 +19,114 @@ export default function Nav() {
 
   const [isOpen, setIsOpen] = useState(false);
   const [isLeavingLanding, setIsLeavingLanding] = useState(false);
+
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [pawTrailActive, setPawTrailActive] = useState(false);
+  const [paws, setPaws] = useState<
+    { id: number; x: number; y: number; angle: number; isLeft: boolean }[]
+  >([]);
+  const [catState, setCatState] = useState<"sleeping" | "awake">("sleeping");
+
+  const lastPawPosRef = useRef<{ x: number; y: number } | null>(null);
+  const pawIndexRef = useRef(0);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (e.key === "c" || e.key === "C") {
+        setPawTrailActive((prev) => {
+          const next = !prev;
+          setToastMsg(
+            next
+              ? "CAT PAW TRAIL ACTIVATED"
+              : "CAT PAW TRAIL DEACTIVATED"
+          );
+          setTimeout(() => setToastMsg(null), 3000);
+          return next;
+        });
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  /*
+   * Paw Trail Mouse Listener
+   */
+  useEffect(() => {
+    if (!pawTrailActive) {
+      setPaws([]);
+      lastPawPosRef.current = null;
+      return;
+    }
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const x = e.clientX;
+      const y = e.clientY;
+
+      if (!lastPawPosRef.current) {
+        lastPawPosRef.current = { x, y };
+        return;
+      }
+
+      const dx = x - lastPawPosRef.current.x;
+      const dy = y - lastPawPosRef.current.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      // Spawn a new paw print every 75px traveled
+      if (dist > 75) {
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
+        const isLeft = pawIndexRef.current % 2 === 0;
+        pawIndexRef.current += 1;
+
+        const newPaw = {
+          id: Date.now() + Math.random(),
+          x,
+          y,
+          angle,
+          isLeft,
+        };
+
+        setPaws((prev) => [...prev.slice(-6), newPaw]);
+        lastPawPosRef.current = { x, y };
+      }
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [pawTrailActive]);
+
+  /*
+   * Auto fade-out old paws
+   */
+  useEffect(() => {
+    if (paws.length === 0) return;
+    const timer = setTimeout(() => {
+      setPaws((prev) => prev.slice(1));
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [paws]);
+
+  /*
+   * 🐾 EASTER EGG: Sleeping Cat in Dome Menu
+   */
+  const handleCatClick = () => {
+    if (catState === "awake") return;
+    setCatState("awake");
+    setTimeout(() => {
+      setCatState("sleeping");
+    }, 3500);
+  };
 
   /*
    * Close menu whenever pathname changes.
@@ -83,6 +191,49 @@ export default function Nav() {
 
   return (
     <>
+      {/* TOAST NOTIFICATION FOR EASTER EGGS */}
+      {toastMsg && (
+        <div className="fixed top-20 md:top-24 left-1/2 -translate-x-1/2 z-[200] pointer-events-none transition-all duration-300">
+          <span className="font-mono text-[9px] sm:text-[10px] tracking-[0.25em] uppercase text-white/80 drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
+            {toastMsg}
+          </span>
+        </div>
+      )}
+
+      {/* 🐾 PAW PRINT TRAIL OVERLAY */}
+      {pawTrailActive && (
+        <div className="fixed inset-0 z-[150] pointer-events-none overflow-hidden">
+          {paws.map((paw) => (
+            <div
+              key={paw.id}
+              className="absolute -translate-x-1/2 -translate-y-1/2 opacity-75 transition-opacity duration-1000"
+              style={{
+                left: `${paw.x}px`,
+                top: `${paw.y}px`,
+                transform: `translate(-50%, -50%) rotate(${paw.angle}deg) scale(${paw.isLeft ? 1 : -1
+                  }, 1)`,
+              }}
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="text-white/80 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+              >
+                {/* Main Pad */}
+                <ellipse cx="12" cy="15" rx="5" ry="4" fill="currentColor" />
+                {/* Toe Beans */}
+                <circle cx="6" cy="9" r="2" fill="currentColor" />
+                <circle cx="10" cy="6" r="2" fill="currentColor" />
+                <circle cx="14" cy="6" r="2" fill="currentColor" />
+                <circle cx="18" cy="9" r="2" fill="currentColor" />
+              </svg>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* GLOBAL NAV */}
       <header
         className="
@@ -152,15 +303,17 @@ export default function Nav() {
                 transition-all
                 duration-[450ms]
                 ease-[cubic-bezier(0.76,0,0.24,1)]
-                ${
-                  isLeavingLanding
-                    ? "translate-x-[120%] opacity-0"
-                    : "translate-x-0 opacity-100"
+                ${isLeavingLanding
+                  ? "translate-x-[120%] opacity-0"
+                  : "translate-x-0 opacity-100"
                 }
               `}
             >
               {mainNavLinks.map((link) => {
-                const isActive = pathname === link.href;
+                const isActive =
+                  link.href === "/"
+                    ? pathname === "/"
+                    : pathname.startsWith(link.href);
 
                 return (
                   <Link
@@ -179,10 +332,9 @@ export default function Nav() {
                       transition-all
                       duration-300
                       group
-                      ${
-                        isActive
-                          ? "text-white"
-                          : "text-white/55 hover:text-white"
+                      ${isActive
+                        ? "text-white"
+                        : "text-white/55 hover:text-white"
                       }
                     `}
                   >
@@ -252,10 +404,9 @@ export default function Nav() {
               transition-all
               duration-[450ms]
               ease-[cubic-bezier(0.76,0,0.24,1)]
-              ${
-                isLanding
-                  ? "md:opacity-0 md:pointer-events-none"
-                  : "opacity-100"
+              ${isLanding
+                ? "md:opacity-0 md:pointer-events-none"
+                : "opacity-100"
               }
               ${isLeavingLanding ? "md:opacity-100 md:pointer-events-auto" : ""}
             `}
@@ -364,7 +515,7 @@ export default function Nav() {
           bg-black/30
           backdrop-blur-[2px]
           transition-opacity
-          duration-500
+          duration-700
           ease-[cubic-bezier(0.76,0,0.24,1)]
           ${isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}
         `}
@@ -398,16 +549,19 @@ export default function Nav() {
           md:pr-14
           overflow-hidden
           transition-transform
-          duration-[600ms]
+          duration-[700ms]
           ease-[cubic-bezier(0.76,0,0.24,1)]
           ${isOpen ? "translate-x-0 pointer-events-auto" : "translate-x-[110%] pointer-events-none"}
         `}
       >
         <div className="flex flex-col gap-10 w-full min-w-[280px]">
-          {/* LINKS */}
+          {/* SLOWER STAGGERED NAV LINKS */}
           <nav className="flex flex-col gap-6">
             {mainNavLinks.map((link, index) => {
-              const isActive = pathname === link.href;
+              const isActive =
+                link.href === "/"
+                  ? pathname === "/"
+                  : pathname.startsWith(link.href);
 
               return (
                 <div key={link.href} className="overflow-hidden py-1">
@@ -424,23 +578,23 @@ export default function Nav() {
                       text-[clamp(1.75rem,4.5vw,2.5rem)]
                       leading-none
                       tracking-tight
-                      transition-all
-                      duration-300
-                      hover:translate-x-2
                       whitespace-nowrap
-                      ${
-                        isActive
-                          ? "text-white translate-x-2"
-                          : "text-zinc-600 hover:text-white"
+                      transition-all
+                      duration-700
+                      ease-[cubic-bezier(0.16,1,0.3,1)]
+                      ${isActive
+                        ? "text-white translate-x-2"
+                        : "text-zinc-400 hover:text-white hover:translate-x-2"
                       }
-                      ${
-                        isOpen
-                          ? "translate-y-0 opacity-100"
-                          : "translate-y-10 opacity-0"
+                      ${isOpen
+                        ? "translate-y-0 opacity-100"
+                        : "translate-y-12 opacity-0 pointer-events-none"
                       }
                     `}
                     style={{
-                      transitionDelay: `${isOpen ? 200 + index * 60 : 0}ms`,
+                      transitionDelay: isOpen
+                        ? `${300 + index * 160}ms`
+                        : "0ms",
                     }}
                   >
                     <span
@@ -451,10 +605,9 @@ export default function Nav() {
                         bg-white
                         transition-all
                         duration-300
-                        ${
-                          isActive
-                            ? "opacity-100 scale-100"
-                            : "opacity-0 scale-0 group-hover:opacity-100 group-hover:scale-100"
+                        ${isActive
+                          ? "opacity-100 scale-100"
+                          : "opacity-0 scale-0 group-hover:opacity-100 group-hover:scale-100"
                         }
                       `}
                     />
@@ -466,30 +619,38 @@ export default function Nav() {
             })}
           </nav>
 
-          {/* BOTTOM META */}
+          {/* SLOWER STAGGERED BOTTOM META */}
           <div
             className={`
               flex
               flex-col
               gap-6
               transition-all
-              duration-500
-              ${isOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}
+              duration-700
+              ease-[cubic-bezier(0.16,1,0.3,1)]
+              ${isOpen
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-8 pointer-events-none"
+              }
             `}
             style={{
-              transitionDelay: isOpen ? "450ms" : "0ms",
+              transitionDelay: isOpen
+                ? `${300 + mainNavLinks.length * 160}ms`
+                : "0ms",
             }}
           >
-            <hr className=" text-slate-300" />
+            <hr className="border-white/20" />
 
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-2.5">
               <p className="font-mono text-[9px] tracking-[0.3em] text-white/90 uppercase whitespace-nowrap drop-shadow-sm">
                 Film Maker, Creative Director &amp; Editor
               </p>
 
-              <p className="font-mono text-[9px] tracking-[0.3em] text-white/70 uppercase whitespace-nowrap drop-shadow-sm">
-                Kathmandu, Nepal
-              </p>
+              <div className="flex items-center gap-3">
+                <p className="font-mono text-[9px] tracking-[0.3em] text-white/70 uppercase whitespace-nowrap drop-shadow-sm">
+                  Kathmandu, Nepal
+                </p>
+              </div>
             </div>
           </div>
         </div>

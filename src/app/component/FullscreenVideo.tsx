@@ -625,7 +625,7 @@ export default function FullscreenVideo({
           STYLES
       ================================================= */}
 
-      <style jsx global>{`
+      <style>{`
         .fullscreen-progress {
           width: 100%;
           height: 3px;

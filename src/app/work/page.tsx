@@ -76,12 +76,30 @@ export default function WorkSection() {
     }
   };
 
-  // Kick off the entrance wipe on mount — timed to Nav's own transition duration
+  // Kick off the entrance wipe on mount — timed to Nav's own transition duration.
+  //
+  // A double rAF is used instead of a fixed setTimeout. With setTimeout, if the
+  // browser hasn't actually painted the curtain's "closed" starting frame yet
+  // (very possible here, given how many background-image layers mount at
+  // once), flipping the transform on the next tick makes the CSS transition
+  // start from a frame that was never rendered — visually that looks like a
+  // jump/glitch partway through the slide instead of a smooth wipe. Two
+  // rAFs guarantee at least one full paint has happened before we trigger
+  // the transition.
   useEffect(() => {
-    const t = setTimeout(() => setRevealed(true), 40);
+    let rafId1 = 0;
+    let rafId2 = 0;
+
+    rafId1 = requestAnimationFrame(() => {
+      rafId2 = requestAnimationFrame(() => {
+        setRevealed(true);
+      });
+    });
+
     const t2 = window.setTimeout(() => setCurtainMounted(false), REVEAL_MS + 100);
     return () => {
-      window.clearTimeout(t);
+      cancelAnimationFrame(rafId1);
+      cancelAnimationFrame(rafId2);
       window.clearTimeout(t2);
     };
   }, []);
@@ -318,9 +336,10 @@ export default function WorkSection() {
         <div
           className="absolute inset-0 z-50 bg-black pointer-events-none"
           style={{
-            transform: revealed ? 'translateX(100%)' : 'translateX(0%)',
+            transform: revealed ? 'translate3d(100%,0,0)' : 'translate3d(0,0,0)',
             transition: `transform ${REVEAL_MS}ms ${REVEAL_EASE}`,
             willChange: 'transform',
+            backfaceVisibility: 'hidden',
           }}
         />
       )}

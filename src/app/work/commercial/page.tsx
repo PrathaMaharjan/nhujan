@@ -348,20 +348,22 @@ export default function CommercialPage() {
                       cursor-pointer
                     "
                   >
-                    {/* Glow halo */}
+                    {/* Glow halo — radial gradient so it fades to nothing instead of ending in a hard rectangle */}
                     <div
                       className="
                         absolute
-                        inset-[-8%]
-                        rounded-[40%]
-                        bg-white/20
-                        blur-[70px]
+                        inset-[-15%]
                         opacity-30
                         group-hover:opacity-50
                         transition-opacity
                         duration-500
                         pointer-events-none
                       "
+                      style={{
+                        background:
+                          "radial-gradient(ellipse at center, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.18) 35%, rgba(255,255,255,0) 70%)",
+                        filter: "blur(30px)",
+                      }}
                     />
 
                     <div className="relative w-full h-full overflow-hidden">
@@ -396,11 +398,6 @@ export default function CommercialPage() {
               );
             })}
           </div>
-
-          {/* TV Power-on flash layer */}
-          {mounted && (
-            <div className="absolute inset-0 bg-white/20 blur-xl pointer-events-none animate-tv-flash mix-blend-screen" />
-          )}
         </div>
       </div>
 
@@ -418,7 +415,7 @@ export default function CommercialPage() {
         >
           <div />
 
-          <div className="max-w-xs md:max-w-sm w-full">
+          <div className="max-w-xs md:max-w-sm w-full overflow-hidden">
             <div key={activeProject.id} className="animate-title-in">
               <MeshText
                 text={activeProject.title}
@@ -441,6 +438,7 @@ export default function CommercialPage() {
             </div>
 
             <p
+              key={`${activeProject.id}-subtitle`}
               className="
                 mt-3
                 text-[10px]
@@ -448,6 +446,7 @@ export default function CommercialPage() {
                 tracking-[0.25em]
                 text-zinc-500
                 uppercase
+                animate-subtitle-in
               "
             >
               {activeProject.category}
@@ -565,7 +564,7 @@ export default function CommercialPage() {
         @keyframes titleIn {
           from {
             opacity: 0;
-            transform: translateY(12px);
+            transform: translateY(45px);
           }
           to {
             opacity: 1;
@@ -574,7 +573,22 @@ export default function CommercialPage() {
         }
 
         .animate-title-in {
-          animation: titleIn 500ms cubic-bezier(0.16, 1, 0.3, 1);
+          animation: titleIn 900ms cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes subtitleIn {
+          from {
+            opacity: 0;
+            transform: translateY(45px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-subtitle-in {
+          animation: subtitleIn 900ms cubic-bezier(0.16, 1, 0.3, 1) 350ms both;
         }
       `}</style>
     </main>

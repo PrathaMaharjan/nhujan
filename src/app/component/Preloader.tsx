@@ -78,7 +78,7 @@ export default function Preloader({ children }: { children: ReactNode }) {
             position: "fixed",
             inset: 0,
             zIndex: 9999,
-            background: "#000",
+            background: "#0B0B0B",
 
             /*
              * Keep the black screen visible while the name
