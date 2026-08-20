@@ -124,20 +124,96 @@ export default function CommercialPage() {
 
   /*
    * --------------------------------------------------------
+   * SCROLL TICK SOUND (synthesized — no audio file needed)
+   * --------------------------------------------------------
+   */
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const lastTickItemRef = useRef<number>(0);
+  const tickRafRef = useRef<number | null>(null);
+
+  const getAudioCtx = useCallback(() => {
+    if (!audioCtxRef.current) {
+      const Ctx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext })
+          .webkitAudioContext;
+      audioCtxRef.current = new Ctx();
+    }
+    return audioCtxRef.current;
+  }, []);
+
+const playTick = useCallback(
+  (strength: number = 1) => {
+    try {
+      const ctx = getAudioCtx();
+      if (ctx.state === "suspended") ctx.resume();
+
+      const now = ctx.currentTime;
+
+      // Sharp high-pitched "tick" — short triangle wave, near-instant envelope
+      const osc = ctx.createOscillator();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(3200 + Math.random() * 400, now);
+      osc.frequency.exponentialRampToValueAtTime(1800, now + 0.012);
+
+      const gain = ctx.createGain();
+      const peak = 0.5 * Math.min(1.8, Math.max(0.5, strength));
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(peak, now + 0.001);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.015);
+
+      // Tiny highpass to keep it thin/precise instead of boomy
+      const filter = ctx.createBiquadFilter();
+      filter.type = "highpass";
+      filter.frequency.value = 1200;
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.02);
+    } catch {
+      // audio not available (e.g. autoplay policy) — fail silently
+    }
+  },
+  [getAudioCtx],
+);
+  // Unlocks the AudioContext on first user gesture (required by browser autoplay policy)
+  useEffect(() => {
+    const unlock = () => {
+      getAudioCtx();
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+    window.addEventListener("pointerdown", unlock);
+    window.addEventListener("keydown", unlock);
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, [getAudioCtx]);
+
+  /*
+   * --------------------------------------------------------
    * GO TO NEXT / PREVIOUS
    * --------------------------------------------------------
    */
-  const goTo = useCallback((direction: 1 | -1) => {
-    const now = Date.now();
-    // Hard throttle — ignore events arriving before the previous animation finishes
-    if (now - lastScrollTimeRef.current < TRANSITION_MS + 50) return;
-    lastScrollTimeRef.current = now;
+  const goTo = useCallback(
+    (direction: 1 | -1) => {
+      const now = Date.now();
+      // Hard throttle — ignore events arriving before the previous animation finishes
+      if (now - lastScrollTimeRef.current < TRANSITION_MS + 50) return;
+      lastScrollTimeRef.current = now;
 
-    setIsSettled(false); // hide video while animating
-    setTransitionEnabled(true);
-    setTrackIndex((prev) => prev + direction);
-    setSidebarPos((prev) => prev + direction);
-  }, []);
+      playTick(1);
+      setIsSettled(false); // hide video while animating
+      setTransitionEnabled(true);
+      setTrackIndex((prev) => prev + direction);
+      setSidebarPos((prev) => prev + direction);
+    },
+    [playTick],
+  );
 
   /*
    * --------------------------------------------------------
@@ -225,6 +301,7 @@ export default function CommercialPage() {
   /*
    * --------------------------------------------------------
    * SIDEBAR SCROLL — debounced snap-to-closest (FIX 2)
+   * + real-time tick sound as items pass by
    * --------------------------------------------------------
    */
   const handleSidebarScroll = () => {
@@ -234,6 +311,20 @@ export default function CommercialPage() {
     const { scrollTop, scrollHeight, clientHeight } = container;
     const singleSetHeight = scrollHeight / SIDEBAR_COPIES;
     const threshold = singleSetHeight * 1.5;
+
+    // --- real-time tick: fire whenever we cross an item boundary ---
+    if (!isProgrammaticScrollRef.current) {
+      if (tickRafRef.current) cancelAnimationFrame(tickRafRef.current);
+      tickRafRef.current = requestAnimationFrame(() => {
+        const itemStep = singleSetHeight / N;
+        const currentItem = Math.round(scrollTop / itemStep);
+        if (currentItem !== lastTickItemRef.current) {
+          const delta = Math.abs(currentItem - lastTickItemRef.current);
+          lastTickItemRef.current = currentItem;
+          playTick(Math.min(1.5, 0.6 + delta * 0.15));
+        }
+      });
+    }
 
     // Infinite boundary jump
     if (scrollTop < threshold) {
@@ -297,6 +388,7 @@ export default function CommercialPage() {
     if (now - lastScrollTimeRef.current < TRANSITION_MS + 50) return;
     lastScrollTimeRef.current = now;
 
+    playTick(1);
     setIsSettled(false);
     setTransitionEnabled(true);
     setTrackIndex(realIndex + 1);

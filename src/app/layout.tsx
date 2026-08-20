@@ -1,5 +1,6 @@
 import "./globals.css";
 import Nav from "./component/Nav";
+import Preloader from "./component/Preloader";
 
 export const metadata = {
   title: "Portfolio",
@@ -15,7 +16,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="bg-black text-white antialiased">
         <Nav />
-        {children}
+        <Preloader>{children}</Preloader>
       </body>
     </html>
   );

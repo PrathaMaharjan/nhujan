@@ -44,7 +44,7 @@ export default function ContactPage() {
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         // Maximum pixel distance the pupil can shift inside the eye
-        const maxRadius = 13;
+        const maxRadius = 10;
         const moveRadius = Math.min(maxRadius, dist * 0.05);
 
         const angle = Math.atan2(dy, dx);
@@ -84,23 +84,25 @@ export default function ContactPage() {
           <span className="mt-2 h-[1px] w-[250px] max-w-[80vw] bg-zinc-700 group-hover:bg-white transition-all duration-300" />
 
           <span
-            className={`mt-2 font-mono text-[8px] sm:text-[9px] tracking-[0.2em] uppercase transition-all duration-300 ${copied
-              ? "text-white opacity-100 font-semibold"
-              : "text-zinc-500 opacity-50 group-hover:opacity-100"
-              }`}
+            className={`mt-2 font-mono text-[8px] sm:text-[9px] tracking-[0.2em] uppercase transition-all duration-300 ${
+              copied
+                ? "text-white opacity-100 font-semibold"
+                : "text-zinc-500 opacity-50 group-hover:opacity-100"
+            }`}
           >
             {copied ? "COPIED TO CLIPBOARD ✦" : "CLICK TO COPY"}
           </span>
         </button>
       </div>
 
-      {/* Minimalist Peeking White Cat — pointed ears, cropped to ears + eyes */}
+      {/* Minimalist Peeking Wireframe Cat Outline with White Eyes */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-20 pointer-events-none overflow-hidden">
         <div
-          className={`transition-all duration-[1500ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${catLoaded
+          className={`transition-all duration-[1500ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            catLoaded
               ? "translate-y-0 opacity-100"
               : "translate-y-[120%] opacity-0"
-            }`}
+          }`}
         >
           <svg
             viewBox="0 0 400 180"
@@ -108,7 +110,7 @@ export default function ContactPage() {
             xmlns="http://www.w3.org/2000/svg"
             className="w-[220px] h-[95px] sm:w-[280px] sm:h-[121px] md:w-[330px] md:h-[143px] drop-shadow-[0_-4px_15px_rgba(255,255,255,0.08)]"
           >
-            {/* Main White Cat Head Silhouette with pointed ears */}
+            {/* Outline Cat Head Silhouette */}
             <path
               d="M 60 180
                  C 60 145, 66 118, 78 100
@@ -117,28 +119,55 @@ export default function ContactPage() {
                  C 166 80, 234 80, 250 88
                  L 285 18
                  L 322 100
-                 C 334 118, 340 145, 340 180
-                 Z"
-              fill="#FFFFFF"
+                 C 334 118, 340 180, 340 180"
+              fill="none"
+              stroke="#FFFFFF"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
 
             {/* Left Eye Container */}
             <g ref={leftEyeRef}>
-              {/* Eye socket */}
-              <ellipse cx="140" cy="132" rx="26" ry="30" fill="#000000" />
-              {/* Left Pupil */}
+              {/* Solid White Eye Socket */}
+              <ellipse
+                cx="140"
+                cy="132"
+                rx="24"
+                ry="28"
+                fill="#FFFFFF"
+              />
+              {/* Black Pupil (Inverted so tracking pupil is visible inside white eye) */}
               <g ref={leftPupilRef} className="will-change-transform">
-                <ellipse cx="140" cy="132" rx="11" ry="14" fill="#FFFFFF" />
+                <ellipse
+                  cx="140"
+                  cy="132"
+                  rx="10"
+                  ry="12"
+                  fill="#000000"
+                />
               </g>
             </g>
 
             {/* Right Eye Container */}
             <g ref={rightEyeRef}>
-              {/* Eye socket */}
-              <ellipse cx="260" cy="132" rx="26" ry="30" fill="#000000" />
-              {/* Right Pupil */}
+              {/* Solid White Eye Socket */}
+              <ellipse
+                cx="260"
+                cy="132"
+                rx="24"
+                ry="28"
+                fill="#FFFFFF"
+              />
+              {/* Black Pupil */}
               <g ref={rightPupilRef} className="will-change-transform">
-                <ellipse cx="260" cy="132" rx="11" ry="14" fill="#FFFFFF" />
+                <ellipse
+                  cx="260"
+                  cy="132"
+                  rx="10"
+                  ry="12"
+                  fill="#000000"
+                />
               </g>
             </g>
           </svg>

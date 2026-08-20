@@ -1,253 +1,295 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
-import GalleryTunnelPreloader from "@/app/component/Gallerytunnelpreloader";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
-const AUTO_ADVANCE_MS = 6000;
+/* --------------------------------------------------------
+ * Replace with your own images. Keep the LAST one as the
+ * shot that should become your homepage — ideally the
+ * poster frame of your homepage showreel video, so the
+ * zoom lands exactly where the real page picks up.
+ * -------------------------------------------------------- */
+const GALLERY_IMAGES: string[] = [
+  "/preloader/still-1.jpg",
+  "/preloader/still-2.jpg",
+  "/preloader/still-3.jpg",
+  "/preloader/still-4.jpg",
+  "/preloader/still-5.jpg",
+  "/preloader/still-6.jpg", // <- final "opens into homepage" shot
+];
 
-const FLY_DURATION_MS = 1000;
-const FADE_DURATION_MS = 450;
-const TOTAL_EXIT_MS = FLY_DURATION_MS + FADE_DURATION_MS;
+// Tripled so there's runway to scroll fast through a couple of
+// loops before settling on the final copy's last image.
+const LOOPED_IMAGES = [...GALLERY_IMAGES, ...GALLERY_IMAGES, ...GALLERY_IMAGES];
+const TARGET_INDEX = LOOPED_IMAGES.length - 1;
 
-type Phase = "tunnel" | "exiting" | "done";
+type Phase = "counting" | "split" | "gallery" | "zoom" | "done";
 
-export default function Preloader({ children }: { children: ReactNode }) {
-  const [phase, setPhase] = useState<Phase>("tunnel");
+function easeOutExpo(t: number) {
+  return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+}
 
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+interface PreloaderProps {
+  children: React.ReactNode;
+}
 
-  const startExit = useCallback(() => {
-    setPhase((current) => {
-      if (current !== "tunnel") return current;
-      return "exiting";
-    });
+export default function Preloader({ children }: PreloaderProps) {
+  const [phase, setPhase] = useState<Phase>("counting");
+  const [percent, setPercent] = useState(0);
+  const [visible, setVisible] = useState(true);
+  const [skip, setSkip] = useState(false);
+  const [galleryEntering, setGalleryEntering] = useState(false);
+  const [zoomRect, setZoomRect] = useState<{
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+  } | null>(null);
+  const [zoomed, setZoomed] = useState(false);
+
+  const containerRef = useRef<HTMLDivElement>(null); // the h-screen viewport window
+  const trackRef = useRef<HTMLDivElement>(null); // the scrolling column
+  const targetRef = useRef<HTMLDivElement>(null); // the image we land on
+  const rafRef = useRef<number | null>(null);
+
+  // Plays once per browser session.
+  useEffect(() => {
+    const alreadyShown = sessionStorage.getItem("preloader-shown");
+    if (alreadyShown) {
+      setSkip(true);
+      setVisible(false);
+    }
   }, []);
 
-  /*
-   * Automatically start the exit after the tunnel has been
-   * visible for the minimum amount of time.
-   */
+  /* ---------------- COUNTING 0 -> 100 ---------------- */
   useEffect(() => {
-    if (phase !== "tunnel") return;
+    if (skip || phase !== "counting") return;
 
-    timerRef.current = setTimeout(() => {
-      startExit();
-    }, AUTO_ADVANCE_MS);
+    if (percent >= 100) {
+      const t = setTimeout(() => setPhase("split"), 350);
+      return () => clearTimeout(t);
+    }
+
+    const speed = percent < 60 ? 14 : percent < 90 ? 26 : 45;
+    const t = setTimeout(() => setPercent((p) => p + 1), speed);
+    return () => clearTimeout(t);
+  }, [percent, phase, skip]);
+
+  /* ---------------- SPLIT -> GALLERY ---------------- */
+  useEffect(() => {
+    if (skip || phase !== "split") return;
+    const t = setTimeout(() => setPhase("gallery"), 900);
+    return () => clearTimeout(t);
+  }, [phase, skip]);
+
+  /* ---------------- GALLERY: enter from bottom, then fast scroll and decelerate ---------------- */
+  useEffect(() => {
+    if (skip || phase !== "gallery") return;
+
+    const container = containerRef.current;
+    const track = trackRef.current;
+    const target = targetRef.current;
+    if (!container || !track || !target) return;
+
+    // 1. Trigger the "slide up from bottom" transition first
+    setGalleryEntering(true);
+
+    const containerHeight = container.clientHeight;
+    const targetTop = target.offsetTop;
+    const targetHeight = target.offsetHeight;
+    const finalY = -(targetTop + targetHeight / 2 - containerHeight / 2);
+
+    const duration = 2000;
+    
+    // 2. Delay the main scroll animation slightly so the entrance from below completes smoothly
+    const startTimeout = setTimeout(() => {
+      const startTime = performance.now();
+
+      const animate = (now: number) => {
+        const elapsed = now - startTime;
+        const t = Math.min(1, elapsed / duration);
+        const eased = easeOutExpo(t);
+        track.style.transform = `translateY(${finalY * eased}px)`;
+
+        if (t < 1) {
+          rafRef.current = requestAnimationFrame(animate);
+        } else {
+          setTimeout(() => setPhase("zoom"), 300);
+        }
+      };
+
+      rafRef.current = requestAnimationFrame(animate);
+    }, 400); // 400ms entrance duration from below
 
     return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
+      clearTimeout(startTimeout);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [phase, startExit]);
+  }, [phase, skip]);
 
-  /*
-   * Prevent the homepage behind the preloader from scrolling.
-   */
+  /* ---------------- ZOOM: the landed image grows to fill the screen ---------------- */
   useEffect(() => {
-    if (phase === "done") return;
+    if (skip || phase !== "zoom") return;
+    const target = targetRef.current;
+    if (!target) return;
 
-    const previousOverflow = document.body.style.overflow;
+    const rect = target.getBoundingClientRect();
+    setZoomRect({ top: rect.top, left: rect.left, width: rect.width, height: rect.height });
 
-    document.body.style.overflow = "hidden";
+    const raf1 = requestAnimationFrame(() => {
+      const raf2 = requestAnimationFrame(() => setZoomed(true));
+      rafRef.current = raf2;
+    });
+
+    const t = setTimeout(() => {
+      setPhase("done");
+      sessionStorage.setItem("preloader-shown", "1");
+      setTimeout(() => setVisible(false), 500);
+    }, 1000);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
+      cancelAnimationFrame(raf1);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      clearTimeout(t);
     };
-  }, [phase]);
+  }, [phase, skip]);
+
+  const handleSkip = useCallback(() => {
+    sessionStorage.setItem("preloader-shown", "1");
+    setPhase("done");
+    setTimeout(() => setVisible(false), 400);
+  }, []);
 
   return (
     <>
-      {phase !== "done" && (
+      {/* Real site renders underneath immediately */}
+      {children}
+
+      {visible && !skip && (
         <div
-          role="button"
-          aria-label="Skip intro"
-          onClick={startExit}
-          onTransitionEnd={(event) => {
-            if (event.propertyName === "opacity" && phase === "exiting") {
-              setPhase("done");
-            }
-          }}
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 9999,
-            background: "#0B0B0B",
-
-            /*
-             * Keep the black screen visible while the name
-             * flies toward the viewer.
-             *
-             * Then fade the entire preloader away.
-             */
-            opacity: phase === "exiting" ? 0 : 1,
-
-            /*
-             * DO NOT scale the entire preloader.
-             *
-             * The previous version scaled the complete tunnel,
-             * which made the transition feel like the whole
-             * page was zooming.
-             */
-            transform: "none",
-
-            transition:
-              phase === "exiting"
-                ? `opacity ${FADE_DURATION_MS}ms ease ${FLY_DURATION_MS}ms`
-                : "none",
-
-            pointerEvents: phase === "exiting" ? "none" : "auto",
-
-            overflow: "hidden",
-          }}
+          className={`fixed inset-0 z-[999] bg-black overflow-hidden transition-opacity duration-500 ease-out ${
+            phase === "done" ? "opacity-0 pointer-events-none" : "opacity-100"
+          }`}
         >
-          {/* 
-            Existing tunnel.
+          {/* ---------------- CENTERED COUNTER TEXT & CAT ---------------- */}
+          {(phase === "counting" || phase === "split") && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-8 select-none">
+              
+              {/* CENTERED TEXT ROW */}
+              <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 md:gap-8 font-mono text-white text-xs sm:text-sm md:text-base tracking-[0.3em] text-center">
+                <span
+                  className={`transition-all duration-[900ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${
+                    phase === "split" ? "-translate-x-[70vw] opacity-0" : ""
+                  }`}
+                >
+                  [ NHUJAN DONGOL ]
+                </span>
+                <span
+                  className={`transition-all duration-[900ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${
+                    phase === "split" ? "translate-x-[70vw] opacity-0" : ""
+                  }`}
+                >
+                  [ {String(percent).padStart(2, "0")} PERCENT ]
+                </span>
+              </div>
 
-            It remains completely untouched.
-          */}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              opacity: phase === "exiting" ? 0.15 : 1,
-              transition: `opacity ${FLY_DURATION_MS}ms ease`,
-            }}
-          >
-            <GalleryTunnelPreloader
-              labelText="Press to Enter"
-              onPress={startExit}
-            />
-          </div>
+              {/* CENTERED CAT GIF CONTAINER */}
+              <div
+                className={`relative transition-transform duration-[900ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${
+                  phase === "split" ? "scale-95" : ""
+                }`}
+              >
+                <img
+                  src="/cat.gif"
+                  alt="Running Cat"
+                  className="w-36 md:w-48 h-auto pointer-events-none"
+                  style={{
+                    filter: "invert(1) grayscale(1) contrast(200%)",
+                    mixBlendMode: "color-dodge",
+                    clipPath: "inset(0 0 25% 0)",
+                  }}
+                />
+                {/* Fades to black on top of the gif instead of fading the gif's own opacity */}
+                <div
+                  className={`absolute inset-0 bg-black transition-opacity duration-[900ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${
+                    phase === "split" ? "opacity-100" : "opacity-0"
+                  }`}
+                />
+              </div>
 
-          {/*
-            NHUJAN DONGOL flying toward the viewer.
+            </div>
+          )}
 
-            This only appears during the exit.
-          */}
-          {/* NHUJAN DONGOL — present from the beginning */}
-          <div
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              inset: 0,
-              zIndex: 20,
+          {/* ---------------- SCROLLING GALLERY (SLIDES UP FROM BELOW) ---------------- */}
+          {(phase === "gallery" || phase === "zoom") && (
+            <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+              <div
+                ref={containerRef}
+                className={`relative w-[320px] md:w-[480px] lg:w-[560px] h-screen overflow-hidden transition-all duration-700 cubic-bezier(0.16,1,0.3,1) ${
+                  galleryEntering ? "translate-y-0 opacity-100" : "translate-y-[100vh] opacity-0"
+                } ${zoomed ? "opacity-0" : ""}`}
+              >
+                <div
+                  ref={trackRef}
+                  className="flex flex-col gap-4"
+                  style={{
+                    paddingTop: "50vh",
+                    paddingBottom: "50vh",
+                    willChange: "transform",
+                  }}
+                >
+                  {LOOPED_IMAGES.map((src, i) => (
+                    <div
+                      key={i}
+                      ref={i === TARGET_INDEX ? targetRef : undefined}
+                      className="w-full aspect-[16/10] flex-shrink-0 overflow-hidden"
+                    >
+                      <img
+                        src={src}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        draggable={false}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-
-              pointerEvents: "none",
-
-              perspective: "1400px",
-              overflow: "hidden",
-            }}
-          >
+          {/* ---------------- ZOOM CLONE ---------------- */}
+          {phase === "zoom" && zoomRect && (
             <div
+              className="fixed overflow-hidden z-10"
               style={{
-                position: "relative",
-
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-
-                textAlign: "center",
-                whiteSpace: "nowrap",
-
-                color: "#fff",
-
-                fontFamily: 'Georgia, "Times New Roman", serif',
-
-                fontWeight: 400,
-
-                letterSpacing: "-0.045em",
-
-                lineHeight: 0.86,
-
-                transformOrigin: "50% 50%",
-
-                /*
-                 * Before exiting:
-                 * completely calm and readable.
-                 *
-                 * During exiting:
-                 * grows toward the viewer at a CONSTANT rate
-                 * (linear) rather than easing in/out, so the
-                 * scale-up feels uniform all the way until it
-                 * flies off screen.
-                 */
-                animation:
-                  phase === "exiting"
-                    ? `nhujanFlyPast ${FLY_DURATION_MS}ms linear forwards`
-                    : "none",
-
-                transform: "translate3d(0, 0, 0) scale(1)",
-
-                opacity: 1,
+                top: zoomed ? 0 : zoomRect.top,
+                left: zoomed ? 0 : zoomRect.left,
+                width: zoomed ? "100vw" : zoomRect.width,
+                height: zoomed ? "100vh" : zoomRect.height,
+                transition:
+                  "top 900ms cubic-bezier(0.76,0,0.24,1), left 900ms cubic-bezier(0.76,0,0.24,1), width 900ms cubic-bezier(0.76,0,0.24,1), height 900ms cubic-bezier(0.76,0,0.24,1)",
               }}
             >
-              <span
-                style={{
-                  fontSize: "clamp(24px, 3.5vw, 48px)",
-                }}
-              >
-                NHUJAN
-              </span>
-
-              <span
-                style={{
-                  fontSize: "clamp(24px, 3.5vw, 48px)",
-                }}
-              >
-                DONGOL
-              </span>
+              <img
+                src={GALLERY_IMAGES[GALLERY_IMAGES.length - 1]}
+                alt=""
+                className="w-full h-full object-cover"
+                draggable={false}
+              />
             </div>
-          </div>
+          )}
 
-          {/*
-            Animation lives here instead of in globals.css,
-            so you don't need another CSS file.
-          */}
-          <style>
-            {`
-  @keyframes nhujanFlyPast {
-    /* Start small */
-    0% {
-      transform: translate3d(0, 0, 0) scale(0.2);
-      opacity: 1;
-    }
-
-    /* Midway: larger but still visible */
-    50% {
-      transform: translate3d(0, 0, 600px) scale(3);
-      opacity: 1;
-    }
-
-    /* End: very large, fading out */
-    100% {
-      transform: translate3d(0, 0, 2200px) scale(13);
-      opacity: 0;
-    }
-  }
-`}
-          </style>
+          {/* ---------------- SKIP BUTTON ---------------- */}
+          {phase !== "done" && (
+            <button
+              type="button"
+              onClick={handleSkip}
+              className="absolute bottom-6 right-6 font-mono text-[10px] tracking-[0.25em] text-zinc-500 hover:text-white transition-colors z-20"
+            >
+              SKIP
+            </button>
+          )}
         </div>
       )}
-
-      {/*
-        Homepage exists underneath the preloader.
-
-        Once the black overlay disappears, the homepage
-        is already there — no navigation/reload is necessary.
-      */}
-      {children}
     </>
   );
 }
