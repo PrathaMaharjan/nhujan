@@ -99,7 +99,7 @@ export default function Preloader({ children }: PreloaderProps) {
     const finalY = -(targetTop + targetHeight / 2 - containerHeight / 2);
 
     const duration = 2000;
-    
+
     // 2. Delay the main scroll animation slightly so the entrance from below completes smoothly
     const startTimeout = setTimeout(() => {
       const startTime = performance.now();
@@ -173,18 +173,20 @@ export default function Preloader({ children }: PreloaderProps) {
           {/* ---------------- CENTERED COUNTER TEXT & CAT ---------------- */}
           {(phase === "counting" || phase === "split") && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-8 select-none">
-              
-              {/* CENTERED TEXT ROW */}
-              <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 md:gap-8 font-mono text-white text-xs sm:text-sm md:text-base tracking-[0.3em] text-center">
+
+              {/* CENTERED TEXT ROW — fixed-width columns so the row never
+                  recenters itself as the percent digit count changes
+                  (e.g. "38 PERCENT" -> "100 PERCENT") */}
+              <div className="flex items-center justify-center gap-4 sm:gap-6 md:gap-8 font-mono text-white text-xs sm:text-sm md:text-base tracking-[0.3em] text-center">
                 <span
-                  className={`transition-all duration-[900ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${
+                  className={`inline-block w-[38vw] sm:w-[26vw] md:w-[20vw] text-right transition-all duration-[900ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${
                     phase === "split" ? "-translate-x-[70vw] opacity-0" : ""
                   }`}
                 >
                   [ NHUJAN DONGOL ]
                 </span>
                 <span
-                  className={`transition-all duration-[900ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${
+                  className={`inline-block w-[38vw] sm:w-[26vw] md:w-[20vw] text-left transition-all duration-[900ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${
                     phase === "split" ? "translate-x-[70vw] opacity-0" : ""
                   }`}
                 >
@@ -201,18 +203,14 @@ export default function Preloader({ children }: PreloaderProps) {
                 <img
                   src="/cat.gif"
                   alt="Running Cat"
-                  className="w-36 md:w-48 h-auto pointer-events-none"
+                  className={`w-36 md:w-48 h-auto pointer-events-none transition-opacity duration-[900ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${
+                    phase === "split" ? "opacity-0" : "opacity-100"
+                  }`}
                   style={{
                     filter: "invert(1) grayscale(1) contrast(200%)",
                     mixBlendMode: "color-dodge",
                     clipPath: "inset(0 0 25% 0)",
                   }}
-                />
-                {/* Fades to black on top of the gif instead of fading the gif's own opacity */}
-                <div
-                  className={`absolute inset-0 bg-black transition-opacity duration-[900ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${
-                    phase === "split" ? "opacity-100" : "opacity-0"
-                  }`}
                 />
               </div>
 

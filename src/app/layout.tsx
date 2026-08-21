@@ -14,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-black text-white antialiased">
+      <body className="bg-[#0B0B0B] text-white antialiased">
         <Nav />
         <Preloader>{children}</Preloader>
       </body>

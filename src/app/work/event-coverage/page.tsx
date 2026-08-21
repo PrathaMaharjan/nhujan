@@ -114,13 +114,98 @@ export default function CommercialPage() {
 
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isProgrammaticScrollRef = useRef(false);
-  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitialMountRef = useRef(true);
+  const programmaticTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sidebarDebounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // FIX 1: throttle by wall-clock time instead of a binary lock
   const lastScrollTimeRef = useRef<number>(0);
 
   const selectedIndex = (((trackIndex - 1) % N) + N) % N;
   const activeProject = COMMERCIAL_PROJECTS[selectedIndex];
+
+  /*
+   * --------------------------------------------------------
+   * SCROLL TICK SOUND (synthesized — no audio file needed)
+   * --------------------------------------------------------
+   */
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const lastTickItemRef = useRef<number>(SIDEBAR_MIDDLE_START);
+  const tickRafRef = useRef<number | null>(null);
+
+  const getAudioCtx = useCallback(() => {
+    if (!audioCtxRef.current) {
+      const Ctx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext })
+          .webkitAudioContext;
+      audioCtxRef.current = new Ctx();
+    }
+    return audioCtxRef.current;
+  }, []);
+
+  const playTick = useCallback(
+    (strength: number = 1) => {
+      try {
+        const ctx = getAudioCtx();
+
+        const fire = () => {
+          const now = ctx.currentTime;
+
+          // Sharp mechanical tick click
+          const osc = ctx.createOscillator();
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(3200 + Math.random() * 400, now);
+          osc.frequency.exponentialRampToValueAtTime(1600, now + 0.015);
+
+          const gain = ctx.createGain();
+          const peak = 0.6 * Math.min(1.8, Math.max(0.5, strength));
+          gain.gain.setValueAtTime(0.0001, now);
+          gain.gain.exponentialRampToValueAtTime(peak, now + 0.001);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.02);
+
+          const filter = ctx.createBiquadFilter();
+          filter.type = "highpass";
+          filter.frequency.value = 1000;
+
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.025);
+        };
+
+        if (ctx.state === "suspended") {
+          ctx.resume().then(fire).catch(() => {});
+        } else {
+          fire();
+        }
+      } catch {
+        // audio not available — fail silently
+      }
+    },
+    [getAudioCtx],
+  );
+
+  // Unlocks the AudioContext on first user gesture
+  useEffect(() => {
+    const unlock = () => {
+      const ctx = getAudioCtx();
+      if (ctx.state === "suspended") {
+        ctx.resume().catch(() => {});
+      }
+    };
+    window.addEventListener("pointerdown", unlock, { passive: true });
+    window.addEventListener("keydown", unlock, { passive: true });
+    window.addEventListener("wheel", unlock, { passive: true });
+    window.addEventListener("touchstart", unlock, { passive: true });
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+      window.removeEventListener("wheel", unlock);
+      window.removeEventListener("touchstart", unlock);
+    };
+  }, [getAudioCtx]);
 
   /*
    * --------------------------------------------------------
@@ -133,11 +218,12 @@ export default function CommercialPage() {
     if (now - lastScrollTimeRef.current < TRANSITION_MS + 50) return;
     lastScrollTimeRef.current = now;
 
+    playTick(1);
     setIsSettled(false); // hide video while animating
     setTransitionEnabled(true);
     setTrackIndex((prev) => prev + direction);
     setSidebarPos((prev) => prev + direction);
-  }, []);
+  }, [playTick]);
 
   /*
    * --------------------------------------------------------
@@ -200,26 +286,48 @@ export default function CommercialPage() {
 
   /*
    * --------------------------------------------------------
-   * AUTO-SCROLL SIDEBAR when main track changes
+   * AUTO-SCROLL SIDEBAR when main track changes or on mount
    * --------------------------------------------------------
    */
   useEffect(() => {
-    if (isProgrammaticScrollRef.current) return;
-
     const container = sidebarRef.current;
     if (!container) return;
 
-    const element = container.children[sidebarPos] as HTMLElement | undefined;
-    if (!element) return;
+    const scrollToActive = (smooth = true) => {
+      const element = container.children[sidebarPos] as HTMLElement | undefined;
+      if (!element) return;
 
-    isProgrammaticScrollRef.current = true;
-    element.scrollIntoView({ behavior: "smooth", block: "center" });
+      const containerRect = container.getBoundingClientRect();
+      const elementRect = element.getBoundingClientRect();
+      const diff =
+        elementRect.top +
+        elementRect.height / 2 -
+        (containerRect.top + containerRect.height / 2);
 
-    const timeout = window.setTimeout(() => {
-      isProgrammaticScrollRef.current = false;
-    }, TRANSITION_MS);
+      if (Math.abs(diff) < 1) return;
 
-    return () => window.clearTimeout(timeout);
+      isProgrammaticScrollRef.current = true;
+      if (smooth) {
+        container.scrollBy({ top: diff, behavior: "smooth" });
+      } else {
+        container.scrollTop += diff;
+      }
+
+      if (programmaticTimeoutRef.current) clearTimeout(programmaticTimeoutRef.current);
+      programmaticTimeoutRef.current = setTimeout(() => {
+        isProgrammaticScrollRef.current = false;
+      }, smooth ? TRANSITION_MS : 50);
+    };
+
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      scrollToActive(false);
+      requestAnimationFrame(() => scrollToActive(false));
+    } else {
+      if (!isProgrammaticScrollRef.current) {
+        scrollToActive(true);
+      }
+    }
   }, [sidebarPos]);
 
   /*
@@ -235,18 +343,34 @@ export default function CommercialPage() {
     const singleSetHeight = scrollHeight / SIDEBAR_COPIES;
     const threshold = singleSetHeight * 1.5;
 
+    // --- real-time tick: fire whenever we cross an item boundary ---
+    if (!isProgrammaticScrollRef.current) {
+      if (tickRafRef.current) cancelAnimationFrame(tickRafRef.current);
+      tickRafRef.current = requestAnimationFrame(() => {
+        const itemStep = singleSetHeight / N;
+        const currentItem = Math.round(scrollTop / itemStep);
+        if (currentItem !== lastTickItemRef.current) {
+          const delta = Math.abs(currentItem - lastTickItemRef.current);
+          lastTickItemRef.current = currentItem;
+          playTick(Math.min(1.5, 0.6 + delta * 0.15));
+        }
+      });
+    }
+
     // Infinite boundary jump
     if (scrollTop < threshold) {
       isProgrammaticScrollRef.current = true;
       container.scrollTop += singleSetHeight * 2;
-      window.setTimeout(() => {
+      if (programmaticTimeoutRef.current) clearTimeout(programmaticTimeoutRef.current);
+      programmaticTimeoutRef.current = setTimeout(() => {
         isProgrammaticScrollRef.current = false;
       }, 50);
       return;
     } else if (scrollTop + clientHeight > scrollHeight - threshold) {
       isProgrammaticScrollRef.current = true;
       container.scrollTop -= singleSetHeight * 2;
-      window.setTimeout(() => {
+      if (programmaticTimeoutRef.current) clearTimeout(programmaticTimeoutRef.current);
+      programmaticTimeoutRef.current = setTimeout(() => {
         isProgrammaticScrollRef.current = false;
       }, 50);
       return;
@@ -255,9 +379,9 @@ export default function CommercialPage() {
     if (isProgrammaticScrollRef.current) return;
 
     // Debounce: fire 180ms after scrolling stops
-    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    if (sidebarDebounceTimeoutRef.current) clearTimeout(sidebarDebounceTimeoutRef.current);
 
-    scrollTimeoutRef.current = setTimeout(() => {
+    sidebarDebounceTimeoutRef.current = setTimeout(() => {
       const containerCenter =
         container.getBoundingClientRect().top + clientHeight / 2;
       let closestIndex = sidebarPos;
