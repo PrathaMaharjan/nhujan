@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
-import BarrelVideo from "@/app/component/BarrelVideo";
+import { useParams } from "next/navigation";
 import MeshText from "@/app/component/MeshText";
 
 interface Project {
@@ -10,119 +10,88 @@ interface Project {
   title: string;
   category: string;
   thumbnail: string;
-  preview: string;
-  vimeoId: string;
+  gif?: string;
 }
 
-const COMMERCIAL_PROJECTS: Project[] = [
-  {
-    id: "1",
-    title: "STREET IS NOT A HOME",
-    category: "COMMERCIAL",
-    thumbnail:
-      "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?q=80&w=1200&auto=format&fit=crop",
-    preview: "/showreel/sample-5s.webm",
-    vimeoId: "76979871",
-  },
-  {
-    id: "2",
-    title: "TOAD SHORT FILM",
-    category: "NARRATIVE",
-    thumbnail:
-      "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1200&auto=format&fit=crop",
-    preview: "/showreel/sample-5s.webm",
-    vimeoId: "76979871",
-  },
-  {
-    id: "3",
-    title: "DESERT SILHOUETTE",
-    category: "MUSIC VIDEO",
-    thumbnail:
-      "https://images.unsplash.com/photo-1485846234645-a62644f84728?q=80&w=1200&auto=format&fit=crop",
-    preview: "/showreel/sample-5s.webm",
-    vimeoId: "76979871",
-  },
-  {
-    id: "4",
-    title: "EQUESTRIAN SHOW",
-    category: "BRAND FILM",
-    thumbnail:
-      "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1200&auto=format&fit=crop",
-    preview: "/showreel/sample-5s.webm",
-    vimeoId: "76979871",
-  },
-  {
-    id: "5",
-    title: "RED BULL ATHLETE",
-    category: "COMMERCIAL",
-    thumbnail:
-      "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=1200&auto=format&fit=crop",
-    preview: "/showreel/sample-5s.webm",
-    vimeoId: "76979871",
-  },
-  {
-    id: "6",
-    title: "CYCLING STAFF PICK",
-    category: "DOCUMENTARY",
-    thumbnail:
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200&auto=format&fit=crop",
-    preview: "/showreel/sample-5s.webm",
-    vimeoId: "76979871",
-  },
-  {
-    id: "7",
-    title: "URBAN ECHOES",
-    category: "EDITORIAL",
-    thumbnail:
-      "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1200&auto=format&fit=crop",
-    preview: "/showreel/sample-5s.webm",
-    vimeoId: "76979871",
-  },
-];
-
-const N = COMMERCIAL_PROJECTS.length;
-
-const EXTENDED_PROJECTS: Project[] = [
-  COMMERCIAL_PROJECTS[N - 1],
-  ...COMMERCIAL_PROJECTS,
-  COMMERCIAL_PROJECTS[0],
-];
-
 const SIDEBAR_COPIES = 7;
-
-const INFINITE_SIDEBAR_PROJECTS: Project[] = Array.from(
-  { length: SIDEBAR_COPIES },
-  () => COMMERCIAL_PROJECTS,
-).flat();
-
-const SIDEBAR_MIDDLE_START = Math.floor(SIDEBAR_COPIES / 2) * N;
-
 const TRANSITION_MS = 700;
 
-export default function CommercialPage() {
+export default function WorkCategoryPage() {
+  const params = useParams<{ slug: string }>();
+  const slug = params.slug;
+
   const [mounted, setMounted] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [categoryTitle, setCategoryTitle] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const hasPositionedRef = useRef(false);
+
   const [trackIndex, setTrackIndex] = useState(1);
   const [transitionEnabled, setTransitionEnabled] = useState(true);
-  const [sidebarPos, setSidebarPos] = useState(SIDEBAR_MIDDLE_START);
-
-  // FIX 3: video only renders after the CSS transition fully settles
-  const [isSettled, setIsSettled] = useState(true);
+  const [sidebarPos, setSidebarPos] = useState(0);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!slug) return;
+
+    fetch(`/api/work-categories/${slug}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((cat) => {
+        if (cat?.title) setCategoryTitle(cat.title);
+      })
+      .catch(() => {});
+
+    fetch(`/api/work-projects/${slug}`)
+      .then((res) => res.json())
+      .then((data: Project[]) => {
+        if (Array.isArray(data)) {
+          setProjects(data);
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+      });
+  }, [slug]);
 
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isProgrammaticScrollRef = useRef(false);
   const isInitialMountRef = useRef(true);
   const programmaticTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sidebarDebounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // FIX 1: throttle by wall-clock time instead of a binary lock
   const lastScrollTimeRef = useRef<number>(0);
 
-  const selectedIndex = (((trackIndex - 1) % N) + N) % N;
-  const activeProject = COMMERCIAL_PROJECTS[selectedIndex];
+  const N = projects.length;
+
+  const EXTENDED_PROJECTS = useMemo(() => {
+    if (N === 0) return [];
+    return [projects[N - 1], ...projects, projects[0]];
+  }, [projects, N]);
+
+  const INFINITE_SIDEBAR_PROJECTS = useMemo(() => {
+    if (N === 0) return [];
+    return Array.from({ length: SIDEBAR_COPIES }, () => projects).flat();
+  }, [projects, N]);
+
+  const SIDEBAR_MIDDLE_START = useMemo(
+    () => Math.floor(SIDEBAR_COPIES / 2) * N,
+    [N]
+  );
+
+  useEffect(() => {
+    if (N === 0 || hasPositionedRef.current) return;
+    hasPositionedRef.current = true;
+    isInitialMountRef.current = true;
+    setTransitionEnabled(false);
+    setTrackIndex(1);
+    setSidebarPos(SIDEBAR_MIDDLE_START);
+  }, [N, SIDEBAR_MIDDLE_START]);
+
+  const selectedIndex = N === 0 ? 0 : (((trackIndex - 1) % N) + N) % N;
+  const activeProject = projects[selectedIndex];
 
   /*
    * --------------------------------------------------------
@@ -130,8 +99,12 @@ export default function CommercialPage() {
    * --------------------------------------------------------
    */
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const lastTickItemRef = useRef<number>(SIDEBAR_MIDDLE_START);
+  const lastTickItemRef = useRef<number>(0);
   const tickRafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    lastTickItemRef.current = SIDEBAR_MIDDLE_START;
+  }, [SIDEBAR_MIDDLE_START]);
 
   const getAudioCtx = useCallback(() => {
     if (!audioCtxRef.current) {
@@ -152,7 +125,6 @@ export default function CommercialPage() {
         const fire = () => {
           const now = ctx.currentTime;
 
-          // Sharp mechanical tick click
           const osc = ctx.createOscillator();
           osc.type = "triangle";
           osc.frequency.setValueAtTime(3200 + Math.random() * 400, now);
@@ -188,7 +160,6 @@ export default function CommercialPage() {
     [getAudioCtx],
   );
 
-  // Unlocks the AudioContext on first user gesture
   useEffect(() => {
     const unlock = () => {
       const ctx = getAudioCtx();
@@ -215,18 +186,17 @@ export default function CommercialPage() {
    */
   const goTo = useCallback(
     (direction: 1 | -1) => {
+      if (N === 0) return;
       const now = Date.now();
-      // Hard throttle — ignore events arriving before the previous animation finishes
       if (now - lastScrollTimeRef.current < TRANSITION_MS + 50) return;
       lastScrollTimeRef.current = now;
 
       playTick(1);
-      setIsSettled(false); // hide video while animating
       setTransitionEnabled(true);
       setTrackIndex((prev) => prev + direction);
       setSidebarPos((prev) => prev + direction);
     },
-    [playTick],
+    [playTick, N],
   );
 
   /*
@@ -235,6 +205,7 @@ export default function CommercialPage() {
    * --------------------------------------------------------
    */
   const handleTransitionEnd = () => {
+    if (N === 0) return;
     if (trackIndex === 0) {
       setTransitionEnabled(false);
       setTrackIndex(N);
@@ -242,18 +213,15 @@ export default function CommercialPage() {
       setTransitionEnabled(false);
       setTrackIndex(1);
     }
-    // FIX 3: animation done — allow video to start playing
-    setIsSettled(true);
   };
 
   /*
    * --------------------------------------------------------
-   * MOUSE WHEEL — main window only (FIX 1 + FIX 2)
+   * MOUSE WHEEL — main window only
    * --------------------------------------------------------
    */
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
-      // FIX 2: if the event target is inside the sidebar, let it scroll freely
       if (
         sidebarRef.current &&
         e.target instanceof Node &&
@@ -264,7 +232,7 @@ export default function CommercialPage() {
 
       e.preventDefault();
 
-      const threshold = 40; // minimum delta before registering a step
+      const threshold = 40;
       if (Math.abs(e.deltaY) < threshold) return;
 
       goTo(e.deltaY > 0 ? 1 : -1);
@@ -295,7 +263,7 @@ export default function CommercialPage() {
    */
   useEffect(() => {
     const container = sidebarRef.current;
-    if (!container) return;
+    if (!container || N === 0) return;
 
     const scrollToActive = (smooth = true) => {
       const element = container.children[sidebarPos] as HTMLElement | undefined;
@@ -332,23 +300,21 @@ export default function CommercialPage() {
         scrollToActive(true);
       }
     }
-  }, [sidebarPos]);
+  }, [sidebarPos, N]);
 
   /*
    * --------------------------------------------------------
-   * SIDEBAR SCROLL — debounced snap-to-closest (FIX 2)
-   * + real-time tick sound as items pass by
+   * SIDEBAR SCROLL — debounced snap-to-closest + tick sound
    * --------------------------------------------------------
    */
   const handleSidebarScroll = () => {
     const container = sidebarRef.current;
-    if (!container) return;
+    if (!container || N === 0) return;
 
     const { scrollTop, scrollHeight, clientHeight } = container;
     const singleSetHeight = scrollHeight / SIDEBAR_COPIES;
     const threshold = singleSetHeight * 1.5;
 
-    // --- real-time tick: fire whenever we cross an item boundary ---
     if (!isProgrammaticScrollRef.current) {
       if (tickRafRef.current) cancelAnimationFrame(tickRafRef.current);
       tickRafRef.current = requestAnimationFrame(() => {
@@ -362,7 +328,6 @@ export default function CommercialPage() {
       });
     }
 
-    // Infinite boundary jump
     if (scrollTop < threshold) {
       isProgrammaticScrollRef.current = true;
       container.scrollTop += singleSetHeight * 2;
@@ -383,7 +348,6 @@ export default function CommercialPage() {
 
     if (isProgrammaticScrollRef.current) return;
 
-    // Debounce: fire 180ms after scrolling stops
     if (sidebarDebounceTimeoutRef.current) clearTimeout(sidebarDebounceTimeoutRef.current);
 
     sidebarDebounceTimeoutRef.current = setTimeout(() => {
@@ -406,12 +370,8 @@ export default function CommercialPage() {
       if (!Number.isNaN(closestIndex) && closestIndex !== sidebarPos) {
         const realIndex = closestIndex % N;
         setSidebarPos(closestIndex);
-        setIsSettled(false); // hide video while new item animates in
         setTransitionEnabled(true);
         setTrackIndex(realIndex + 1);
-
-        // Re-settle after transition
-        window.setTimeout(() => setIsSettled(true), TRANSITION_MS + 50);
       }
     }, 180);
   };
@@ -422,23 +382,35 @@ export default function CommercialPage() {
    * --------------------------------------------------------
    */
   const handleThumbnailClick = (clickedAbsIndex: number, realIndex: number) => {
+    if (N === 0) return;
     const now = Date.now();
     if (now - lastScrollTimeRef.current < TRANSITION_MS + 50) return;
     lastScrollTimeRef.current = now;
 
     playTick(1);
-    setIsSettled(false);
     setTransitionEnabled(true);
     setTrackIndex(realIndex + 1);
     setSidebarPos(clickedAbsIndex);
-
-    window.setTimeout(() => setIsSettled(true), TRANSITION_MS + 50);
   };
+
+  if (loading) {
+    return <main className="h-screen w-full bg-black" />;
+  }
+
+  if (N === 0 || !activeProject) {
+    return (
+      <main className="h-screen w-full bg-black text-white flex items-center justify-center">
+        <p className="text-xs tracking-[0.3em] text-white/30 uppercase">
+          {categoryTitle ? `No projects yet in ${categoryTitle}` : "No projects yet"}
+        </p>
+      </main>
+    );
+  }
 
   return (
     <main className="relative h-screen w-full overflow-hidden bg-black text-white select-none">
       {/* ==================================================
-          MAIN CENTER BARREL VIDEO TRACK
+          MAIN CENTER TRACK — GIFs play directly, no video layer
           ================================================== */}
       <div className="absolute inset-0 flex justify-center items-center pointer-events-none z-10 overflow-hidden">
         <div
@@ -456,77 +428,59 @@ export default function CommercialPage() {
               willChange: "transform",
             }}
           >
-            {EXTENDED_PROJECTS.map((project, idx) => {
-              const projectRealIndex = (((idx - 1) % N) + N) % N;
-              const isActive = projectRealIndex === selectedIndex;
-
-              return (
-                <div
-                  key={`main-track-${project.id}-${idx}`}
-                  className="w-full h-screen flex-shrink-0 flex items-center justify-center"
-                  style={{ padding: "24px 20px" }}
+            {EXTENDED_PROJECTS.map((project, idx) => (
+              <div
+                key={`main-track-${project.id}-${idx}`}
+                className="w-full h-screen flex-shrink-0 flex items-center justify-center"
+                style={{ padding: "24px 20px" }}
+              >
+                <Link
+                  href={`/work/${slug}/${project.id}`}
+                  className="
+                    relative
+                    w-full
+                    aspect-[16/10]
+                    pointer-events-auto
+                    group
+                    block
+                    cursor-pointer
+                  "
                 >
-                  <Link
-                    href={`/work/commercial/${project.id}`}
+                  <div
                     className="
-                      relative
-                      w-full
-                      aspect-[16/10]
-                      pointer-events-auto
-                      group
-                      block
-                      cursor-pointer
+                      absolute
+                      inset-[-15%]
+                      opacity-30
+                      group-hover:opacity-50
+                      transition-opacity
+                      duration-500
+                      pointer-events-none
                     "
-                  >
-                    {/* Glow halo — radial gradient so it fades to nothing instead of ending in a hard rectangle */}
-                    <div
+                    style={{
+                      background:
+                        "radial-gradient(ellipse at center, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.18) 35%, rgba(255,255,255,0) 70%)",
+                      filter: "blur(30px)",
+                    }}
+                  />
+
+                  <div className="relative w-full h-full overflow-hidden">
+                    <img
+                      src={project.gif || project.thumbnail}
+                      alt={project.title}
                       className="
                         absolute
-                        inset-[-15%]
-                        opacity-30
-                        group-hover:opacity-50
-                        transition-opacity
-                        duration-500
+                        inset-0
+                        w-full
+                        h-full
+                        object-cover
                         pointer-events-none
                       "
-                      style={{
-                        background:
-                          "radial-gradient(ellipse at center, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.18) 35%, rgba(255,255,255,0) 70%)",
-                        filter: "blur(30px)",
-                      }}
+                      draggable={false}
                     />
-
-                    <div className="relative w-full h-full overflow-hidden">
-                      {/* FIX 3: only mount BarrelVideo after animation fully settles */}
-                      {isActive && isSettled ? (
-                        <BarrelVideo
-                          src={project.preview}
-                          distortion={0}
-                          edgeSoftness={0.001}
-                          zoom={1}
-                          glow={false}
-                        />
-                      ) : (
-                        <img
-                          src={project.thumbnail}
-                          alt={project.title}
-                          className="
-                            absolute
-                            inset-0
-                            w-full
-                            h-full
-                            object-cover
-                            scale-110
-                            pointer-events-none
-                          "
-                          draggable={false}
-                        />
-                      )}
-                    </div>
-                  </Link>
-                </div>
-              );
-            })}
+                  </div>
+                </Link>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -538,7 +492,6 @@ export default function CommercialPage() {
         className="h-full w-full grid grid-cols-12 items-center relative z-20 pointer-events-none"
         style={{ padding: "0 4%" }}
       >
-        {/* LEFT SIDE INFO */}
         <div
           className="col-span-3 flex flex-col justify-between h-full pointer-events-auto animate-signal-ui"
           style={{ paddingTop: "10%", paddingBottom: "10%" }}
@@ -586,12 +539,9 @@ export default function CommercialPage() {
           <div />
         </div>
 
-        {/* EMPTY CENTER */}
         <div className="col-span-6" />
 
-        {/* RIGHT SIDEBAR RAIL */}
         <div className="col-span-3 h-full flex items-center justify-end gap-6 pointer-events-auto animate-signal-ui">
-          {/* NUMBER */}
           <div className="flex flex-col items-center font-mono text-zinc-400 select-none">
             <span className="text-3xl md:text-4xl font-bold text-white tracking-tighter transition-all duration-300">
               {selectedIndex + 1 < 10
@@ -606,7 +556,6 @@ export default function CommercialPage() {
             </span>
           </div>
 
-          {/* THUMBNAIL RAIL */}
           <div
             ref={sidebarRef}
             onScroll={handleSidebarScroll}

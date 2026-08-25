@@ -11,9 +11,11 @@ interface WorkCategory {
   image: string;
 }
 
-// Matches Nav's landing-page transition duration/easing exactly
 const REVEAL_MS = 450;
 const REVEAL_EASE = 'cubic-bezier(0.76,0,0.24,1)';
+
+const FALLBACK_DEFAULT_BG =
+  'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=2000&auto=format&fit=crop';
 
 export default function WorkSection() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -23,52 +25,39 @@ export default function WorkSection() {
   const [isHovered, setIsHovered] = useState(false);
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
 
-  // Entrance transition state
   const [revealed, setRevealed] = useState(false);
   const [curtainMounted, setCurtainMounted] = useState(true);
 
-  // Set initial position tracking as uninitialized (null)
   const targetPos = useRef<{ x: number; y: number } | null>(null);
   const currentPos = useRef<{ x: number; y: number } | null>(null);
   const animFrameId = useRef<number | null>(null);
 
-  const defaultBgImage =
-    'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=2000&auto=format&fit=crop';
+  const [defaultBgImage, setDefaultBgImage] = useState(FALLBACK_DEFAULT_BG);
+  const [workCategories, setWorkCategories] = useState<WorkCategory[]>([]);
 
-  const workCategories: WorkCategory[] = [
-    {
-      id: 'commercial',
-      title: 'Commercial',
-      slug: '/work/commercial',
-      subtext: 'NARRATIVE\nDOCUMENTARY\nSHORT FILMS',
-      image:
-        'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?q=80&w=2000&auto=format&fit=crop',
-    },
-    {
-      id: 'music-videos',
-      title: 'Music Video',
-      slug: '/work/music-videos',
-      subtext: 'BRAND CAMPAIGNS\nAUTOMOTIVE\nFASHION & EDITORIAL',
-      image:
-        'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=2000&auto=format&fit=crop',
-    },
-    {
-      id: 'Film',
-      title: 'FILM',
-      slug: '/work/film',
-      subtext: 'VISUAL CONCEPTS\nLIVE SESSIONS\nPERFORMANCE',
-      image:
-        'https://images.unsplash.com/photo-1485846234645-a62644f84728?q=80&w=2000&auto=format&fit=crop',
-    },
-    {
-      id: 'event-coverage',
-      title: 'Event Coverage',
-      slug: '/work/event-coverage',
-      subtext: 'REPRESENTATION\nSTUDIO DIRECT\nAVAILABILITY',
-      image:
-        'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=2000&auto=format&fit=crop',
-    },
-  ];
+  useEffect(() => {
+    fetch('/api/work-categories')
+      .then((res) => res.json())
+      .then((data: { defaultImage: string | null; categories: any[] }) => {
+        if (data.defaultImage) setDefaultBgImage(data.defaultImage);
+        if (Array.isArray(data.categories)) {
+          setWorkCategories(
+            data.categories
+              .filter((c) => c.image) // only show categories that have an image set
+              .map((c) => ({
+                id: c.slug,
+                title: c.title,
+                slug: `/work/${c.slug}`,
+                subtext: c.subtext ?? '',
+                image: c.image,
+              }))
+          );
+        }
+      })
+      .catch(() => {
+        // silently keep empty/fallback state
+      });
+  }, []);
 
   const handleCategoryHover = (newIdx: number) => {
     if (newIdx !== activeIdx) {
@@ -76,16 +65,6 @@ export default function WorkSection() {
     }
   };
 
-  // Kick off the entrance wipe on mount — timed to Nav's own transition duration.
-  //
-  // A double rAF is used instead of a fixed setTimeout. With setTimeout, if the
-  // browser hasn't actually painted the curtain's "closed" starting frame yet
-  // (very possible here, given how many background-image layers mount at
-  // once), flipping the transform on the next tick makes the CSS transition
-  // start from a frame that was never rendered — visually that looks like a
-  // jump/glitch partway through the slide instead of a smooth wipe. Two
-  // rAFs guarantee at least one full paint has happened before we trigger
-  // the transition.
   useEffect(() => {
     let rafId1 = 0;
     let rafId2 = 0;
@@ -109,9 +88,8 @@ export default function WorkSection() {
     const boxHeight = 216;
 
     const render = () => {
-      // Only transform HUD elements if mouse position has been captured
       if (targetPos.current && currentPos.current) {
-        const ease = 0.12; // Increased ease slightly for faster initial lock-on
+        const ease = 0.12;
         currentPos.current.x += (targetPos.current.x - currentPos.current.x) * ease;
         currentPos.current.y += (targetPos.current.y - currentPos.current.y) * ease;
 
@@ -139,7 +117,6 @@ export default function WorkSection() {
     };
   }, []);
 
-  // Global mousemove listener to detect cursor location immediately on mount
   useEffect(() => {
     const handleGlobalMouseMove = (e: MouseEvent) => {
       if (!containerRef.current) return;
@@ -157,7 +134,6 @@ export default function WorkSection() {
 
         targetPos.current = { x, y };
 
-        // Snap currentPos immediately if it hasn't been set yet
         if (!currentPos.current) {
           currentPos.current = { x, y };
         }
@@ -201,7 +177,6 @@ export default function WorkSection() {
       onMouseLeave={() => setIsHovered(false)}
       className="relative flex min-h-screen w-full flex-col justify-center overflow-hidden bg-black px-6 uppercase selection:bg-white selection:text-black md:px-16"
     >
-      {/* 1. Background Layers */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
           className={`absolute inset-0 bg-cover bg-center transition-opacity duration-[1800ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${activeIdx === null ? 'opacity-100' : 'opacity-0'
@@ -227,19 +202,14 @@ export default function WorkSection() {
         })}
       </div>
 
-      {/* 2. Global Dark Overlay */}
       <div className="absolute inset-0 bg-black/80 z-10 pointer-events-none" />
 
-      {/* 3. Moving Spotlight HUD Frame */}
       <div
         ref={hudFrameRef}
         className={`pointer-events-none absolute left-0 top-0 z-20 overflow-hidden rounded border border-white/20 transition-opacity duration-300 ease-out ${isHovered && currentPos.current ? 'opacity-100' : 'opacity-0'
           }`}
       >
-        <div
-          ref={spotlightInnerRef}
-          className="absolute inset-0 h-screen w-screen"
-        >
+        <div ref={spotlightInnerRef} className="absolute inset-0 h-screen w-screen">
           <div
             className={`absolute inset-0 h-full w-full bg-cover bg-center transition-opacity duration-[1800ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${activeIdx === null ? 'opacity-100' : 'opacity-0'
               }`}
@@ -270,13 +240,11 @@ export default function WorkSection() {
           })}
         </div>
 
-        {/* Reticle Brackets */}
         <div className="absolute top-0 left-0 h-4 w-4 border-l-2 border-t-2 border-white z-10" />
         <div className="absolute top-0 right-0 h-4 w-4 border-r-2 border-t-2 border-white z-10" />
         <div className="absolute bottom-0 left-0 h-4 w-4 border-l-2 border-b-2 border-white z-10" />
         <div className="absolute bottom-0 right-0 h-4 w-4 border-r-2 border-b-2 border-white z-10" />
 
-        {/* Center Crosshair */}
         <div className="absolute inset-0 flex items-center justify-center z-10">
           <div className="relative h-3 w-5">
             <div className="absolute top-0 left-0 h-1.5 w-1.5 border-l border-t border-white/70" />
@@ -284,17 +252,13 @@ export default function WorkSection() {
           </div>
         </div>
 
-
-
         <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-[10px] font-mono tracking-widest text-white drop-shadow-md z-10">
           <span className="text-white/90">
             {activeIdx !== null ? 'CLICK TO OPEN' : 'HOVER CATEGORY'}
           </span>
-
         </div>
       </div>
 
-      {/* 4. Interactive Category Navigation */}
       <main className="relative z-30 flex w-full max-w-7xl mx-auto items-center justify-between px-4 text-slate-100">
         {workCategories.map((item, index) => {
           const isSelected = activeIdx === index;
@@ -331,7 +295,6 @@ export default function WorkSection() {
         })}
       </main>
 
-      {/* 5. ENTRANCE CURTAIN — wipes left→right on mount, matched to Nav's 450ms transition */}
       {curtainMounted && (
         <div
           className="absolute inset-0 z-50 bg-black pointer-events-none"

@@ -13,7 +13,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+        <html lang="en" suppressHydrationWarning>
+
       <body className="bg-[#0B0B0B] text-white antialiased">
         <Nav />
         <Preloader>{children}</Preloader>

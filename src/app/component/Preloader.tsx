@@ -1,32 +1,22 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import gsap from "gsap";
 
 /* --------------------------------------------------------
- * Replace with your own images. Keep the LAST one as the
- * shot that should become your homepage — ideally the
- * poster frame of your homepage showreel video, so the
- * zoom lands exactly where the real page picks up.
+ * Fallback only — used if the DB fetch fails or returns
+ * nothing yet. Real images come from /api/preloader.
  * -------------------------------------------------------- */
-const GALLERY_IMAGES: string[] = [
+const FALLBACK_IMAGES: string[] = [
   "/preloader/still-1.jpg",
   "/preloader/still-2.jpg",
   "/preloader/still-3.jpg",
   "/preloader/still-4.jpg",
   "/preloader/still-5.jpg",
-  "/preloader/still-6.jpg", // <- final "opens into homepage" shot
+  "/preloader/still-6.jpg",
 ];
 
-// Tripled so there's runway to scroll fast through a couple of
-// loops before settling on the final copy's last image.
-const LOOPED_IMAGES = [...GALLERY_IMAGES, ...GALLERY_IMAGES, ...GALLERY_IMAGES];
-const TARGET_INDEX = LOOPED_IMAGES.length - 1;
-
 type Phase = "counting" | "split" | "gallery" | "zoom" | "done";
-
-function easeOutExpo(t: number) {
-  return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
-}
 
 interface PreloaderProps {
   children: React.ReactNode;
@@ -37,216 +27,223 @@ export default function Preloader({ children }: PreloaderProps) {
   const [percent, setPercent] = useState(0);
   const [visible, setVisible] = useState(true);
   const [skip, setSkip] = useState(false);
-  const [galleryEntering, setGalleryEntering] = useState(false);
   const [zoomRect, setZoomRect] = useState<{
     top: number;
     left: number;
     width: number;
     height: number;
   } | null>(null);
-  const [zoomed, setZoomed] = useState(false);
+  const [galleryImages, setGalleryImages] = useState<string[]>(FALLBACK_IMAGES);
 
-  const containerRef = useRef<HTMLDivElement>(null); // the h-screen viewport window
-  const trackRef = useRef<HTMLDivElement>(null); // the scrolling column
-  const targetRef = useRef<HTMLDivElement>(null); // the image we land on
-  const rafRef = useRef<number | null>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const leftTextRef = useRef<HTMLSpanElement>(null);
+  const rightTextRef = useRef<HTMLSpanElement>(null);
+  const catRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const targetRef = useRef<HTMLDivElement>(null);
+  const zoomCloneRef = useRef<HTMLDivElement>(null);
 
-  // Plays once per browser session.
+  // Fetch real images in parallel with the counting animation.
   useEffect(() => {
-    const alreadyShown = sessionStorage.getItem("preloader-shown");
-    if (alreadyShown) {
-      setSkip(true);
-      setVisible(false);
-    }
+    fetch("/api/preloader")
+      .then((res) => res.json())
+      .then((urls: string[]) => {
+        if (Array.isArray(urls) && urls.length > 0) setGalleryImages(urls);
+      })
+      .catch(() => {
+        // silently keep fallback images
+      });
   }, []);
 
-  /* ---------------- COUNTING 0 -> 100 ---------------- */
+  const loopedImages = useMemo(
+    () => [...galleryImages, ...galleryImages, ...galleryImages],
+    [galleryImages]
+  );
+  const targetIndex = loopedImages.length - 1;
+
+  /* ---------------- COUNTING 0 -> 100 (gsap tween, eased) ---------------- */
   useEffect(() => {
     if (skip || phase !== "counting") return;
 
-    if (percent >= 100) {
-      const t = setTimeout(() => setPhase("split"), 350);
-      return () => clearTimeout(t);
-    }
+    const counter = { val: 0 };
+    const tween = gsap.to(counter, {
+      val: 100,
+      duration: 1.4,
+      ease: "power2.inOut",
+      onUpdate: () => setPercent(Math.round(counter.val)),
+      onComplete: () => {
+        gsap.delayedCall(0.15, () => setPhase("split"));
+      },
+    });
 
-    const speed = percent < 60 ? 14 : percent < 90 ? 26 : 45;
-    const t = setTimeout(() => setPercent((p) => p + 1), speed);
-    return () => clearTimeout(t);
-  }, [percent, phase, skip]);
-
-  /* ---------------- SPLIT -> GALLERY ---------------- */
-  useEffect(() => {
-    if (skip || phase !== "split") return;
-    const t = setTimeout(() => setPhase("gallery"), 900);
-    return () => clearTimeout(t);
+    return () => {
+      tween.kill();
+    };
   }, [phase, skip]);
 
-  /* ---------------- GALLERY: enter from bottom, then fast scroll and decelerate ---------------- */
+  /* ---------------- SPLIT THEN FULL TOP-TO-BOTTOM SCROLL ---------------- */
   useEffect(() => {
-    if (skip || phase !== "gallery") return;
+    if (skip || phase !== "split") return;
 
     const container = containerRef.current;
     const track = trackRef.current;
     const target = targetRef.current;
     if (!container || !track || !target) return;
 
-    // 1. Trigger the "slide up from bottom" transition first
-    setGalleryEntering(true);
-
     const containerHeight = container.clientHeight;
+
     const targetTop = target.offsetTop;
     const targetHeight = target.offsetHeight;
     const finalY = -(targetTop + targetHeight / 2 - containerHeight / 2);
 
-    const duration = 2000;
+    gsap.set(container, { y: 0, opacity: 1 });
+    gsap.set(track, { y: "100vh" });
 
-    // 2. Delay the main scroll animation slightly so the entrance from below completes smoothly
-    const startTimeout = setTimeout(() => {
-      const startTime = performance.now();
+    const tl = gsap.timeline({
+      onComplete: () => {
+        gsap.delayedCall(0.1, () => setPhase("zoom"));
+      },
+    });
 
-      const animate = (now: number) => {
-        const elapsed = now - startTime;
-        const t = Math.min(1, elapsed / duration);
-        const eased = easeOutExpo(t);
-        track.style.transform = `translateY(${finalY * eased}px)`;
-
-        if (t < 1) {
-          rafRef.current = requestAnimationFrame(animate);
-        } else {
-          setTimeout(() => setPhase("zoom"), 300);
-        }
-      };
-
-      rafRef.current = requestAnimationFrame(animate);
-    }, 400); // 400ms entrance duration from below
+    // 1. Text splits outward completely
+    tl.to(
+      leftTextRef.current,
+      { xPercent: -140, opacity: 0, duration: 0.65, ease: "power4.inOut" },
+      0
+    )
+      .to(
+        rightTextRef.current,
+        { xPercent: 140, opacity: 0, duration: 0.65, ease: "power4.inOut" },
+        0
+      )
+      .to(
+        catRef.current,
+        { opacity: 0, scale: 0.92, duration: 0.5, ease: "power2.out" },
+        0.05
+      )
+      // 2. Fast continuous scroll from above viewport down to target image
+      .to(
+        track,
+        { y: finalY, duration: 3.0, ease: "power4.out" },
+        0.55
+      );
 
     return () => {
-      clearTimeout(startTimeout);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      tl.kill();
     };
   }, [phase, skip]);
 
-  /* ---------------- ZOOM: the landed image grows to fill the screen ---------------- */
+  /* ---------------- ZOOM: landed image morphs to fill the screen ---------------- */
   useEffect(() => {
     if (skip || phase !== "zoom") return;
     const target = targetRef.current;
+    const container = containerRef.current;
     if (!target) return;
 
     const rect = target.getBoundingClientRect();
     setZoomRect({ top: rect.top, left: rect.left, width: rect.width, height: rect.height });
 
-    const raf1 = requestAnimationFrame(() => {
-      const raf2 = requestAnimationFrame(() => setZoomed(true));
-      rafRef.current = raf2;
+    const raf = requestAnimationFrame(() => {
+      if (container) {
+        gsap.to(container, { opacity: 0, duration: 0.3, ease: "power2.out" });
+      }
+      if (zoomCloneRef.current) {
+        gsap.to(zoomCloneRef.current, {
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          duration: 0.8,
+          ease: "power4.inOut",
+        });
+      }
     });
 
     const t = setTimeout(() => {
       setPhase("done");
-      sessionStorage.setItem("preloader-shown", "1");
-      setTimeout(() => setVisible(false), 500);
-    }, 1000);
+      gsap.to(overlayRef.current, {
+        opacity: 0,
+        duration: 0.4,
+        ease: "power2.out",
+        onComplete: () => setVisible(false),
+      });
+    }, 850);
 
     return () => {
-      cancelAnimationFrame(raf1);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      cancelAnimationFrame(raf);
       clearTimeout(t);
     };
   }, [phase, skip]);
 
   const handleSkip = useCallback(() => {
-    sessionStorage.setItem("preloader-shown", "1");
-    setPhase("done");
-    setTimeout(() => setVisible(false), 400);
+    gsap.to(overlayRef.current, {
+      opacity: 0,
+      duration: 0.35,
+      ease: "power2.out",
+      onComplete: () => {
+        setPhase("done");
+        setVisible(false);
+      },
+    });
   }, []);
 
   return (
     <>
-      {/* Real site renders underneath immediately */}
       {children}
 
       {visible && !skip && (
-        <div
-          className={`fixed inset-0 z-[999] bg-black overflow-hidden transition-opacity duration-500 ease-out ${
-            phase === "done" ? "opacity-0 pointer-events-none" : "opacity-100"
-          }`}
-        >
+        <div ref={overlayRef} className="fixed inset-0 z-[999] bg-[#0B0B0B] overflow-hidden">
           {/* ---------------- CENTERED COUNTER TEXT & CAT ---------------- */}
           {(phase === "counting" || phase === "split") && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-8 select-none">
-
-              {/* CENTERED TEXT ROW — fixed-width columns so the row never
-                  recenters itself as the percent digit count changes
-                  (e.g. "38 PERCENT" -> "100 PERCENT") */}
-              <div className="flex items-center justify-center gap-4 sm:gap-6 md:gap-8 font-mono text-white text-xs sm:text-sm md:text-base tracking-[0.3em] text-center">
-                <span
-                  className={`inline-block w-[38vw] sm:w-[26vw] md:w-[20vw] text-right transition-all duration-[900ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${
-                    phase === "split" ? "-translate-x-[70vw] opacity-0" : ""
-                  }`}
-                >
+            <div className="absolute inset-0 mt-52 flex flex-col items-center justify-center gap-8 select-none z-10">
+              <div className="flex items-center justify-center gap-3 sm:gap-4 md:gap-6 font-mono text-white text-xs sm:text-sm md:text-base tracking-[0.3em] text-center">
+                <span ref={leftTextRef} className="inline-block whitespace-nowrap text-right">
                   [ NHUJAN DONGOL ]
                 </span>
-                <span
-                  className={`inline-block w-[38vw] sm:w-[26vw] md:w-[20vw] text-left transition-all duration-[900ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${
-                    phase === "split" ? "translate-x-[70vw] opacity-0" : ""
-                  }`}
-                >
+                <span ref={rightTextRef} className="inline-block whitespace-nowrap text-left">
                   [ {String(percent).padStart(2, "0")} PERCENT ]
                 </span>
               </div>
 
-              {/* CENTERED CAT GIF CONTAINER */}
-              <div
-                className={`relative transition-transform duration-[900ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${
-                  phase === "split" ? "scale-95" : ""
-                }`}
-              >
+              <div ref={catRef} className="relative flex justify-center items-center overflow-hidden">
                 <img
                   src="/cat.gif"
                   alt="Running Cat"
-                  className={`w-36 md:w-48 h-auto pointer-events-none transition-opacity duration-[900ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${
-                    phase === "split" ? "opacity-0" : "opacity-100"
-                  }`}
+                  className="w-52 md:w-72 h-auto pointer-events-none"
                   style={{
-                    filter: "invert(1) grayscale(1) contrast(200%)",
                     mixBlendMode: "color-dodge",
-                    clipPath: "inset(0 0 25% 0)",
+                    filter: "invert(1) grayscale(1) contrast(500%)",
+                    clipPath: "inset(0 0 22% 0)",
                   }}
                 />
               </div>
-
             </div>
           )}
 
-          {/* ---------------- SCROLLING GALLERY (SLIDES UP FROM BELOW) ---------------- */}
-          {(phase === "gallery" || phase === "zoom") && (
+          {/* ---------------- SCROLLING GALLERY ---------------- */}
+          {(phase === "split" || phase === "gallery" || phase === "zoom") && (
             <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
               <div
                 ref={containerRef}
-                className={`relative w-[320px] md:w-[480px] lg:w-[560px] h-screen overflow-hidden transition-all duration-700 cubic-bezier(0.16,1,0.3,1) ${
-                  galleryEntering ? "translate-y-0 opacity-100" : "translate-y-[100vh] opacity-0"
-                } ${zoomed ? "opacity-0" : ""}`}
+                className="relative w-[320px] md:w-[480px] lg:w-[560px] h-screen overflow-hidden"
               >
                 <div
                   ref={trackRef}
                   className="flex flex-col gap-4"
                   style={{
-                    paddingTop: "50vh",
-                    paddingBottom: "50vh",
+                    paddingTop: 0,
+                    paddingBottom: 0,
                     willChange: "transform",
                   }}
                 >
-                  {LOOPED_IMAGES.map((src, i) => (
+                  {loopedImages.map((src, i) => (
                     <div
                       key={i}
-                      ref={i === TARGET_INDEX ? targetRef : undefined}
+                      ref={i === targetIndex ? targetRef : undefined}
                       className="w-full aspect-[16/10] flex-shrink-0 overflow-hidden"
                     >
-                      <img
-                        src={src}
-                        alt=""
-                        className="w-full h-full object-cover"
-                        draggable={false}
-                      />
+                      <img src={src} alt="" className="w-full h-full object-cover" draggable={false} />
                     </div>
                   ))}
                 </div>
@@ -257,18 +254,17 @@ export default function Preloader({ children }: PreloaderProps) {
           {/* ---------------- ZOOM CLONE ---------------- */}
           {phase === "zoom" && zoomRect && (
             <div
-              className="fixed overflow-hidden z-10"
+              ref={zoomCloneRef}
+              className="fixed overflow-hidden z-20"
               style={{
-                top: zoomed ? 0 : zoomRect.top,
-                left: zoomed ? 0 : zoomRect.left,
-                width: zoomed ? "100vw" : zoomRect.width,
-                height: zoomed ? "100vh" : zoomRect.height,
-                transition:
-                  "top 900ms cubic-bezier(0.76,0,0.24,1), left 900ms cubic-bezier(0.76,0,0.24,1), width 900ms cubic-bezier(0.76,0,0.24,1), height 900ms cubic-bezier(0.76,0,0.24,1)",
+                top: zoomRect.top,
+                left: zoomRect.left,
+                width: zoomRect.width,
+                height: zoomRect.height,
               }}
             >
               <img
-                src={GALLERY_IMAGES[GALLERY_IMAGES.length - 1]}
+                src={galleryImages[galleryImages.length - 1]}
                 alt=""
                 className="w-full h-full object-cover"
                 draggable={false}
@@ -281,7 +277,7 @@ export default function Preloader({ children }: PreloaderProps) {
             <button
               type="button"
               onClick={handleSkip}
-              className="absolute bottom-6 right-6 font-mono text-[10px] tracking-[0.25em] text-zinc-500 hover:text-white transition-colors z-20"
+              className="absolute bottom-6 right-6 font-mono text-[10px] tracking-[0.25em] text-zinc-500 hover:text-white transition-colors z-30"
             >
               SKIP
             </button>
