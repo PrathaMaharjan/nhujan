@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import Footer from "./Footer";
 
 const mainNavLinks = [
   { name: "HOME.", href: "/" },
@@ -46,9 +47,7 @@ export default function Nav() {
         setPawTrailActive((prev) => {
           const next = !prev;
           setToastMsg(
-            next
-              ? "CAT PAW TRAIL ACTIVATED"
-              : "CAT PAW TRAIL DEACTIVATED"
+            next ? "CAT PAW TRAIL ACTIVATED" : "CAT PAW TRAIL DEACTIVATED",
           );
           setTimeout(() => setToastMsg(null), 3000);
           return next;
@@ -210,8 +209,9 @@ export default function Nav() {
               style={{
                 left: `${paw.x}px`,
                 top: `${paw.y}px`,
-                transform: `translate(-50%, -50%) rotate(${paw.angle}deg) scale(${paw.isLeft ? 1 : -1
-                  }, 1)`,
+                transform: `translate(-50%, -50%) rotate(${paw.angle}deg) scale(${
+                  paw.isLeft ? 1 : -1
+                }, 1)`,
               }}
             >
               <svg
@@ -303,9 +303,10 @@ export default function Nav() {
                 transition-all
                 duration-[450ms]
                 ease-[cubic-bezier(0.76,0,0.24,1)]
-                ${isLeavingLanding
-                  ? "translate-x-[120%] opacity-0"
-                  : "translate-x-0 opacity-100"
+                ${
+                  isLeavingLanding
+                    ? "translate-x-[120%] opacity-0"
+                    : "translate-x-0 opacity-100"
                 }
               `}
             >
@@ -326,15 +327,16 @@ export default function Nav() {
                       text-[12px]
                       lg:text-[13px]
                       tracking-[0.18em]
-                      font-medium
+                      font-bold
                       uppercase
                       whitespace-nowrap
                       transition-all
                       duration-300
                       group
-                      ${isActive
-                        ? "text-white"
-                        : "text-white/55 hover:text-white"
+                      ${
+                        isActive
+                          ? "text-white"
+                          : "text-white/55 hover:text-white"
                       }
                     `}
                   >
@@ -404,9 +406,10 @@ export default function Nav() {
               transition-all
               duration-[450ms]
               ease-[cubic-bezier(0.76,0,0.24,1)]
-              ${isLanding
-                ? "md:opacity-0 md:pointer-events-none"
-                : "opacity-100"
+              ${
+                isLanding
+                  ? "md:opacity-0 md:pointer-events-none"
+                  : "opacity-100"
               }
               ${isLeavingLanding ? "md:opacity-100 md:pointer-events-auto" : ""}
             `}
@@ -505,7 +508,7 @@ export default function Nav() {
       )}
 
       {/* BACKDROP OVERLAY */}
-      <div
+      {/* <div
         onClick={() => setIsOpen(false)}
         aria-hidden="true"
         className={`
@@ -519,10 +522,10 @@ export default function Nav() {
           ease-[cubic-bezier(0.76,0,0.24,1)]
           ${isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}
         `}
-      />
+      /> */}
 
       {/* HIGHLY TRANSLUCENT DOME MENU */}
-      <div
+      {/* <div
         className={`
           fixed
           top-1/2
@@ -556,7 +559,7 @@ export default function Nav() {
       >
         <div className="flex flex-col gap-10 w-full min-w-[280px]">
           {/* SLOWER STAGGERED NAV LINKS */}
-          <nav className="flex flex-col gap-6">
+      {/* <nav className="flex flex-col gap-6">
             {mainNavLinks.map((link, index) => {
               const isActive =
                 link.href === "/"
@@ -582,13 +585,15 @@ export default function Nav() {
                       transition-all
                       duration-700
                       ease-[cubic-bezier(0.16,1,0.3,1)]
-                      ${isActive
-                        ? "text-white translate-x-2"
-                        : "text-zinc-400 hover:text-white hover:translate-x-2"
+                      ${
+                        isActive
+                          ? "text-white translate-x-2"
+                          : "text-zinc-400 hover:text-white hover:translate-x-2"
                       }
-                      ${isOpen
-                        ? "translate-y-0 opacity-100"
-                        : "translate-y-12 opacity-0 pointer-events-none"
+                      ${
+                        isOpen
+                          ? "translate-y-0 opacity-100"
+                          : "translate-y-12 opacity-0 pointer-events-none"
                       }
                     `}
                     style={{
@@ -605,9 +610,10 @@ export default function Nav() {
                         bg-white
                         transition-all
                         duration-300
-                        ${isActive
-                          ? "opacity-100 scale-100"
-                          : "opacity-0 scale-0 group-hover:opacity-100 group-hover:scale-100"
+                        ${
+                          isActive
+                            ? "opacity-100 scale-100" 3333333333333333333
+                            : "opacity-0 scale-0 group-hover:opacity-100 group-hover:scale-100"
                         }
                       `}
                     />
@@ -620,7 +626,7 @@ export default function Nav() {
           </nav>
 
           {/* SLOWER STAGGERED BOTTOM META */}
-          <div
+      {/* <div
             className={`
               flex
               flex-col
@@ -628,9 +634,10 @@ export default function Nav() {
               transition-all
               duration-700
               ease-[cubic-bezier(0.16,1,0.3,1)]
-              ${isOpen
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 translate-y-8 pointer-events-none"
+              ${
+                isOpen
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 translate-y-8 pointer-events-none"
               }
             `}
             style={{
@@ -657,98 +664,7 @@ export default function Nav() {
       </div>
 
       {/* LANDING BOTTOM CORNER */}
-      {isLanding && (
-        <>
-          {/* DEVELOPERS */}
-          <div
-            className="
-              fixed
-              bottom-6
-              left-6
-              md:left-8
-              z-[100]
-              font-mono
-              text-[9px]
-              md:text-[10px]
-              tracking-[0.3em]
-              text-white/60
-              uppercase
-              pointer-events-none
-            "
-          >
-            DEVELOPED BY &lt;/&gt;
-          </div>
-
-          {/* SOCIAL ICONS */}
-          <div
-            className="
-              fixed
-              bottom-5
-              right-6
-              md:right-8
-              z-[100]
-              flex
-              items-center
-              gap-5
-              pointer-events-auto
-            "
-          >
-            {/* Instagram */}
-            <a
-              href="https://instagram.com"
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Instagram"
-              className="
-                text-white/85
-                hover:text-white
-                transition-all
-                hover:scale-110
-              "
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                className="w-5 h-5 md:w-6 md:h-6"
-              >
-                <rect x="3" y="3" width="18" height="18" rx="5" />
-                <circle cx="12" cy="12" r="4" />
-                <circle
-                  cx="17.5"
-                  cy="6.5"
-                  r="1"
-                  fill="currentColor"
-                  stroke="none"
-                />
-              </svg>
-            </a>
-
-            {/* LinkedIn */}
-            <a
-              href="https://linkedin.com"
-              target="_blank"
-              rel="noreferrer"
-              aria-label="LinkedIn"
-              className="
-                text-white/85
-                hover:text-white
-                transition-all
-                hover:scale-110
-              "
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="w-5 h-5 md:w-6 md:h-6"
-              >
-                <path d="M5.2 3.5A2.2 2.2 0 1 1 5.2 7.9 2.2 2.2 0 0 1 5.2 3.5ZM3.3 9h3.8v11.5H3.3V9Zm6.1 0h3.6v1.6h.1c.5-.9 1.7-1.9 3.5-1.9 3.8 0 4.5 2.5 4.5 5.7v6.1h-3.8V15c0-1.3 0-3-1.9-3s-2.2 1.4-2.2 2.9v5.6H9.4V9Z" />
-              </svg>
-            </a>
-          </div>
-        </>
-      )}
+      {/* <Footer /> */}
     </>
   );
 }

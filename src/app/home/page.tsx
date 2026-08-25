@@ -250,7 +250,7 @@ export default function HomePage() {
               SHOWREEL 2026
           ================================================= */}
 
-          <div
+          {/* <div
             className="
               pointer-events-none
               absolute
@@ -267,7 +267,7 @@ export default function HomePage() {
             "
           >
             Showreel / 2026
-          </div>
+          </div> */}
         </div>
       )}
 

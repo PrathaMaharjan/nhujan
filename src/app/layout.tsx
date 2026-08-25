@@ -1,5 +1,6 @@
 import "./globals.css";
 import Nav from "./component/Nav";
+import Footer from "./component/Footer";
 
 export const metadata = {
   title: "Portfolio",
@@ -16,6 +17,7 @@ export default function RootLayout({
       <body className="bg-black text-white antialiased">
         <Nav />
         {children}
+        <Footer />
       </body>
     </html>
   );
