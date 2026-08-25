@@ -1,253 +1,289 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
-import GalleryTunnelPreloader from "@/app/component/Gallerytunnelpreloader";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import gsap from "gsap";
 
-const AUTO_ADVANCE_MS = 6000;
+/* --------------------------------------------------------
+ * Fallback only — used if the DB fetch fails or returns
+ * nothing yet. Real images come from /api/preloader.
+ * -------------------------------------------------------- */
+const FALLBACK_IMAGES: string[] = [
+  "/preloader/still-1.jpg",
+  "/preloader/still-2.jpg",
+  "/preloader/still-3.jpg",
+  "/preloader/still-4.jpg",
+  "/preloader/still-5.jpg",
+  "/preloader/still-6.jpg",
+];
 
-const FLY_DURATION_MS = 1000;
-const FADE_DURATION_MS = 450;
-const TOTAL_EXIT_MS = FLY_DURATION_MS + FADE_DURATION_MS;
+type Phase = "counting" | "split" | "gallery" | "zoom" | "done";
 
-type Phase = "tunnel" | "exiting" | "done";
+interface PreloaderProps {
+  children: React.ReactNode;
+}
 
-export default function Preloader({ children }: { children: ReactNode }) {
-  const [phase, setPhase] = useState<Phase>("tunnel");
+export default function Preloader({ children }: PreloaderProps) {
+  const [phase, setPhase] = useState<Phase>("counting");
+  const [percent, setPercent] = useState(0);
+  const [visible, setVisible] = useState(true);
+  const [skip, setSkip] = useState(false);
+  const [zoomRect, setZoomRect] = useState<{
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+  } | null>(null);
+  const [galleryImages, setGalleryImages] = useState<string[]>(FALLBACK_IMAGES);
 
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const leftTextRef = useRef<HTMLSpanElement>(null);
+  const rightTextRef = useRef<HTMLSpanElement>(null);
+  const catRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const targetRef = useRef<HTMLDivElement>(null);
+  const zoomCloneRef = useRef<HTMLDivElement>(null);
 
-  const startExit = useCallback(() => {
-    setPhase((current) => {
-      if (current !== "tunnel") return current;
-      return "exiting";
+  // Fetch real images in parallel with the counting animation.
+  useEffect(() => {
+    fetch("/api/preloader")
+      .then((res) => res.json())
+      .then((urls: string[]) => {
+        if (Array.isArray(urls) && urls.length > 0) setGalleryImages(urls);
+      })
+      .catch(() => {
+        // silently keep fallback images
+      });
+  }, []);
+
+  const loopedImages = useMemo(
+    () => [...galleryImages, ...galleryImages, ...galleryImages],
+    [galleryImages]
+  );
+  const targetIndex = loopedImages.length - 1;
+
+  /* ---------------- COUNTING 0 -> 100 (gsap tween, eased) ---------------- */
+  useEffect(() => {
+    if (skip || phase !== "counting") return;
+
+    const counter = { val: 0 };
+    const tween = gsap.to(counter, {
+      val: 100,
+      duration: 1.4,
+      ease: "power2.inOut",
+      onUpdate: () => setPercent(Math.round(counter.val)),
+      onComplete: () => {
+        gsap.delayedCall(0.15, () => setPhase("split"));
+      },
+    });
+
+    return () => {
+      tween.kill();
+    };
+  }, [phase, skip]);
+
+  /* ---------------- SPLIT THEN FULL TOP-TO-BOTTOM SCROLL ---------------- */
+  useEffect(() => {
+    if (skip || phase !== "split") return;
+
+    const container = containerRef.current;
+    const track = trackRef.current;
+    const target = targetRef.current;
+    if (!container || !track || !target) return;
+
+    const containerHeight = container.clientHeight;
+
+    const targetTop = target.offsetTop;
+    const targetHeight = target.offsetHeight;
+    const finalY = -(targetTop + targetHeight / 2 - containerHeight / 2);
+
+    gsap.set(container, { y: 0, opacity: 1 });
+    gsap.set(track, { y: "100vh" });
+
+    const tl = gsap.timeline({
+      onComplete: () => {
+        gsap.delayedCall(0.1, () => setPhase("zoom"));
+      },
+    });
+
+    // 1. Text splits outward completely
+    tl.to(
+      leftTextRef.current,
+      { xPercent: -140, opacity: 0, duration: 0.65, ease: "power4.inOut" },
+      0
+    )
+      .to(
+        rightTextRef.current,
+        { xPercent: 140, opacity: 0, duration: 0.65, ease: "power4.inOut" },
+        0
+      )
+      .to(
+        catRef.current,
+        { opacity: 0, scale: 0.92, duration: 0.5, ease: "power2.out" },
+        0.05
+      )
+      // 2. Fast continuous scroll from above viewport down to target image
+      .to(
+        track,
+        { y: finalY, duration: 3.0, ease: "power4.out" },
+        0.55
+      );
+
+    return () => {
+      tl.kill();
+    };
+  }, [phase, skip]);
+
+  /* ---------------- ZOOM: landed image morphs to fill the screen ---------------- */
+  useEffect(() => {
+    if (skip || phase !== "zoom") return;
+    const target = targetRef.current;
+    const container = containerRef.current;
+    if (!target) return;
+
+    const rect = target.getBoundingClientRect();
+    setZoomRect({ top: rect.top, left: rect.left, width: rect.width, height: rect.height });
+
+    const raf = requestAnimationFrame(() => {
+      if (container) {
+        gsap.to(container, { opacity: 0, duration: 0.3, ease: "power2.out" });
+      }
+      if (zoomCloneRef.current) {
+        gsap.to(zoomCloneRef.current, {
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          duration: 0.8,
+          ease: "power4.inOut",
+        });
+      }
+    });
+
+    const t = setTimeout(() => {
+      setPhase("done");
+      gsap.to(overlayRef.current, {
+        opacity: 0,
+        duration: 0.4,
+        ease: "power2.out",
+        onComplete: () => setVisible(false),
+      });
+    }, 850);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(t);
+    };
+  }, [phase, skip]);
+
+  const handleSkip = useCallback(() => {
+    gsap.to(overlayRef.current, {
+      opacity: 0,
+      duration: 0.35,
+      ease: "power2.out",
+      onComplete: () => {
+        setPhase("done");
+        setVisible(false);
+      },
     });
   }, []);
 
-  /*
-   * Automatically start the exit after the tunnel has been
-   * visible for the minimum amount of time.
-   */
-  useEffect(() => {
-    if (phase !== "tunnel") return;
-
-    timerRef.current = setTimeout(() => {
-      startExit();
-    }, AUTO_ADVANCE_MS);
-
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-    };
-  }, [phase, startExit]);
-
-  /*
-   * Prevent the homepage behind the preloader from scrolling.
-   */
-  useEffect(() => {
-    if (phase === "done") return;
-
-    const previousOverflow = document.body.style.overflow;
-
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [phase]);
-
   return (
     <>
-      {phase !== "done" && (
-        <div
-          role="button"
-          aria-label="Skip intro"
-          onClick={startExit}
-          onTransitionEnd={(event) => {
-            if (event.propertyName === "opacity" && phase === "exiting") {
-              setPhase("done");
-            }
-          }}
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 9999,
-            background: "#0B0B0B",
+      {children}
 
-            /*
-             * Keep the black screen visible while the name
-             * flies toward the viewer.
-             *
-             * Then fade the entire preloader away.
-             */
-            opacity: phase === "exiting" ? 0 : 1,
+      {visible && !skip && (
+        <div ref={overlayRef} className="fixed inset-0 z-[999] bg-[#0B0B0B] overflow-hidden">
+          {/* ---------------- CENTERED COUNTER TEXT & CAT ---------------- */}
+          {(phase === "counting" || phase === "split") && (
+            <div className="absolute inset-0 mt-52 flex flex-col items-center justify-center gap-8 select-none z-10">
+              <div className="flex items-center justify-center gap-3 sm:gap-4 md:gap-6 font-mono text-white text-xs sm:text-sm md:text-base tracking-[0.3em] text-center">
+                <span ref={leftTextRef} className="inline-block whitespace-nowrap text-right">
+                  [ NHUJAN DONGOL ]
+                </span>
+                <span ref={rightTextRef} className="inline-block whitespace-nowrap text-left">
+                  [ {String(percent).padStart(2, "0")} PERCENT ]
+                </span>
+              </div>
 
-            /*
-             * DO NOT scale the entire preloader.
-             *
-             * The previous version scaled the complete tunnel,
-             * which made the transition feel like the whole
-             * page was zooming.
-             */
-            transform: "none",
+              <div ref={catRef} className="relative flex justify-center items-center overflow-hidden">
+                <img
+                  src="/cat.gif"
+                  alt="Running Cat"
+                  className="w-52 md:w-72 h-auto pointer-events-none"
+                  style={{
+                    mixBlendMode: "color-dodge",
+                    filter: "invert(1) grayscale(1) contrast(500%)",
+                    clipPath: "inset(0 0 22% 0)",
+                  }}
+                />
+              </div>
+            </div>
+          )}
 
-            transition:
-              phase === "exiting"
-                ? `opacity ${FADE_DURATION_MS}ms ease ${FLY_DURATION_MS}ms`
-                : "none",
+          {/* ---------------- SCROLLING GALLERY ---------------- */}
+          {(phase === "split" || phase === "gallery" || phase === "zoom") && (
+            <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+              <div
+                ref={containerRef}
+                className="relative w-[320px] md:w-[480px] lg:w-[560px] h-screen overflow-hidden"
+              >
+                <div
+                  ref={trackRef}
+                  className="flex flex-col gap-4"
+                  style={{
+                    paddingTop: 0,
+                    paddingBottom: 0,
+                    willChange: "transform",
+                  }}
+                >
+                  {loopedImages.map((src, i) => (
+                    <div
+                      key={i}
+                      ref={i === targetIndex ? targetRef : undefined}
+                      className="w-full aspect-[16/10] flex-shrink-0 overflow-hidden"
+                    >
+                      <img src={src} alt="" className="w-full h-full object-cover" draggable={false} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
-            pointerEvents: phase === "exiting" ? "none" : "auto",
-
-            overflow: "hidden",
-          }}
-        >
-          {/* 
-            Existing tunnel.
-
-            It remains completely untouched.
-          */}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              opacity: phase === "exiting" ? 0.15 : 1,
-              transition: `opacity ${FLY_DURATION_MS}ms ease`,
-            }}
-          >
-            <GalleryTunnelPreloader
-              labelText="Press to Enter"
-              onPress={startExit}
-            />
-          </div>
-
-          {/*
-            NHUJAN DONGOL flying toward the viewer.
-
-            This only appears during the exit.
-          */}
-          {/* NHUJAN DONGOL — present from the beginning */}
-          <div
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              inset: 0,
-              zIndex: 20,
-
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-
-              pointerEvents: "none",
-
-              perspective: "1400px",
-              overflow: "hidden",
-            }}
-          >
+          {/* ---------------- ZOOM CLONE ---------------- */}
+          {phase === "zoom" && zoomRect && (
             <div
+              ref={zoomCloneRef}
+              className="fixed overflow-hidden z-20"
               style={{
-                position: "relative",
-
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-
-                textAlign: "center",
-                whiteSpace: "nowrap",
-
-                color: "#fff",
-
-                fontFamily: 'Georgia, "Times New Roman", serif',
-
-                fontWeight: 400,
-
-                letterSpacing: "-0.045em",
-
-                lineHeight: 0.86,
-
-                transformOrigin: "50% 50%",
-
-                /*
-                 * Before exiting:
-                 * completely calm and readable.
-                 *
-                 * During exiting:
-                 * grows toward the viewer at a CONSTANT rate
-                 * (linear) rather than easing in/out, so the
-                 * scale-up feels uniform all the way until it
-                 * flies off screen.
-                 */
-                animation:
-                  phase === "exiting"
-                    ? `nhujanFlyPast ${FLY_DURATION_MS}ms linear forwards`
-                    : "none",
-
-                transform: "translate3d(0, 0, 0) scale(1)",
-
-                opacity: 1,
+                top: zoomRect.top,
+                left: zoomRect.left,
+                width: zoomRect.width,
+                height: zoomRect.height,
               }}
             >
-              <span
-                style={{
-                  fontSize: "clamp(24px, 3.5vw, 48px)",
-                }}
-              >
-                NHUJAN
-              </span>
-
-              <span
-                style={{
-                  fontSize: "clamp(24px, 3.5vw, 48px)",
-                }}
-              >
-                DONGOL
-              </span>
+              <img
+                src={galleryImages[galleryImages.length - 1]}
+                alt=""
+                className="w-full h-full object-cover"
+                draggable={false}
+              />
             </div>
-          </div>
+          )}
 
-          {/*
-            Animation lives here instead of in globals.css,
-            so you don't need another CSS file.
-          */}
-          <style>
-            {`
-  @keyframes nhujanFlyPast {
-    /* Start small */
-    0% {
-      transform: translate3d(0, 0, 0) scale(0.2);
-      opacity: 1;
-    }
-
-    /* Midway: larger but still visible */
-    50% {
-      transform: translate3d(0, 0, 600px) scale(3);
-      opacity: 1;
-    }
-
-    /* End: very large, fading out */
-    100% {
-      transform: translate3d(0, 0, 2200px) scale(13);
-      opacity: 0;
-    }
-  }
-`}
-          </style>
+          {/* ---------------- SKIP BUTTON ---------------- */}
+          {phase !== "done" && (
+            <button
+              type="button"
+              onClick={handleSkip}
+              className="absolute bottom-6 right-6 font-mono text-[10px] tracking-[0.25em] text-zinc-500 hover:text-white transition-colors z-30"
+            >
+              SKIP
+            </button>
+          )}
         </div>
       )}
-
-      {/*
-        Homepage exists underneath the preloader.
-
-        Once the black overlay disappears, the homepage
-        is already there — no navigation/reload is necessary.
-      */}
-      {children}
     </>
   );
 }
