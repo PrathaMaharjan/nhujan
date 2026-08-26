@@ -1,34 +1,41 @@
 export default function Footer() {
   return (
-    <div className="absolute bottom-0 left-0 w-full h-16 pointer-events-none">
+    <footer className="fixed inset-x-0 bottom-0 z-[100] h-16 pointer-events-none">
       {/* DEVELOPERS */}
       <div
         className="
-              fixed
+              absolute
               bottom-6
               left-6
               md:left-8
-              z-[100]
               font-mono
               text-[9px]
               md:text-[10px]
               tracking-[0.3em]
               text-white/60
               uppercase
-              pointer-events-none
+              pointer-events-auto
+              group
+              cursor-default
             "
       >
-        DEVELOPED BY {"</>"}
+        DEVELOPED BY{" "}
+        <span className="inline-flex items-baseline tracking-[0.08em] text-white/75">
+          <span>[</span>
+          <span className="inline-block max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-500 ease-out group-hover:max-w-[260px] group-hover:px-2 group-hover:opacity-100">
+            PRATHA MAHARJAN // PRAGUN RAJ MASKEY
+          </span>
+          <span>]</span>
+        </span>
       </div>
 
       {/* SOCIAL ICONS */}
       <div
         className="
-              fixed
+              absolute
               bottom-5
               right-6
               md:right-8
-              z-[100]
               flex
               items-center
               gap-5
@@ -89,6 +96,6 @@ export default function Footer() {
           </svg>
         </a>
       </div>
-    </div>
+    </footer>
   );
 }

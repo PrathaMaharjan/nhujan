@@ -1,7 +1,6 @@
 "use client";
 
 import FullscreenVideo from "@/app/component/FullscreenVideo";
-import Navigation from "@/app/component/Nav";
 import { useEffect, useRef, useState } from "react";
 
 export default function HomePage() {
@@ -71,12 +70,6 @@ export default function HomePage() {
   return (
     <main className="relative h-dvh w-dvw overflow-hidden bg-black">
       {/* =================================================
-          NAVIGATION
-      ================================================= */}
-
-      {!isFullscreen && <Navigation />}
-
-      {/* =================================================
           SHOWREEL PREVIEW
       ================================================= */}
 
@@ -100,7 +93,7 @@ export default function HomePage() {
           ================================================= */}
 
           <video
-            src="/showreel/sample-5s.webm"
+            src="/showreel/showreel_preview.mp4"
             autoPlay
             muted
             loop
@@ -116,6 +109,32 @@ export default function HomePage() {
               opacity-90
             "
           />
+
+          <div
+            className="
+              pointer-events-none
+              absolute
+              inset-0
+              z-35
+              flex
+              items-center
+              justify-center
+            "
+          >
+            <span
+              className="
+                font-mono
+                text-[14px]
+                uppercase
+                tracking-[0.22em]
+                text-white/35
+                sm:text-[16px]
+                md:text-[18px]
+              "
+            >
+              FILMMAKER//EDITOR
+            </span>
+          </div>
 
           {/* =================================================
               CURSOR REACTIVE LIGHT

@@ -3,7 +3,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import Footer from "./Footer";
 
 const mainNavLinks = [
   { name: "HOME.", href: "/" },
@@ -18,7 +17,6 @@ export default function Nav() {
 
   const isLanding = pathname === "/";
 
-  const [isOpen, setIsOpen] = useState(false);
   const [isLeavingLanding, setIsLeavingLanding] = useState(false);
 
   const [toastMsg, setToastMsg] = useState<string | null>(null);
@@ -26,8 +24,6 @@ export default function Nav() {
   const [paws, setPaws] = useState<
     { id: number; x: number; y: number; angle: number; isLeft: boolean }[]
   >([]);
-  const [catState, setCatState] = useState<"sleeping" | "awake">("sleeping");
-
   const lastPawPosRef = useRef<{ x: number; y: number } | null>(null);
   const pawIndexRef = useRef(0);
 
@@ -64,9 +60,9 @@ export default function Nav() {
    */
   useEffect(() => {
     if (!pawTrailActive) {
-      setPaws([]);
       lastPawPosRef.current = null;
-      return;
+      const clearPaws = setTimeout(() => setPaws([]), 0);
+      return () => clearTimeout(clearPaws);
     }
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -117,38 +113,15 @@ export default function Nav() {
   }, [paws]);
 
   /*
-   * 🐾 EASTER EGG: Sleeping Cat in Dome Menu
-   */
-  const handleCatClick = () => {
-    if (catState === "awake") return;
-    setCatState("awake");
-    setTimeout(() => {
-      setCatState("sleeping");
-    }, 3500);
-  };
-
-  /*
    * Close menu whenever pathname changes.
    */
   useEffect(() => {
-    setIsOpen(false);
-    setIsLeavingLanding(false);
+    const resetNavigation = setTimeout(() => {
+      setIsLeavingLanding(false);
+    }, 0);
+
+    return () => clearTimeout(resetNavigation);
   }, [pathname]);
-
-  /*
-   * Lock scrolling while dome menu is open.
-   */
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isOpen]);
 
   /*
    * Landing-page navigation transition.
@@ -166,26 +139,6 @@ export default function Nav() {
     setTimeout(() => {
       router.push(href);
     }, 450);
-  };
-
-  /*
-   * Escape key to close menu.
-   */
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
-        setIsOpen(false);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen]);
-
-  /*
-   * Hamburger
-   */
-  const toggleMenu = () => {
-    setIsOpen((current) => !current);
   };
 
   return (
@@ -257,8 +210,6 @@ export default function Nav() {
 
               event.preventDefault();
 
-              setIsOpen(false);
-
               setTimeout(() => {
                 router.push("/");
               }, 250);
@@ -287,79 +238,78 @@ export default function Nav() {
             NHUJAN DONGOL
           </Link>
 
-          {/* DESKTOP LANDING NAV */}
-          {isLanding && (
-            <nav
-              className={`
-                hidden
-                md:flex
-                pointer-events-auto
-                absolute
-                top-0
-                right-0
-                items-center
-                gap-7
-                lg:gap-9
-                transition-all
-                duration-[450ms]
-                ease-[cubic-bezier(0.76,0,0.24,1)]
-                ${
-                  isLeavingLanding
-                    ? "translate-x-[120%] opacity-0"
-                    : "translate-x-0 opacity-100"
-                }
-              `}
-            >
-              {mainNavLinks.map((link) => {
-                const isActive =
-                  link.href === "/"
-                    ? pathname === "/"
-                    : pathname.startsWith(link.href);
+          {/* DESKTOP NAV */}
+          <nav
+            className={`
+              flex
+              pointer-events-auto
+              absolute
+              top-0
+              right-0
+              items-center
+              gap-4
+              md:gap-7
+              lg:gap-9
+              transition-all
+              duration-[450ms]
+              ease-[cubic-bezier(0.76,0,0.24,1)]
+              ${
+                isLeavingLanding
+                  ? "translate-x-[120%] opacity-0"
+                  : "translate-x-0 opacity-100"
+              }
+            `}
+          >
+            {mainNavLinks.map((link) => {
+              const isActive =
+                link.href === "/"
+                  ? pathname === "/"
+                  : pathname.startsWith(link.href);
 
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={(event) => navigateFromLanding(event, link.href)}
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={(event) =>
+                    isLanding && navigateFromLanding(event, link.href)
+                  }
+                  className={`
+                    relative
+                    font-mono
+                    text-[12px]
+                    lg:text-[13px]
+                    tracking-[0.18em]
+                    font-bold
+                    uppercase
+                    whitespace-nowrap
+                    transition-all
+                    duration-300
+                    ease-out
+                    hover:scale-110
+                    group
+                    ${
+                      isActive ? "text-white" : "text-white/55 hover:text-white"
+                    }
+                  `}
+                >
+                  {link.name}
+
+                  <span
                     className={`
-                      relative
-                      font-mono
-                      text-[12px]
-                      lg:text-[13px]
-                      tracking-[0.18em]
-                      font-bold
-                      uppercase
-                      whitespace-nowrap
+                      absolute
+                      left-0
+                      -bottom-1
+                      h-[2px]
+                      bg-white
                       transition-all
                       duration-300
-                      group
-                      ${
-                        isActive
-                          ? "text-white"
-                          : "text-white/55 hover:text-white"
-                      }
+                      ${isActive ? "w-full" : "w-0 group-hover:w-full"}
                     `}
-                  >
-                    {link.name}
-
-                    {/* Active underline */}
-                    <span
-                      className={`
-                        absolute
-                        left-0
-                        -bottom-1
-                        h-[2px]
-                        bg-white
-                        transition-all
-                        duration-300
-                        ${isActive ? "w-full" : "w-0 group-hover:w-full"}
-                      `}
-                    />
-                  </Link>
-                );
-              })}
-            </nav>
-          )}
+                  />
+                </Link>
+              );
+            })}
+          </nav>
 
           {/* NON-LANDING BACK BUTTON */}
           {!isLanding && (
@@ -384,128 +334,8 @@ export default function Nav() {
               Back
             </button>
           )}
-
-          {/* HAMBURGER */}
-          <button
-            onClick={toggleMenu}
-            aria-label={isOpen ? "Close menu" : "Open menu"}
-            className={`
-              pointer-events-auto
-              absolute
-              top-0
-              right-0
-              z-[110]
-              flex
-              h-8
-              w-8
-              flex-col
-              items-center
-              justify-center
-              gap-[6px]
-              cursor-pointer
-              transition-all
-              duration-[450ms]
-              ease-[cubic-bezier(0.76,0,0.24,1)]
-              ${
-                isLanding
-                  ? "md:opacity-0 md:pointer-events-none"
-                  : "opacity-100"
-              }
-              ${isLeavingLanding ? "md:opacity-100 md:pointer-events-auto" : ""}
-            `}
-          >
-            <span
-              className={`
-                block
-                h-[1.5px]
-                w-6
-                bg-white
-                transition-transform
-                duration-400
-                ease-[cubic-bezier(0.76,0,0.24,1)]
-                origin-center
-                ${isOpen ? "translate-y-[7.5px] rotate-45" : ""}
-              `}
-            />
-            <span
-              className={`
-                block
-                h-[1.5px]
-                w-6
-                bg-white
-                transition-all
-                duration-300
-                ease-[cubic-bezier(0.76,0,0.24,1)]
-                ${isOpen ? "opacity-0 scale-x-0" : "opacity-100 scale-x-100"}
-              `}
-            />
-            <span
-              className={`
-                block
-                h-[1.5px]
-                w-6
-                bg-white
-                transition-transform
-                duration-400
-                ease-[cubic-bezier(0.76,0,0.24,1)]
-                origin-center
-                ${isOpen ? "-translate-y-[7.5px] -rotate-45" : ""}
-              `}
-            />
-          </button>
         </div>
       </header>
-
-      {/* MOBILE TOP NAV (LANDING) */}
-      {isLanding && (
-        <div
-          className="
-            md:hidden
-            fixed
-            top-0
-            right-0
-            z-[101]
-            pointer-events-none
-            px-6
-            py-5
-          "
-        >
-          <button
-            onClick={toggleMenu}
-            aria-label={isOpen ? "Close menu" : "Open menu"}
-            className="
-              pointer-events-auto
-              relative
-              flex
-              h-8
-              w-8
-              flex-col
-              items-center
-              justify-center
-              gap-[6px]
-            "
-          >
-            <span
-              className={`
-                block h-[1.5px] w-6 bg-white transition-transform duration-400 ease-[cubic-bezier(0.76,0,0.24,1)] origin-center
-                ${isOpen ? "translate-y-[7.5px] rotate-45" : ""}
-              `}
-            />
-            <span
-              className={`
-                block h-[1.5px] w-6 bg-white transition-all duration-300 ease-[cubic-bezier(0.76,0,0.24,1)]
-                ${isOpen ? "opacity-0 scale-x-0" : "opacity-100 scale-x-100"}
-              `}
-            />
-            <span
-              className={`
-                block h-[1.5px] w-6 bg-white transition-transform duration-400 ease-[cubic-bezier(0.76,0,0.24,1)] origin-center
-                ${isOpen ? "-translate-y-[7.5px] -rotate-45" : ""}
-              `}
-            />
-          </button>
-        </div>
-      )}
 
       {/* BACKDROP OVERLAY */}
       {/* <div
