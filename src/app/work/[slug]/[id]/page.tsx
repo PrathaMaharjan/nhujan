@@ -134,7 +134,7 @@ export default function ProjectDetailPage() {
           className={`relative w-full max-w-[1300px] mx-auto aspect-video max-h-[96vh] bg-black overflow-hidden rounded-sm origin-center cursor-pointer group/hero ${revealed ? "animate-slit-open" : "opacity-0"
             }`}
         >
-          {/* YouTube Video Embed or Base Image / Video */}
+
           {(() => {
             const ytId = parseYouTubeId(project.vimeoId || project.heroImageUrl);
             if (ytId) {
@@ -204,7 +204,7 @@ export default function ProjectDetailPage() {
             >
               {(project.categoryLabel || project.year) && (
                 <p
-                  className={`font-mono text-[9px] tracking-[0.4em] text-zinc-400 uppercase mb-3 transition-all duration-1000 delay-100 ease-out ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+                  className={`font-mono m-1 text-[9px] tracking-[0.4em] text-zinc-400 uppercase mb-3 transition-all duration-1000 delay-100 ease-out ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
                     }`}
                 >
                   {project.categoryLabel} {project.categoryLabel && project.year && " · "} {project.year}
