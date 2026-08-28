@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { isVideoUrl, parseYouTubeId } from "@/lib/media";
 
 interface GalleryItem {
   id: string;
@@ -34,13 +35,14 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<ProjectData | null>(null);
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const [showContent, setShowContent] = useState(false);
   const [showTopBtn, setShowTopBtn] = useState(false);
 
   useEffect(() => {
     if (!id) return;
-    fetch(`/api/work-projects/detail/${id}`)
+    fetch(`/api/work-projects/detail/${encodeURIComponent(id)}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data) {
@@ -52,17 +54,24 @@ export default function ProjectDetailPage() {
   }, [id]);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setRevealed(true), 80);
-    const t2 = setTimeout(() => setShowContent(true), 700);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-    };
-  }, []);
+    if (!loading && project) {
+      setRevealed(false);
+      setShowContent(false);
+      const t1 = setTimeout(() => setRevealed(true), 60);
+      const t2 = setTimeout(() => setShowContent(true), 750);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    }
+  }, [loading, project]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setLightbox(null);
+      if (e.key === "Escape") {
+        setLightbox(null);
+        setVideoModalOpen(false);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -106,33 +115,62 @@ export default function ProjectDetailPage() {
     <div className="min-h-screen w-full bg-black text-white selection:bg-white selection:text-black overflow-x-hidden">
       {/* HERO SECTION */}
       <div
-        className={`${W} pt-10 pb-0 flex justify-center items-center overflow-hidden`}
+        className={`${W} pt-11 sm:pt-13 md:pt-16 pb-6 flex flex-col justify-center items-center overflow-hidden`}
         style={{ minHeight: "100vh" }}
       >
+        {/* BACK TO CATEGORY BUTTON */}
+        <div className="w-full max-w-[1300px] mx-auto mb-2 flex items-center">
+          <Link
+            href={`/work/${slug || ""}`}
+            className="group inline-flex items-center gap-2 font-mono text-[10px] sm:text-[11px] tracking-[0.25em] text-zinc-400 hover:text-white transition-all uppercase"
+          >
+            <span className="text-sm transition-transform duration-300 group-hover:-translate-x-1">←</span>
+            <span>BACK</span>
+          </Link>
+        </div>
+
         <section
-          className={`relative w-full max-w-[1300px] mx-auto aspect-video max-h-[96vh] bg-black overflow-hidden rounded-sm origin-center ${
-            revealed ? "animate-slit-open" : "opacity-0"
-          }`}
+          onClick={() => setVideoModalOpen(true)}
+          className={`relative w-full max-w-[1300px] mx-auto aspect-video max-h-[96vh] bg-black overflow-hidden rounded-sm origin-center cursor-pointer group/hero ${revealed ? "animate-slit-open" : "opacity-0"
+            }`}
         >
-          {/* Vimeo Video or Base Image */}
-          {project.vimeoId ? (
-            <div className="absolute inset-0 w-full h-full">
-              <iframe
-                src={`https://player.vimeo.com/video/${project.vimeoId}?autoplay=1&muted=1&loop=1&autopause=0&background=0&title=0&byline=0&portrait=0`}
-                className="w-full h-full object-cover border-0"
-                allow="autoplay; fullscreen; picture-in-picture"
-                allowFullScreen
-                title={project.title}
+          {/* YouTube Video Embed or Base Image / Video */}
+          {(() => {
+            const ytId = parseYouTubeId(project.vimeoId || project.heroImageUrl);
+            if (ytId) {
+              return (
+                <div className="absolute inset-0 w-full h-full pointer-events-none">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&loop=1&playlist=${ytId}&controls=0&rel=0&playsinline=1&modestbranding=1`}
+                    className="w-full h-full object-cover border-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    title={project.title}
+                  />
+                </div>
+              );
+            }
+            if (isVideoUrl(heroImage)) {
+              return (
+                <video
+                  src={heroImage}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="absolute inset-0 w-full h-full object-cover saturate-[0.85] brightness-[0.9] pointer-events-none"
+                />
+              );
+            }
+            return (
+              <img
+                src={heroImage}
+                alt={project.title}
+                draggable={false}
+                className="absolute inset-0 w-full h-full object-cover saturate-[0.85] brightness-[0.9] pointer-events-none"
               />
-            </div>
-          ) : (
-            <img
-              src={heroImage}
-              alt={project.title}
-              draggable={false}
-              className="absolute inset-0 w-full h-full object-cover saturate-[0.85] brightness-[0.9]"
-            />
-          )}
+            );
+          })()}
 
           {/* INTENSIFIED MULTI-LAYER BOTTOM-ONLY BLUR */}
           <div
@@ -160,31 +198,28 @@ export default function ProjectDetailPage() {
           {/* ANIMATED INFO PANEL */}
           <div className="absolute inset-0 z-10 flex items-end p-6 sm:p-12 pointer-events-none">
             <div
-              className={`w-full max-w-3xl pointer-events-auto transition-all duration-1000 ease-out ${
-                showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
-              }`}
+              onClick={(e) => e.stopPropagation()}
+              className={`w-full max-w-3xl pointer-events-auto transition-all duration-1000 ease-out ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
+                }`}
             >
               {(project.categoryLabel || project.year) && (
                 <p
-                  className={`font-mono text-[9px] tracking-[0.4em] text-zinc-400 uppercase mb-3 transition-all duration-1000 delay-100 ease-out ${
-                    showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-                  }`}
+                  className={`font-mono text-[9px] tracking-[0.4em] text-zinc-400 uppercase mb-3 transition-all duration-1000 delay-100 ease-out ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+                    }`}
                 >
                   {project.categoryLabel} {project.categoryLabel && project.year && " · "} {project.year}
                 </p>
               )}
               <h1
-                className={`font-sans font-black text-[clamp(1.8rem,4vw,3rem)] leading-[1] tracking-tight text-white mb-4 transition-all duration-1000 delay-200 ease-out ${
-                  showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-                }`}
+                className={`font-sans font-black text-[clamp(1.8rem,4vw,3rem)] leading-[1] tracking-tight text-white mb-4 transition-all duration-1000 delay-200 ease-out ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+                  }`}
               >
                 {project.title}
               </h1>
               {project.description && (
                 <p
-                  className={`font-sans text-[13px] sm:text-[14px] leading-[1.7] text-zinc-300 max-w-2xl mb-6 font-normal transition-all duration-1000 delay-300 ease-out ${
-                    showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-                  }`}
+                  className={`font-sans text-[13px] sm:text-[14px] leading-[1.7] text-zinc-300 max-w-2xl mb-6 font-normal transition-all duration-1000 delay-300 ease-out ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+                    }`}
                 >
                   {project.description}
                 </p>
@@ -192,9 +227,8 @@ export default function ProjectDetailPage() {
 
               {(project.director || project.client) && (
                 <div
-                  className={`flex flex-wrap gap-x-12 gap-y-4 transition-all duration-1000 delay-500 ease-out ${
-                    showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-                  }`}
+                  className={`flex flex-wrap gap-x-12 gap-y-4 transition-all duration-1000 delay-500 ease-out ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+                    }`}
                 >
                   {project.director && (
                     <div>
@@ -262,13 +296,79 @@ export default function ProjectDetailPage() {
           >
             ✕ CLOSE
           </button>
-          <img
-            src={lightbox}
-            alt=""
-            className="max-w-full max-h-[90vh] object-contain"
+          {isVideoUrl(lightbox) ? (
+            <video
+              src={lightbox}
+              autoPlay
+              loop
+              muted
+              controls
+              playsInline
+              className="max-w-full max-h-[90vh] object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <img
+              src={lightbox}
+              alt=""
+              className="max-w-full max-h-[90vh] object-contain"
+              onClick={(e) => e.stopPropagation()}
+              draggable={false}
+            />
+          )}
+        </div>
+      )}
+
+      {/* FULLSCREEN HERO VIDEO MODAL */}
+      {videoModalOpen && (
+        <div
+          className="fixed inset-0 z-[110] bg-black/95 flex items-center justify-center p-2 sm:p-6 md:p-10 backdrop-blur-md"
+          onClick={() => setVideoModalOpen(false)}
+        >
+          <button
+            onClick={() => setVideoModalOpen(false)}
+            className="absolute top-6 right-6 z-20 text-white/70 hover:text-white font-mono text-xs tracking-widest uppercase transition flex items-center gap-2 cursor-pointer bg-black/60 px-4 py-2 rounded-full border border-white/20 hover:border-white/60"
+          >
+            <span>✕</span> <span>CLOSE</span>
+          </button>
+
+          <div
+            className="relative w-full max-w-6xl aspect-video max-h-[88vh] bg-black rounded overflow-hidden shadow-2xl flex items-center justify-center"
             onClick={(e) => e.stopPropagation()}
-            draggable={false}
-          />
+          >
+            {(() => {
+              const ytId = parseYouTubeId(project.vimeoId || project.heroImageUrl);
+              if (ytId) {
+                return (
+                  <iframe
+                    src={`https://www.youtube.com/embed/${ytId}?autoplay=1&mute=0&controls=1&rel=0&playsinline=1&modestbranding=1`}
+                    className="w-full h-full border-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    title={project.title}
+                  />
+                );
+              }
+              if (isVideoUrl(heroImage)) {
+                return (
+                  <video
+                    src={heroImage}
+                    autoPlay
+                    controls
+                    playsInline
+                    className="w-full h-full object-contain"
+                  />
+                );
+              }
+              return (
+                <img
+                  src={heroImage}
+                  alt={project.title}
+                  className="w-full h-full object-contain"
+                />
+              );
+            })()}
+          </div>
         </div>
       )}
 
@@ -334,16 +434,26 @@ function GalleryCell({
       ref={ref}
       onClick={onClick}
       style={{ transitionDelay: visible ? `${(index % 4) * 90}ms` : "0ms" }}
-      className={`relative overflow-hidden group cursor-pointer bg-zinc-900 ${aspect} ${className} transition-all duration-700 ease-out ${
-        visible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-8 scale-[0.97]"
-      }`}
+      className={`relative overflow-hidden group cursor-pointer bg-zinc-900 ${aspect} ${className} transition-all duration-700 ease-out ${visible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-8 scale-[0.97]"
+        }`}
     >
-      <img
-        src={src}
-        alt=""
-        draggable={false}
-        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04] saturate-[0.8] group-hover:saturate-100 brightness-[0.92] group-hover:brightness-100"
-      />
+      {isVideoUrl(src) ? (
+        <video
+          src={src}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04] saturate-[0.8] group-hover:saturate-100 brightness-[0.92] group-hover:brightness-100"
+        />
+      ) : (
+        <img
+          src={src}
+          alt=""
+          draggable={false}
+          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04] saturate-[0.8] group-hover:saturate-100 brightness-[0.92] group-hover:brightness-100"
+        />
+      )}
       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500" />
       <div className="absolute bottom-3 right-3 w-6 h-6 border border-white/20 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-white/60 text-[9px] font-mono pointer-events-none">
         ↗

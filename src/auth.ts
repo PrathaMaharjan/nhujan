@@ -27,6 +27,30 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
-  pages: { signIn: "/admin/login" },
-  session: { strategy: "jwt" },
-});
+  pages: { signIn: "/login" },
+  session: {
+    strategy: "jwt",
+    maxAge: 2 * 60 * 60, // Auto log out after 2 hours (in seconds)
+  },
+  jwt: {
+    maxAge: 2 * 60 * 60, // JWT token lifespan: 2 hours
+  },
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.email = user.email;
+        token.name = user.name;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (token && session.user) {
+        session.user.id = (token.id as string) || (token.sub as string);
+        session.user.email = token.email as string;
+        session.user.name = token.name as string;
+      }
+      return session;
+    },
+  },
+});

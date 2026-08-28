@@ -147,8 +147,8 @@ export default function BrandsPage() {
     <main
       className="
         relative
-        h-dvh
-        w-dvw
+        h-screen
+        w-full
         overflow-hidden
         bg-black
         text-white

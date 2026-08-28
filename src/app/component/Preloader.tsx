@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import gsap from "gsap";
 
 /* --------------------------------------------------------
@@ -23,6 +24,9 @@ interface PreloaderProps {
 }
 
 export default function Preloader({ children }: PreloaderProps) {
+  const pathname = usePathname();
+  const isAdminOrLogin = pathname.startsWith("/admin") || pathname.startsWith("/login");
+
   const [phase, setPhase] = useState<Phase>("counting");
   const [percent, setPercent] = useState(0);
   const [visible, setVisible] = useState(true);
@@ -187,6 +191,10 @@ export default function Preloader({ children }: PreloaderProps) {
       },
     });
   }, []);
+
+  if (isAdminOrLogin) {
+    return <>{children}</>;
+  }
 
   return (
     <>

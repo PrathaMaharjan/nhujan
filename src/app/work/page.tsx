@@ -2,6 +2,8 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
+import gsap from 'gsap';
+import { isVideoUrl } from '@/lib/media';
 
 interface WorkCategory {
   id: string;
@@ -10,9 +12,6 @@ interface WorkCategory {
   subtext: string;
   image: string;
 }
-
-const REVEAL_MS = 450;
-const REVEAL_EASE = 'cubic-bezier(0.76,0,0.24,1)';
 
 const FALLBACK_DEFAULT_BG =
   'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=2000&auto=format&fit=crop';
@@ -24,9 +23,6 @@ export default function WorkSection() {
 
   const [isHovered, setIsHovered] = useState(false);
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
-
-  const [revealed, setRevealed] = useState(false);
-  const [curtainMounted, setCurtainMounted] = useState(true);
 
   const targetPos = useRef<{ x: number; y: number } | null>(null);
   const currentPos = useRef<{ x: number; y: number } | null>(null);
@@ -48,7 +44,13 @@ export default function WorkSection() {
                 id: c.slug,
                 title: c.title,
                 slug: `/work/${c.slug}`,
-                subtext: c.subtext ?? '',
+                subtext: c.subtext
+                  ? c.subtext
+                    .split('\n')
+                    .map((l: string) => l.trim())
+                    .filter(Boolean)
+                    .join('\n')
+                  : '',
                 image: c.image,
               }))
           );
@@ -64,24 +66,6 @@ export default function WorkSection() {
       setActiveIdx(newIdx);
     }
   };
-
-  useEffect(() => {
-    let rafId1 = 0;
-    let rafId2 = 0;
-
-    rafId1 = requestAnimationFrame(() => {
-      rafId2 = requestAnimationFrame(() => {
-        setRevealed(true);
-      });
-    });
-
-    const t2 = window.setTimeout(() => setCurtainMounted(false), REVEAL_MS + 100);
-    return () => {
-      cancelAnimationFrame(rafId1);
-      cancelAnimationFrame(rafId2);
-      window.clearTimeout(t2);
-    };
-  }, []);
 
   useEffect(() => {
     const boxWidth = 384;
@@ -179,10 +163,25 @@ export default function WorkSection() {
     >
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
-          className={`absolute inset-0 bg-cover bg-center transition-opacity duration-[1800ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${activeIdx === null ? 'opacity-100' : 'opacity-0'
+          className={`absolute inset-0 transition-opacity duration-[1800ms] ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden ${activeIdx === null ? 'opacity-100' : 'opacity-0'
             }`}
-          style={{ backgroundImage: `url('${defaultBgImage}')` }}
-        />
+        >
+          {isVideoUrl(defaultBgImage) ? (
+            <video
+              src={defaultBgImage}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div
+              className="w-full h-full bg-cover bg-center"
+              style={{ backgroundImage: `url('${defaultBgImage}')` }}
+            />
+          )}
+        </div>
 
         {workCategories.map((cat, index) => {
           const isActive = index === activeIdx;
@@ -190,14 +189,29 @@ export default function WorkSection() {
           return (
             <div
               key={cat.id}
-              className={`absolute inset-0 bg-cover bg-center transition-all duration-[1800ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${isActive
+              className={`absolute inset-0 transition-all duration-[1800ms] ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden ${isActive
                 ? 'opacity-100 translate-x-0'
                 : activeIdx !== null && index < activeIdx
                   ? '-translate-x-full opacity-0'
                   : 'translate-x-full opacity-0'
                 }`}
-              style={{ backgroundImage: `url('${cat.image}')` }}
-            />
+            >
+              {isVideoUrl(cat.image) ? (
+                <video
+                  src={cat.image}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div
+                  className="w-full h-full bg-cover bg-center"
+                  style={{ backgroundImage: `url('${cat.image}')` }}
+                />
+              )}
+            </div>
           );
         })}
       </div>
@@ -211,13 +225,28 @@ export default function WorkSection() {
       >
         <div ref={spotlightInnerRef} className="absolute inset-0 h-screen w-screen">
           <div
-            className={`absolute inset-0 h-full w-full bg-cover bg-center transition-opacity duration-[1800ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${activeIdx === null ? 'opacity-100' : 'opacity-0'
+            className={`absolute inset-0 h-full w-full transition-opacity duration-[1800ms] ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden ${activeIdx === null ? 'opacity-100' : 'opacity-0'
               }`}
             style={{
-              backgroundImage: `url('${defaultBgImage}')`,
               filter: 'brightness(1.2) contrast(1.05)',
             }}
-          />
+          >
+            {isVideoUrl(defaultBgImage) ? (
+              <video
+                src={defaultBgImage}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div
+                className="w-full h-full bg-cover bg-center"
+                style={{ backgroundImage: `url('${defaultBgImage}')` }}
+              />
+            )}
+          </div>
 
           {workCategories.map((cat, index) => {
             const isActive = index === activeIdx;
@@ -225,17 +254,32 @@ export default function WorkSection() {
             return (
               <div
                 key={`spotlight-${cat.id}`}
-                className={`absolute inset-0 h-full w-full bg-cover bg-center transition-all duration-[1800ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${isActive
+                className={`absolute inset-0 h-full w-full transition-all duration-[1800ms] ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden ${isActive
                   ? 'opacity-100 translate-x-0'
                   : activeIdx !== null && index < activeIdx
                     ? '-translate-x-full opacity-0'
                     : 'translate-x-full opacity-0'
                   }`}
                 style={{
-                  backgroundImage: `url('${cat.image}')`,
                   filter: 'brightness(1.2) contrast(1.05)',
                 }}
-              />
+              >
+                {isVideoUrl(cat.image) ? (
+                  <video
+                    src={cat.image}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className="w-full h-full bg-cover bg-center"
+                    style={{ backgroundImage: `url('${cat.image}')` }}
+                  />
+                )}
+              </div>
             );
           })}
         </div>
@@ -268,12 +312,12 @@ export default function WorkSection() {
               key={item.id}
               href={item.slug}
               onMouseEnter={() => handleCategoryHover(index)}
-              className="group flex flex-col items-center text-center py-8"
+              className="group flex flex-col items-start text-left py-8"
             >
               <h2
-                className={`mb-4 tracking-tighter text-white drop-shadow-lg transition-all duration-500 ease-out ${isSelected
-                  ? 'scale-110 font-normal text-3xl md:text-4xl lg:text-5xl opacity-100'
-                  : 'scale-75 font-extralight text-xl md:text-2xl lg:text-3xl opacity-50 hover:opacity-80'
+                className={`m-0 mb-3 p-0 text-left tracking-tight text-white drop-shadow-lg transition-all duration-500 ease-out ${isSelected
+                  ? 'font-normal text-3xl md:text-4xl lg:text-5xl opacity-100'
+                  : 'font-extralight text-2xl md:text-3xl lg:text-4xl opacity-40 hover:opacity-75'
                   }`}
                 style={{
                   fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
@@ -283,7 +327,7 @@ export default function WorkSection() {
               </h2>
 
               <p
-                className={`whitespace-pre-line text-[9px] font-semibold tracking-widest leading-relaxed text-slate-300 transition-all duration-500 ${isSelected
+                className={`m-1 p-0 text-left w-full whitespace-pre-line text-[9px] font-semibold tracking-widest leading-relaxed text-slate-300 transition-all duration-500 ${isSelected
                   ? 'opacity-100 translate-y-0'
                   : 'opacity-0 translate-y-2 pointer-events-none'
                   }`}
@@ -294,18 +338,6 @@ export default function WorkSection() {
           );
         })}
       </main>
-
-      {curtainMounted && (
-        <div
-          className="absolute inset-0 z-50 bg-black pointer-events-none"
-          style={{
-            transform: revealed ? 'translate3d(100%,0,0)' : 'translate3d(0,0,0)',
-            transition: `transform ${REVEAL_MS}ms ${REVEAL_EASE}`,
-            willChange: 'transform',
-            backfaceVisibility: 'hidden',
-          }}
-        />
-      )}
     </section>
   );
 }

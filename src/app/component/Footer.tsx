@@ -1,4 +1,14 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+
 export default function Footer() {
+  const pathname = usePathname();
+
+  if (pathname.startsWith("/admin") || pathname.startsWith("/login")) {
+    return null;
+  }
+
   return (
     <footer className="fixed inset-x-0 bottom-0 z-[100] h-16 pointer-events-none">
       {/* DEVELOPERS */}

@@ -5,12 +5,14 @@ import React, { useState, useEffect, useRef } from "react";
 export default function ContactPage() {
   const [copied, setCopied] = useState(false);
   const [catLoaded, setCatLoaded] = useState(false);
+  const [showMeow, setShowMeow] = useState(false);
   const email = "nhujandongol@gmail.com";
 
   const leftEyeRef = useRef<SVGGElement>(null);
   const rightEyeRef = useRef<SVGGElement>(null);
   const leftPupilRef = useRef<SVGGElement>(null);
   const rightPupilRef = useRef<SVGGElement>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   const handleCopyEmail = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -19,6 +21,69 @@ export default function ContactPage() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
+  };
+
+  const playMeow = () => {
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
+    }
+    const ctx = audioCtxRef.current;
+    if (ctx.state === "suspended") ctx.resume();
+
+    const now = ctx.currentTime;
+
+    // Main tone
+    const osc = ctx.createOscillator();
+    osc.type = "sawtooth";
+
+    // Vibrato (gives it a "voiced" wavering quality instead of a clean sweep)
+    const vibrato = ctx.createOscillator();
+    vibrato.type = "sine";
+    vibrato.frequency.value = 7;
+    const vibratoGain = ctx.createGain();
+    vibratoGain.gain.value = 15;
+    vibrato.connect(vibratoGain);
+    vibratoGain.connect(osc.frequency);
+
+    // Formant-style bandpass filter to shape the vowel ("ow") color
+    const filter = ctx.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.Q.value = 6;
+
+    const gain = ctx.createGain();
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+
+    // Pitch contour: nasal "mrr" onset -> rising "ee" -> falling "ow"
+    osc.frequency.setValueAtTime(320, now);
+    osc.frequency.linearRampToValueAtTime(280, now + 0.06);
+    osc.frequency.exponentialRampToValueAtTime(520, now + 0.22);
+    osc.frequency.exponentialRampToValueAtTime(210, now + 0.55);
+
+    // Filter sweep tracks the vowel shift
+    filter.frequency.setValueAtTime(600, now);
+    filter.frequency.linearRampToValueAtTime(1400, now + 0.22);
+    filter.frequency.exponentialRampToValueAtTime(500, now + 0.55);
+
+    // Amplitude envelope
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.3, now + 0.08);
+    gain.gain.setValueAtTime(0.3, now + 0.25);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.58);
+
+    osc.start(now);
+    vibrato.start(now);
+    osc.stop(now + 0.6);
+    vibrato.stop(now + 0.6);
+  };
+
+  const handleCatClick = () => {
+    playMeow();
+    setShowMeow(true);
+    setTimeout(() => setShowMeow(false), 800);
   };
 
   useEffect(() => {
@@ -66,7 +131,7 @@ export default function ContactPage() {
   }, []);
 
   return (
-    <main className="relative h-screen w-screen bg-black text-white flex flex-col items-center justify-center select-none px-4 overflow-hidden">
+    <main className="relative h-screen w-full bg-black text-white flex flex-col items-center justify-center select-none px-4 overflow-hidden">
       {/* Ambient center glow */}
       <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.015),transparent_70%)]" />
 
@@ -98,17 +163,27 @@ export default function ContactPage() {
       {/* Minimalist Peeking Wireframe Cat Outline with White Eyes */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-20 pointer-events-none overflow-hidden">
         <div
-          className={`transition-all duration-[1500ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          className={`relative transition-all duration-[1500ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
             catLoaded
               ? "translate-y-0 opacity-100"
               : "translate-y-[120%] opacity-0"
           }`}
         >
+          {/* Meow speech bubble */}
+          <span
+            className={`pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 font-mono text-[10px] sm:text-xs tracking-widest text-white transition-all duration-300 ${
+              showMeow ? "opacity-100 -translate-y-1" : "opacity-0 translate-y-0"
+            }`}
+          >
+            meow
+          </span>
+
           <svg
             viewBox="0 0 400 180"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
-            className="w-[220px] h-[95px] sm:w-[280px] sm:h-[121px] md:w-[330px] md:h-[143px] drop-shadow-[0_-4px_15px_rgba(255,255,255,0.08)]"
+            onClick={handleCatClick}
+            className="pointer-events-auto cursor-pointer w-[220px] h-[95px] sm:w-[280px] sm:h-[121px] md:w-[330px] md:h-[143px] drop-shadow-[0_-4px_15px_rgba(255,255,255,0.08)]"
           >
             {/* Outline Cat Head Silhouette */}
             <path

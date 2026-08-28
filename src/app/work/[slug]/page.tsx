@@ -4,9 +4,12 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import MeshText from "@/app/component/MeshText";
+import { isVideoUrl } from "@/lib/media";
+import { slugify } from "@/lib/slug";
 
 interface Project {
   id: string;
+  slug?: string;
   title: string;
   category: string;
   thumbnail: string;
@@ -49,6 +52,11 @@ export default function WorkCategoryPage() {
       .then((data: Project[]) => {
         if (Array.isArray(data)) {
           setProjects(data);
+          if (data.length > 0) {
+            const initialPos = Math.floor(SIDEBAR_COPIES / 2) * data.length;
+            setSidebarPos(initialPos);
+            lastTickItemRef.current = initialPos;
+          }
         }
         setLoading(false);
       })
@@ -80,15 +88,6 @@ export default function WorkCategoryPage() {
     () => Math.floor(SIDEBAR_COPIES / 2) * N,
     [N]
   );
-
-  useEffect(() => {
-    if (N === 0 || hasPositionedRef.current) return;
-    hasPositionedRef.current = true;
-    isInitialMountRef.current = true;
-    setTransitionEnabled(false);
-    setTrackIndex(1);
-    setSidebarPos(SIDEBAR_MIDDLE_START);
-  }, [N, SIDEBAR_MIDDLE_START]);
 
   const selectedIndex = N === 0 ? 0 : (((trackIndex - 1) % N) + N) % N;
   const activeProject = projects[selectedIndex];
@@ -261,46 +260,58 @@ export default function WorkCategoryPage() {
    * AUTO-SCROLL SIDEBAR when main track changes or on mount
    * --------------------------------------------------------
    */
-  useEffect(() => {
-    const container = sidebarRef.current;
-    if (!container || N === 0) return;
+  const scrollToActive = useCallback(
+    (smooth = true) => {
+      const container = sidebarRef.current;
+      if (!container || N === 0) return;
 
-    const scrollToActive = (smooth = true) => {
       const element = container.children[sidebarPos] as HTMLElement | undefined;
       if (!element) return;
 
-      const containerRect = container.getBoundingClientRect();
-      const elementRect = element.getBoundingClientRect();
-      const diff =
-        elementRect.top +
-        elementRect.height / 2 -
-        (containerRect.top + containerRect.height / 2);
+      const targetScrollTop =
+        element.offsetTop + element.offsetHeight / 2 - container.clientHeight / 2;
 
-      if (Math.abs(diff) < 1) return;
+      if (Math.abs(container.scrollTop - targetScrollTop) < 1) return;
 
       isProgrammaticScrollRef.current = true;
       if (smooth) {
-        container.scrollBy({ top: diff, behavior: "smooth" });
+        container.scrollTo({ top: targetScrollTop, behavior: "smooth" });
       } else {
-        container.scrollTop += diff;
+        container.scrollTop = targetScrollTop;
       }
 
       if (programmaticTimeoutRef.current) clearTimeout(programmaticTimeoutRef.current);
-      programmaticTimeoutRef.current = setTimeout(() => {
-        isProgrammaticScrollRef.current = false;
-      }, smooth ? TRANSITION_MS : 50);
-    };
+      programmaticTimeoutRef.current = setTimeout(
+        () => {
+          isProgrammaticScrollRef.current = false;
+        },
+        smooth ? TRANSITION_MS : 50
+      );
+    },
+    [sidebarPos, N]
+  );
+
+  useEffect(() => {
+    if (N === 0) return;
 
     if (isInitialMountRef.current) {
       isInitialMountRef.current = false;
       scrollToActive(false);
-      requestAnimationFrame(() => scrollToActive(false));
+      const rId = requestAnimationFrame(() => scrollToActive(false));
+      const t1 = setTimeout(() => scrollToActive(false), 50);
+      const t2 = setTimeout(() => scrollToActive(false), 200);
+      const t3 = setTimeout(() => scrollToActive(false), 1000);
+
+      return () => {
+        cancelAnimationFrame(rId);
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+      };
     } else {
-      if (!isProgrammaticScrollRef.current) {
-        scrollToActive(true);
-      }
+      scrollToActive(true);
     }
-  }, [sidebarPos, N]);
+  }, [sidebarPos, N, scrollToActive]);
 
   /*
    * --------------------------------------------------------
@@ -435,7 +446,7 @@ export default function WorkCategoryPage() {
                 style={{ padding: "24px 20px" }}
               >
                 <Link
-                  href={`/work/${slug}/${project.id}`}
+                  href={`/work/${slug}/${project.slug || slugify(project.title) || project.id}`}
                   className="
                     relative
                     w-full
@@ -464,19 +475,40 @@ export default function WorkCategoryPage() {
                   />
 
                   <div className="relative w-full h-full overflow-hidden">
-                    <img
-                      src={project.gif || project.thumbnail}
-                      alt={project.title}
-                      className="
-                        absolute
-                        inset-0
-                        w-full
-                        h-full
-                        object-cover
-                        pointer-events-none
-                      "
-                      draggable={false}
-                    />
+                    {(() => {
+                      const mediaUrl = project.gif || project.thumbnail;
+                      return isVideoUrl(mediaUrl) ? (
+                        <video
+                          src={mediaUrl}
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
+                          className="
+                            absolute
+                            inset-0
+                            w-full
+                            h-full
+                            object-cover
+                            pointer-events-none
+                          "
+                        />
+                      ) : (
+                        <img
+                          src={mediaUrl}
+                          alt={project.title}
+                          className="
+                            absolute
+                            inset-0
+                            w-full
+                            h-full
+                            object-cover
+                            pointer-events-none
+                          "
+                          draggable={false}
+                        />
+                      );
+                    })()}
                   </div>
                 </Link>
               </div>
@@ -561,6 +593,7 @@ export default function WorkCategoryPage() {
             onScroll={handleSidebarScroll}
             onWheel={(e) => e.stopPropagation()}
             className="
+              relative
               h-[80vh]
               w-32 md:w-36
               flex
@@ -597,23 +630,41 @@ export default function WorkCategoryPage() {
                     duration-500
                     ease-out
                     cursor-pointer
+                    outline-none
+                    border-none
                     ${isSelected
-                      ? "opacity-100 scale-135 z-10 shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_15px_rgba(255,255,255,0.15)] ring-1 ring-white/40"
+                      ? "opacity-100 scale-135 z-10 shadow-[0_10px_30px_rgba(0,0,0,0.9)]"
                       : "opacity-35 scale-90 hover:opacity-75 hover:scale-95 grayscale-[30%]"
                     }
                   `}
                 >
-                  <img
-                    src={project.thumbnail}
-                    alt={project.title}
-                    className="
-                      w-full
-                      h-full
-                      object-cover
-                      pointer-events-none
-                    "
-                    draggable={false}
-                  />
+                  {isVideoUrl(project.thumbnail) ? (
+                    <video
+                      src={project.thumbnail}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="
+                        w-full
+                        h-full
+                        object-cover
+                        pointer-events-none
+                      "
+                    />
+                  ) : (
+                    <img
+                      src={project.thumbnail}
+                      alt={project.title}
+                      className="
+                        w-full
+                        h-full
+                        object-cover
+                        pointer-events-none
+                      "
+                      draggable={false}
+                    />
+                  )}
                 </button>
               );
             })}

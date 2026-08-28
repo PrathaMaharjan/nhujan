@@ -68,7 +68,7 @@ export default function HomePage() {
    */
 
   return (
-    <main className="relative h-dvh w-dvw overflow-hidden bg-black">
+    <main className="relative h-screen w-full overflow-hidden bg-black">
       {/* =================================================
           SHOWREEL PREVIEW
       ================================================= */}
@@ -77,10 +77,10 @@ export default function HomePage() {
         <div
           ref={videoContainerRef}
           className="
-            fixed
+            absolute
             inset-0
-            h-[100dvh]
-            w-[100dvw]
+            h-full
+            w-full
             overflow-hidden
             cursor-none
           "
@@ -101,8 +101,8 @@ export default function HomePage() {
             className="
               absolute
               inset-0
-              h-[100dvh]
-              w-[100dvw]
+              h-full
+              w-full
               object-cover
               grayscale-[0.8]
               saturate-[0.9]

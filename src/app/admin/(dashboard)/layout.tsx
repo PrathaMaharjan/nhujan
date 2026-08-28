@@ -9,7 +9,7 @@ import { eq } from "drizzle-orm";
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session?.user?.email) {
-    redirect("/admin/login");
+    redirect("/login");
   }
 
   const currentUser = await db.query.users.findFirst({
@@ -40,7 +40,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <form
             action={async () => {
               "use server";
-              await signOut({ redirectTo: "/admin/login" });
+              await signOut({ redirectTo: "/login" });
             }}
           >
             <button

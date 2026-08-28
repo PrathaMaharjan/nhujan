@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Script from "next/script";
 import { generateCloudinarySignature } from "@/lib/cloudinary-client";
+import { isVideoUrl } from "@/lib/media";
 
 type WorkCategoryRow = {
   id: string;
@@ -73,6 +74,8 @@ export default function WorkAdminPage() {
         uploadSignature: generateCloudinarySignature,
         multiple: false,
         folder: "work-categories",
+        resourceType: "auto",
+        clientAllowedFormats: ["png", "jpg", "jpeg", "webp", "gif", "mp4", "webm", "mov", "m4v"],
       },
       async (error: any, result: any) => {
         if (!error && result.event === "success") {
@@ -180,14 +183,25 @@ export default function WorkAdminPage() {
               </p>
               <div className="relative w-full aspect-[21/9] group overflow-hidden bg-white/[0.02]">
                 {defaultRow.imageUrl ? (
-                  <img
-                    src={defaultRow.imageUrl}
-                    alt="Default"
-                    className="w-full h-full object-cover opacity-90"
-                  />
+                  isVideoUrl(defaultRow.imageUrl) ? (
+                    <video
+                      src={defaultRow.imageUrl}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="w-full h-full object-cover opacity-90"
+                    />
+                  ) : (
+                    <img
+                      src={defaultRow.imageUrl}
+                      alt="Default"
+                      className="w-full h-full object-cover opacity-90"
+                    />
+                  )
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-white/20 text-xs tracking-widest">
-                    NO IMAGE SET
+                    NO MEDIA SET
                   </div>
                 )}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-all duration-500 flex items-center justify-center">
@@ -196,7 +210,7 @@ export default function WorkAdminPage() {
                     disabled={uploadingId === defaultRow.id}
                     className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-[11px] tracking-[0.25em] text-white border-b border-white/40 pb-1 hover:border-white disabled:opacity-40"
                   >
-                    {uploadingId === defaultRow.id ? "UPLOADING…" : "CHANGE IMAGE"}
+                    {uploadingId === defaultRow.id ? "UPLOADING…" : "CHANGE MEDIA"}
                   </button>
                 </div>
                 <div className="absolute bottom-4 left-4 text-[10px] tracking-[0.25em] text-white/50">
@@ -265,17 +279,28 @@ export default function WorkAdminPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-14">
               {categoryRows.map((row, index) => (
                 <div key={row.id} className="group">
-                  {/* Image — styled like the real site card */}
+                  {/* Media card */}
                   <div className="relative aspect-[4/3] overflow-hidden bg-white/[0.02] mb-4">
                     {row.imageUrl ? (
-                      <img
-                        src={row.imageUrl}
-                        alt={row.title}
-                        className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition duration-500"
-                      />
+                      isVideoUrl(row.imageUrl) ? (
+                        <video
+                          src={row.imageUrl}
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
+                          className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition duration-500"
+                        />
+                      ) : (
+                        <img
+                          src={row.imageUrl}
+                          alt={row.title}
+                          className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition duration-500"
+                        />
+                      )
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-white/20 text-xs tracking-widest">
-                        NO IMAGE SET
+                        NO MEDIA SET
                       </div>
                     )}
 
@@ -285,7 +310,7 @@ export default function WorkAdminPage() {
                         disabled={uploadingId === row.id}
                         className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-[11px] tracking-[0.25em] text-white border-b border-white/40 pb-1 hover:border-white disabled:opacity-40"
                       >
-                        {uploadingId === row.id ? "UPLOADING…" : "CHANGE IMAGE"}
+                        {uploadingId === row.id ? "UPLOADING…" : "CHANGE MEDIA"}
                       </button>
                     </div>
 

@@ -3,11 +3,11 @@ import { NextResponse } from "next/server";
 
 export default auth((req) => {
   const isLoggedIn = !!req.auth;
-  const isLoginPage = req.nextUrl.pathname === "/admin/login";
+  const isLoginPage = req.nextUrl.pathname === "/login";
   const isAdminRoute = req.nextUrl.pathname.startsWith("/admin");
 
   if (isAdminRoute && !isLoginPage && !isLoggedIn) {
-    const loginUrl = new URL("/admin/login", req.nextUrl.origin);
+    const loginUrl = new URL("/login", req.nextUrl.origin);
     return NextResponse.redirect(loginUrl);
   }
 
@@ -20,5 +20,6 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/login"],
 };
+

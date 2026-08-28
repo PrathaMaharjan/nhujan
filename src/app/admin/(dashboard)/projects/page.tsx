@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Script from "next/script";
 import { generateCloudinarySignature } from "@/lib/cloudinary-client";
+import { isVideoUrl } from "@/lib/media";
 
 type WorkCategoryRow = {
   id: string;
@@ -166,7 +167,8 @@ export default function ProjectsAdminPage() {
         uploadSignature: generateCloudinarySignature,
         multiple: false,
         folder: "work-projects/gifs",
-        clientAllowedFormats: ["gif", "webp", "png", "jpg", "jpeg"],
+        resourceType: "auto",
+        clientAllowedFormats: ["gif", "webp", "png", "jpg", "jpeg", "mp4", "webm", "mov", "m4v"],
       },
       async (error: any, result: any) => {
         if (!error && result.event === "success") {
@@ -197,7 +199,8 @@ export default function ProjectsAdminPage() {
         uploadSignature: generateCloudinarySignature,
         multiple: false,
         folder: "work-projects/thumbnails",
-        clientAllowedFormats: ["png", "jpg", "jpeg", "webp"],
+        resourceType: "auto",
+        clientAllowedFormats: ["png", "jpg", "jpeg", "webp", "gif", "mp4", "webm", "mov", "m4v"],
       },
       async (error: any, result: any) => {
         if (!error && result.event === "success") {
@@ -227,7 +230,8 @@ export default function ProjectsAdminPage() {
         uploadSignature: generateCloudinarySignature,
         multiple: true,
         folder: `work-projects/${projectId}/gallery`,
-        clientAllowedFormats: ["png", "jpg", "jpeg", "webp", "gif"],
+        resourceType: "auto",
+        clientAllowedFormats: ["png", "jpg", "jpeg", "webp", "gif", "mp4", "webm", "mov", "m4v"],
       },
       async (error: any, result: any) => {
         if (!error && result.event === "success") {
@@ -474,23 +478,34 @@ export default function ProjectsAdminPage() {
                     </div>
                   </div>
 
-                  {/* 1. Center GIF */}
+                  {/* 1. Center GIF / Video */}
                   <div className="mb-4">
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-[9px] tracking-[0.25em] text-white/40 uppercase">
-                        Center GIF (Animation)
+                        Center Media (GIF / MP4)
                       </span>
                     </div>
                     <div className="relative aspect-[16/10] overflow-hidden bg-white/[0.03] rounded-sm group/media">
                       {row.gifUrl ? (
-                        <img
-                          src={row.gifUrl}
-                          alt={`${row.title} GIF`}
-                          className="w-full h-full object-cover opacity-90 group-hover/media:opacity-100 transition duration-500"
-                        />
+                        isVideoUrl(row.gifUrl) ? (
+                          <video
+                            src={row.gifUrl}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            className="w-full h-full object-cover opacity-90 group-hover/media:opacity-100 transition duration-500"
+                          />
+                        ) : (
+                          <img
+                            src={row.gifUrl}
+                            alt={`${row.title} Media`}
+                            className="w-full h-full object-cover opacity-90 group-hover/media:opacity-100 transition duration-500"
+                          />
+                        )
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-white/20 text-[10px] tracking-widest">
-                          NO GIF SET
+                          NO MEDIA SET
                         </div>
                       )}
 
@@ -500,26 +515,37 @@ export default function ProjectsAdminPage() {
                           disabled={uploadingTarget === `${row.id}-gif`}
                           className="opacity-0 group-hover/media:opacity-100 transition-opacity duration-300 text-[10px] tracking-[0.2em] text-white border-b border-white/40 pb-0.5 hover:border-white disabled:opacity-40"
                         >
-                          {uploadingTarget === `${row.id}-gif` ? "UPLOADING…" : row.gifUrl ? "CHANGE GIF" : "+ UPLOAD GIF"}
+                          {uploadingTarget === `${row.id}-gif` ? "UPLOADING…" : row.gifUrl ? "CHANGE MEDIA" : "+ UPLOAD MEDIA"}
                         </button>
                       </div>
                     </div>
                   </div>
 
-                  {/* 2. Static Sidebar Thumbnail */}
+                  {/* 2. Sidebar Thumbnail */}
                   <div className="mb-4">
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-[9px] tracking-[0.25em] text-white/40 uppercase">
-                        Sidebar Thumbnail (Static Image)
+                        Sidebar Thumbnail (Image / Video)
                       </span>
                     </div>
                     <div className="relative aspect-[16/10] overflow-hidden bg-white/[0.03] rounded-sm group/thumb">
                       {row.thumbnailUrl ? (
-                        <img
-                          src={row.thumbnailUrl}
-                          alt={`${row.title} Thumbnail`}
-                          className="w-full h-full object-cover opacity-90 group-hover/thumb:opacity-100 transition duration-500"
-                        />
+                        isVideoUrl(row.thumbnailUrl) ? (
+                          <video
+                            src={row.thumbnailUrl}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            className="w-full h-full object-cover opacity-90 group-hover/thumb:opacity-100 transition duration-500"
+                          />
+                        ) : (
+                          <img
+                            src={row.thumbnailUrl}
+                            alt={`${row.title} Thumbnail`}
+                            className="w-full h-full object-cover opacity-90 group-hover/thumb:opacity-100 transition duration-500"
+                          />
+                        )
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-white/20 text-[10px] tracking-widest">
                           NO THUMBNAIL SET
@@ -603,11 +629,11 @@ export default function ProjectsAdminPage() {
                     </div>
 
                     <div>
-                      <label className="text-[9px] tracking-[0.2em] text-white/30 block">VIMEO ID (HERO VIDEO)</label>
+                      <label className="text-[9px] tracking-[0.2em] text-white/30 block">YOUTUBE (URL OR ID)</label>
                       <input
                         defaultValue={row.vimeoId}
                         onBlur={(e) => handleFieldBlur(row.id, "vimeoId", e.target.value)}
-                        placeholder="e.g. 70591644"
+                        placeholder="e.g. https://youtu.be/... or YouTube Video ID"
                         className="w-full bg-transparent text-[10px] tracking-[0.15em] text-white/50 outline-none border-b border-white/10 focus:border-white/30 py-1 font-mono transition placeholder:text-white/15"
                       />
                     </div>
@@ -693,13 +719,24 @@ export default function ProjectsAdminPage() {
                         className="border border-white/10 p-3 rounded bg-white/[0.02] flex flex-col justify-between"
                       >
                         <div>
-                          {/* Image preview */}
+                          {/* Image/Video preview */}
                           <div className={`relative w-full ${img.aspectRatio} overflow-hidden rounded-sm bg-black mb-3 border border-white/5`}>
-                            <img
-                              src={img.imageUrl}
-                              alt=""
-                              className="w-full h-full object-cover"
-                            />
+                            {isVideoUrl(img.imageUrl) ? (
+                              <video
+                                src={img.imageUrl}
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <img
+                                src={img.imageUrl}
+                                alt=""
+                                className="w-full h-full object-cover"
+                              />
+                            )}
                             <span className="absolute top-2 left-2 bg-black/70 text-[9px] font-mono px-1.5 py-0.5 rounded text-white/80">
                               #{idx + 1}
                             </span>

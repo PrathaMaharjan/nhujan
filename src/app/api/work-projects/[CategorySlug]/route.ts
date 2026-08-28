@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { workProjects } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { slugify } from "@/lib/slug";
 
 export async function GET(
   req: Request,
@@ -21,6 +22,7 @@ export async function GET(
 
   const projects = rows.map((r: any) => ({
     id: r.id,
+    slug: r.slug || slugify(r.title),
     title: r.title,
     category: r.categoryLabel,
     thumbnail: r.thumbnailUrl ?? "",
