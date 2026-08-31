@@ -104,8 +104,8 @@ export default function HomePage() {
               h-full
               w-full
               object-cover
-              grayscale-[0.8]
-              saturate-[0.9]
+              grayscale-[0.0]
+              saturate-[0.8]
               opacity-90
             "
           />
@@ -117,6 +117,7 @@ export default function HomePage() {
               inset-0
               z-35
               flex
+              flex-col
               items-center
               justify-center
             "
@@ -133,6 +134,20 @@ export default function HomePage() {
               "
             >
               FILMMAKER//EDITOR
+            </span>
+
+            <span
+              className="
+                mt-3
+                font-mono
+                text-[8px]
+                uppercase
+                tracking-[0.28em]
+                text-white/80
+                md:hidden
+              "
+            >
+              Tap to Play
             </span>
           </div>
 
@@ -216,14 +231,11 @@ export default function HomePage() {
               pointer-events-none
               fixed
               z-40
-              flex
-              flex-col
-              items-center
-              justify-center
-              gap-2
               text-white
               transition-opacity
               duration-300
+              hidden
+              md:block
               ${mouseInside ? "opacity-100" : "opacity-0"}
             `}
             style={{
@@ -232,37 +244,47 @@ export default function HomePage() {
               transform: "translate(-50%, -50%)",
             }}
           >
-            <div
-              className="
-                flex
-                h-14
-                w-14
-                items-center
-                justify-center
-                rounded-full
-                border
-                border-white/70
-                bg-black/10
-                backdrop-blur-sm
-              "
-            >
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            </div>
+            <div className="relative flex items-center justify-center">
+              <div
+                className="
+                  flex
+                  h-14
+                  w-14
+                  items-center
+                  justify-center
+                  rounded-full
+                  border
+                  border-white/70
+                  bg-black/10
+                  backdrop-blur-sm
+                "
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill="currentColor"
+                >
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
 
-            <span
-              className="
-                whitespace-nowrap
-                font-mono
-                text-[8px]
-                tracking-[0.3em]
-                uppercase
-                text-white/90
-              "
-            >
-              Click to Play
-            </span>
+              <span
+                className="
+                  absolute
+                  left-1/2
+                  top-[calc(100%+10px)]
+                  -translate-x-1/2
+                  whitespace-nowrap
+                  font-mono
+                  text-[8px]
+                  tracking-[0.3em]
+                  uppercase
+                  text-white/90
+                "
+              >
+                Click to Play
+              </span>
+            </div>
           </div>
 
           {/* =================================================

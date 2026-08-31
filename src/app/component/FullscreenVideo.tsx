@@ -105,11 +105,18 @@ export default function FullscreenVideo({
     if (!isOpen) return;
 
     const previousCursor = document.body.style.cursor;
+    const previousFullscreenState = document.body.dataset.fullscreen;
 
     document.body.style.cursor = "none";
+    document.body.dataset.fullscreen = "true";
 
     return () => {
       document.body.style.cursor = previousCursor;
+      if (previousFullscreenState === undefined) {
+        delete document.body.dataset.fullscreen;
+      } else {
+        document.body.dataset.fullscreen = previousFullscreenState;
+      }
     };
   }, [isOpen]);
 
@@ -271,7 +278,7 @@ export default function FullscreenVideo({
    * -------------------------------------------------------
    */
 
-  const toggleMute = () => {
+  const toggleMute = useCallback(() => {
     const video = videoRef.current;
 
     if (!video) return;
@@ -285,7 +292,7 @@ export default function FullscreenVideo({
     }
 
     revealControls();
-  };
+  }, [revealControls]);
 
   /*
    * -------------------------------------------------------
@@ -334,7 +341,7 @@ export default function FullscreenVideo({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen, togglePlayback, close]);
+  }, [isOpen, togglePlayback, close, toggleMute]);
 
   if (!isOpen) return null;
 

@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import FuzzyText from "@/app/component/MeshText"
+import FuzzyText from "@/app/component/MeshText";
 const mainNavLinks = [
   { name: "HOME.", href: "/" },
   { name: "WORK.", href: "/work" },
@@ -19,12 +19,11 @@ export default function Nav() {
   const [paws, setPaws] = useState<
     { id: number; x: number; y: number; angle: number; isLeft: boolean }[]
   >([]);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const lastPawPosRef = useRef<{ x: number; y: number } | null>(null);
   const pawIndexRef = useRef(0);
-
-  if (pathname.startsWith("/admin") || pathname.startsWith("/login")) {
-    return null;
-  }
+  const hideNav =
+    pathname.startsWith("/admin") || pathname.startsWith("/login");
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -54,9 +53,14 @@ export default function Nav() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
   /*
    * Paw Trail Mouse Listener
    */
+
   useEffect(() => {
     if (!pawTrailActive) {
       lastPawPosRef.current = null;
@@ -110,6 +114,10 @@ export default function Nav() {
     return () => clearTimeout(timer);
   }, [paws]);
 
+  if (hideNav) {
+    return null;
+  }
+
   return (
     <>
       {/* TOAST NOTIFICATION FOR EASTER EGGS */}
@@ -131,8 +139,9 @@ export default function Nav() {
               style={{
                 left: `${paw.x}px`,
                 top: `${paw.y}px`,
-                transform: `translate(-50%, -50%) rotate(${paw.angle}deg) scale(${paw.isLeft ? 1 : -1
-                  }, 1)`,
+                transform: `translate(-50%, -50%) rotate(${paw.angle}deg) scale(${
+                  paw.isLeft ? 1 : -1
+                }, 1)`,
               }}
             >
               <svg
@@ -154,17 +163,17 @@ export default function Nav() {
       )}
 
       {/* GLOBAL NAV */}
-      <header className="fixed inset-x-0 top-0 z-[100] pointer-events-none px-6 md:px-8 py-5 md:py-6">
-        <div className="relative w-full h-full">
-          {/* NAME - integrated with FuzzyText */}
+      <header className="site-nav fixed inset-x-0 top-0 z-[100] pointer-events-none px-3 py-4 sm:px-6 sm:py-5 md:px-8 md:py-6">
+        <div className="relative mx-auto flex max-w-[1600px] items-center justify-between gap-3">
           <Link
             href="/"
-            className="pointer-events-auto absolute top-0 left-0 inline-block opacity-90 hover:opacity-100 transition-opacity duration-300"
+            className="pointer-events-auto inline-block opacity-90 transition-opacity duration-300 hover:opacity-100"
           >
             <FuzzyText
               text="NHUJAN DONGOL"
               font={{
-                fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                fontFamily:
+                  "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
                 fontSize: 15,
                 fontWeight: 700,
                 letterSpacing: "0.25em",
@@ -180,8 +189,27 @@ export default function Nav() {
             />
           </Link>
 
-          {/* DESKTOP NAV */}
-          <nav className="flex pointer-events-auto absolute top-0 right-0 items-center gap-4 md:gap-7 lg:gap-9">
+          <button
+            type="button"
+            aria-label="Toggle navigation menu"
+            aria-expanded={mobileOpen}
+            onClick={() => setMobileOpen((prev) => !prev)}
+            className="pointer-events-auto relative z-[120] flex h-10 w-10 items-center justify-center border border-white/15 bg-black/20 transition-colors duration-300 hover:border-white/40 md:hidden"
+          >
+            <span className="relative flex h-4 w-5 items-center justify-center">
+              <span
+                className={`absolute block h-px w-5 bg-white transition-all duration-300 ${mobileOpen ? "rotate-45" : "-translate-y-1.5"}`}
+              />
+              <span
+                className={`absolute block h-px w-5 bg-white transition-all duration-300 ${mobileOpen ? "opacity-0" : "opacity-100"}`}
+              />
+              <span
+                className={`absolute block h-px w-5 bg-white transition-all duration-300 ${mobileOpen ? "-rotate-45" : "translate-y-1.5"}`}
+              />
+            </span>
+          </button>
+
+          <nav className="pointer-events-auto hidden items-center justify-end gap-2 sm:gap-3 md:flex md:gap-5 lg:gap-9">
             {mainNavLinks.map((link) => {
               const isActive =
                 link.href === "/"
@@ -195,19 +223,21 @@ export default function Nav() {
                   className={`
                     relative
                     font-mono
-                    text-[12px]
+                    text-[9px]
+                    sm:text-[10px]
+                    md:text-[11px]
                     lg:text-[13px]
-                    tracking-[0.18em]
+                    tracking-[0.14em]
+                    sm:tracking-[0.18em]
                     font-bold
                     uppercase
                     whitespace-nowrap
                     transition-all
                     duration-300
                     ease-out
-                    hover:scale-110
+                    hover:scale-105
                     group
-                    ${isActive ? "text-white" : "text-white/55 hover:text-white"
-                    }
+                    ${isActive ? "text-white" : "text-white/55 hover:text-white"}
                   `}
                 >
                   {link.name}
@@ -228,6 +258,60 @@ export default function Nav() {
               );
             })}
           </nav>
+
+          <div
+            className={`fixed inset-0 z-[110] bg-[#0b0b0b] transition-transform duration-300 ease-out md:hidden ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}
+            aria-hidden={!mobileOpen}
+          >
+            <div className="flex h-full w-full flex-col px-6 py-5">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-[10px] tracking-[0.32em] uppercase text-white/50">
+                  Menu
+                </span>
+
+                <button
+                  type="button"
+                  aria-label="Close navigation menu"
+                  onClick={() => setMobileOpen(false)}
+                  className="pointer-events-auto flex h-10 w-10 items-center justify-center border border-white/15 bg-black/20 transition-colors duration-300 hover:border-white/40"
+                >
+                  <span className="relative block h-4 w-4">
+                    <span className="absolute left-0 top-1/2 h-px w-4 -translate-y-1/2 rotate-45 bg-white" />
+                    <span className="absolute left-0 top-1/2 h-px w-4 -translate-y-1/2 -rotate-45 bg-white" />
+                  </span>
+                </button>
+              </div>
+
+              <nav className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
+                {mainNavLinks.map((link) => {
+                  const isActive =
+                    link.href === "/"
+                      ? pathname === "/"
+                      : pathname.startsWith(link.href);
+
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setMobileOpen(false)}
+                      className={`
+                        font-sans
+                        text-[30px]
+                        font-black
+                        uppercase
+                        tracking-[0.08em]
+                        transition-all
+                        duration-200
+                        ${isActive ? "text-white" : "text-white/55 hover:text-white"}
+                      `}
+                    >
+                      {link.name}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+          </div>
         </div>
       </header>
     </>

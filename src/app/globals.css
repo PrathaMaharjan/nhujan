@@ -2,12 +2,12 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0B0B0B;
+  --background: #0b0b0b;
   --foreground: #ededed;
 }
 
 @theme {
-  --color-black: #0B0B0B;
+  --color-black: #0b0b0b;
 }
 
 @theme inline {
@@ -19,9 +19,16 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0B0B0B;
+    --background: #0b0b0b;
     --foreground: #ededed;
   }
+}
+
+body[data-fullscreen="true"] .site-nav,
+body[data-fullscreen="true"] .site-footer {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 html,
@@ -197,7 +204,6 @@ body {
   animation: slitOpenMiddleToSides 1.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-
 @keyframes titleIn {
   from {
     opacity: 0;
@@ -226,6 +232,150 @@ body {
   }
 }
 
+@keyframes marqueeLeft {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes marqueeRight {
+  from {
+    transform: translateX(-50%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-marquee-left {
+  animation: marqueeLeft 24s linear infinite;
+}
+
+.animate-marquee-right {
+  animation: marqueeRight 28s linear infinite;
+}
+
 .animate-subtitle-in {
   animation: subtitleIn 900ms cubic-bezier(0.16, 1, 0.3, 1) 350ms both;
+}
+
+@keyframes marquee-left {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes marquee-right {
+  0% {
+    transform: translateX(-50%);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.marquee-shell {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(0, 0, 0, 1) 8%,
+    rgba(0, 0, 0, 1) 92%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(0, 0, 0, 1) 8%,
+    rgba(0, 0, 0, 1) 92%,
+    transparent 100%
+  );
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  align-items: center;
+  gap: 0;
+  will-change: transform;
+}
+
+.marquee-left {
+  animation-name: marquee-left;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.marquee-right {
+  animation-name: marquee-right;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.brand-tile {
+  display: flex;
+  height: 3.2rem;
+  width: 6.5rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  opacity: 0.6;
+  transition:
+    opacity 300ms ease,
+    transform 300ms ease;
+}
+
+.brand-tile:hover {
+  opacity: 1;
+  transform: scale(1.03);
+}
+
+.artist-tile {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  opacity: 0.45;
+  transition:
+    opacity 300ms ease,
+    transform 300ms ease;
+}
+
+.artist-tile:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.artist-tile span {
+  font-family: "Inter", sans-serif;
+  font-size: clamp(0.82rem, 1vw + 0.5rem, 1.5rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+@media (max-width: 640px) {
+  .brand-tile {
+    height: 2.4rem;
+    width: 5rem;
+  }
 }
