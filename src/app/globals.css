@@ -41,6 +41,14 @@ body {
   max-width: 100%;
 }
 
+.brand-logo img {
+  transition: transform 220ms ease;
+}
+
+.brand-logo:hover img {
+  transform: scale(1.08);
+}
+
 /* ── Navigation links (WORK / CONTACT / BRANDS) ── */
 .nav-link {
   font-family: "Inter", sans-serif;

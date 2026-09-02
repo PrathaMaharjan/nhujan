@@ -85,7 +85,7 @@ function BrandSticker({
       active: true,
     };
 
-    setState({ x: 0, y: 0, lift: 10, active: true });
+    setState({ x: 0, y: 0, lift: 8, active: true });
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
@@ -99,9 +99,9 @@ function BrandSticker({
     const distance = Math.hypot(distX, distY);
     const velocity = Math.hypot(dx, dy);
 
-    const nextX = clamp(distX * 0.18, -18, 18);
-    const nextY = clamp(distY * -0.18, -18, 18);
-    const lift = clamp(distance * 0.18 + velocity * 0.12, 0, 18);
+    const nextX = clamp(distX * 0.22, -28, 28);
+    const nextY = clamp(distY * 0.22, -28, 28);
+    const lift = clamp(distance * 0.12 + velocity * 0.08, 8, 20);
 
     setState({
       x: nextX,
@@ -135,15 +135,17 @@ function BrandSticker({
       }}
     >
       <div
+        className="brand-logo"
         style={{
           height: 64,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          transform: `translate3d(0, ${-state.lift}px, 0) rotateX(${state.y * 0.9}deg) rotateY(${state.x * 0.9}deg) scale(${state.active ? 1.04 : 0.9})`,
+          transform: `translate3d(${state.x}px, ${state.y - state.lift}px, 0) rotateX(${state.y * -0.35}deg) rotateY(${state.x * 0.35}deg) scale(${state.active ? 1.08 : 1})`,
           transformStyle: "preserve-3d",
-          transition: state.active ? "none" : "transform 220ms ease, box-shadow 220ms ease",
-          boxShadow: "0 8px 12px rgba(0,0,0,0.18)",
+          transition: state.active
+            ? "none"
+            : "transform 620ms cubic-bezier(0.34, 1.56, 0.64, 1)",
           filter: "brightness(0) invert(1)",
           cursor: "grab",
         }}
@@ -206,7 +208,6 @@ function ArtistSticker({
 export default function BrandsPage() {
   const [brands, setBrands] = useState<BrandItem[]>(FALLBACK_BRAND_LOGOS);
   const [artists, setArtists] = useState<ArtistItem[]>(FALLBACK_ARTISTS);
-  const [paw, setPaw] = useState({ x: 0, y: 0, visible: false });
 
   useEffect(() => {
     fetch("/api/brands")
@@ -227,17 +228,15 @@ export default function BrandsPage() {
   }, []);
 
   const hasCustomCoordinates =
-    brands.some((b) => typeof b.posX === "number" && typeof b.posY === "number") ||
-    artists.some((a) => typeof a.posX === "number" && typeof a.posY === "number");
+    brands.some(
+      (b) => typeof b.posX === "number" && typeof b.posY === "number",
+    ) ||
+    artists.some(
+      (a) => typeof a.posX === "number" && typeof a.posY === "number",
+    );
 
   return (
-    <main
-      className="relative h-screen w-full overflow-hidden bg-[#0b0b0b] text-white select-none cursor-none"
-      onPointerMove={(event) => {
-        setPaw({ x: event.clientX, y: event.clientY, visible: true });
-      }}
-      onPointerLeave={() => setPaw({ x: 0, y: 0, visible: false })}
-    >
+    <main className="relative h-screen w-full overflow-hidden bg-[#0b0b0b] text-white select-none">
       <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05),transparent_42%)]" />
 
       <div
@@ -252,7 +251,8 @@ export default function BrandsPage() {
       {hasCustomCoordinates ? (
         <div className="absolute inset-0 z-10 overflow-hidden">
           {brands.map((brand, idx) => {
-            const hasPos = typeof brand.posX === "number" && typeof brand.posY === "number";
+            const hasPos =
+              typeof brand.posX === "number" && typeof brand.posY === "number";
             const x = hasPos ? brand.posX! : 15 + (idx % 4) * 22;
             const y = hasPos ? brand.posY! : 18 + Math.floor(idx / 4) * 16;
 
@@ -272,7 +272,9 @@ export default function BrandsPage() {
           })}
 
           {artists.map((artist, idx) => {
-            const hasPos = typeof artist.posX === "number" && typeof artist.posY === "number";
+            const hasPos =
+              typeof artist.posX === "number" &&
+              typeof artist.posY === "number";
             const x = hasPos ? artist.posX! : 12 + (idx % 5) * 18;
             const y = hasPos ? artist.posY! : 55 + Math.floor(idx / 5) * 10;
 
@@ -301,7 +303,7 @@ export default function BrandsPage() {
                   Brands
                 </h2>
 
-                <div className="flex w-full flex-wrap items-center justify-center gap-3 sm:gap-4 md:gap-5">
+                <div className="flex w-full flex-wrap items-center justify-center gap-4 sm:gap-5 md:gap-6">
                   {brands.map((brand, idx) => (
                     <BrandSticker
                       key={brand.id || `${brand.name}-${idx}`}
@@ -331,37 +333,6 @@ export default function BrandsPage() {
               </section>
             </div>
           </div>
-        </div>
-      )}
-
-      {paw.visible && (
-        <div
-          className="pointer-events-none fixed z-50"
-          style={{
-            left: paw.x,
-            top: paw.y,
-            transform: "translate(-18%, -18%)",
-          }}
-        >
-          <svg
-            width="26"
-            height="26"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="drop-shadow-[0_0_12px_rgba(255,255,255,0.9)]"
-          >
-            <circle cx="8" cy="7" r="2" fill="white" />
-            <circle cx="15" cy="7" r="2" fill="white" />
-            <circle cx="5" cy="12" r="2" fill="white" />
-            <circle cx="18" cy="12" r="2" fill="white" />
-            <ellipse cx="11.5" cy="16.5" rx="5.5" ry="4.5" fill="white" />
-            <path
-              d="M11.5 2.5L14 6.2L11.5 4.5L9 6.2L11.5 2.5Z"
-              fill="white"
-              opacity="0.8"
-            />
-          </svg>
         </div>
       )}
     </main>
