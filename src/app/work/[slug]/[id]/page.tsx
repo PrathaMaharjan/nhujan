@@ -162,14 +162,17 @@ export default function ProjectDetailPage() {
                 />
               );
             }
-            return (
-              <img
-                src={heroImage}
-                alt={project.title}
-                draggable={false}
-                className="absolute inset-0 w-full h-full object-cover saturate-[0.85] brightness-[0.9] pointer-events-none"
-              />
-            );
+            if (heroImage) {
+              return (
+                <img
+                  src={heroImage}
+                  alt={project.title}
+                  draggable={false}
+                  className="absolute inset-0 w-full h-full object-cover saturate-[0.85] brightness-[0.9] pointer-events-none"
+                />
+              );
+            }
+            return null;
           })()}
 
           {/* INTENSIFIED MULTI-LAYER BOTTOM-ONLY BLUR */}
@@ -360,13 +363,16 @@ export default function ProjectDetailPage() {
                   />
                 );
               }
-              return (
-                <img
-                  src={heroImage}
-                  alt={project.title}
-                  className="w-full h-full object-contain"
-                />
-              );
+              if (heroImage) {
+                return (
+                  <img
+                    src={heroImage}
+                    alt={project.title}
+                    className="w-full h-full object-contain"
+                  />
+                );
+              }
+              return null;
             })()}
           </div>
         </div>
@@ -446,14 +452,14 @@ function GalleryCell({
           playsInline
           className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04] saturate-[0.8] group-hover:saturate-100 brightness-[0.92] group-hover:brightness-100"
         />
-      ) : (
+      ) : src ? (
         <img
           src={src}
           alt=""
           draggable={false}
           className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04] saturate-[0.8] group-hover:saturate-100 brightness-[0.92] group-hover:brightness-100"
         />
-      )}
+      ) : null}
       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500" />
       <div className="absolute bottom-3 right-3 w-6 h-6 border border-white/20 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-white/60 text-[9px] font-mono pointer-events-none">
         ↗

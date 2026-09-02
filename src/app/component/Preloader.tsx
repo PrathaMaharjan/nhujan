@@ -251,7 +251,7 @@ export default function Preloader({ children }: PreloaderProps) {
                       ref={i === targetIndex ? targetRef : undefined}
                       className="w-full aspect-[16/10] flex-shrink-0 overflow-hidden"
                     >
-                      <img src={src} alt="" className="w-full h-full object-cover" draggable={false} />
+                      {src ? <img src={src} alt="" className="w-full h-full object-cover" draggable={false} /> : null}
                     </div>
                   ))}
                 </div>
@@ -271,12 +271,14 @@ export default function Preloader({ children }: PreloaderProps) {
                 height: zoomRect.height,
               }}
             >
-              <img
-                src={galleryImages[galleryImages.length - 1]}
-                alt=""
-                className="w-full h-full object-cover"
-                draggable={false}
-              />
+              {galleryImages[galleryImages.length - 1] ? (
+                <img
+                  src={galleryImages[galleryImages.length - 1]}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  draggable={false}
+                />
+              ) : null}
             </div>
           )}
 

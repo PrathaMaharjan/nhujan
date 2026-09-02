@@ -142,21 +142,32 @@ export default function ContactPage() {
           onClick={handleCopyEmail}
           className="group relative flex flex-col items-center justify-center cursor-pointer px-4 py-2 transition-all duration-300"
         >
-          <span className="font-mono text-xs sm:text-sm md:text-base tracking-widest text-zinc-300 group-hover:text-white transition-colors duration-300">
-            {email}
-          </span>
+          <div className="flex items-center gap-2.5">
+            <span className="font-mono text-xs sm:text-sm md:text-base tracking-widest text-zinc-300 group-hover:text-white transition-colors duration-300">
+              {email}
+            </span>
+
+            {/* Clipboard Icon */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={`w-4 h-4 transition-all duration-300 ${
+                copied
+                  ? "text-white scale-110"
+                  : "text-zinc-500 group-hover:text-white"
+              }`}
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+            </svg>
+          </div>
 
           <span className="mt-2 h-[1px] w-[250px] max-w-[80vw] bg-zinc-700 group-hover:bg-white transition-all duration-300" />
-
-          <span
-            className={`mt-2 font-mono text-[8px] sm:text-[9px] tracking-[0.2em] uppercase transition-all duration-300 ${
-              copied
-                ? "text-white opacity-100 font-semibold"
-                : "text-zinc-500 opacity-50 group-hover:opacity-100"
-            }`}
-          >
-            {copied ? "COPIED TO CLIPBOARD ✦" : "CLICK TO COPY"}
-          </span>
         </button>
       </div>
 
@@ -212,7 +223,7 @@ export default function ContactPage() {
                 ry="28"
                 fill="#FFFFFF"
               />
-              {/* Black Pupil (Inverted so tracking pupil is visible inside white eye) */}
+              {/* Black Pupil */}
               <g ref={leftPupilRef} className="will-change-transform">
                 <ellipse
                   cx="140"

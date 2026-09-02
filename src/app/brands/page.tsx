@@ -1,9 +1,26 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import MeshText from "@/app/component/MeshText";
 
-const BRAND_LOGOS = [
+interface BrandItem {
+  id?: string;
+  name: string;
+  image: string;
+  order?: number;
+  posX?: number | null;
+  posY?: number | null;
+}
+
+interface ArtistItem {
+  id?: string;
+  name: string;
+  order?: number;
+  posX?: number | null;
+  posY?: number | null;
+}
+
+const FALLBACK_BRAND_LOGOS: BrandItem[] = [
   { name: "ADIDAS", image: "/Adidas_Logo 2.png" },
   { name: "CLOSEUP", image: "/Closeup logo.png" },
   { name: "UNILEVER", image: "/brands/Unilever.svg" },
@@ -14,30 +31,38 @@ const BRAND_LOGOS = [
   { name: "NIKE", image: "/brands/Nike.svg" },
 ];
 
-const ARTISTS = [
-  "Shushant KC",
-  "Ujjan Shakya",
-  "Sajjan Raj Vaidya",
-  "Sushant Ghimire",
-  "Nabin K Bhattarai",
-  "Albatross",
-  "Rohit John Chettri",
-  "Bartika Eam Rai",
-  "Phosphenes",
-  "The Elements",
-  "Kutumba",
-  "Mingma Sherpa",
-  "Yabesh Thapa",
-  "Swoopna Suman",
-  "Rachana Dahal",
-  "Vek",
-  "Prabesh Kumar Shrestha",
-  "Diwas Gurung",
-  "Bipul Chettri",
-  "1974 AD",
+const FALLBACK_ARTISTS: ArtistItem[] = [
+  { name: "Shushant KC" },
+  { name: "Ujjan Shakya" },
+  { name: "Sajjan Raj Vaidya" },
+  { name: "Sushant Ghimire" },
+  { name: "Nabin K Bhattarai" },
+  { name: "Albatross" },
+  { name: "Rohit John Chettri" },
+  { name: "Bartika Eam Rai" },
+  { name: "Phosphenes" },
+  { name: "The Elements" },
+  { name: "Kutumba" },
+  { name: "Mingma Sherpa" },
+  { name: "Yabesh Thapa" },
+  { name: "Swoopna Suman" },
+  { name: "Rachana Dahal" },
+  { name: "Vek" },
+  { name: "Prabesh Kumar Shrestha" },
+  { name: "Diwas Gurung" },
+  { name: "Bipul Chettri" },
+  { name: "1974 AD" },
 ];
 
-function BrandSticker({ name, image }: { name: string; image: string }) {
+function BrandSticker({
+  name,
+  image,
+  style,
+}: {
+  name: string;
+  image: string;
+  style?: React.CSSProperties;
+}) {
   const dragRef = useRef({
     startX: 0,
     startY: 0,
@@ -95,9 +120,12 @@ function BrandSticker({ name, image }: { name: string; image: string }) {
     setState({ x: 0, y: 0, lift: 0, active: false });
   };
 
+  if (!image) return null;
+
   return (
     <div
       className="flex items-center justify-center"
+      style={style}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -139,9 +167,18 @@ function BrandSticker({ name, image }: { name: string; image: string }) {
   );
 }
 
-function ArtistSticker({ name }: { name: string }) {
+function ArtistSticker({
+  name,
+  style,
+}: {
+  name: string;
+  style?: React.CSSProperties;
+}) {
   return (
-    <div className="flex items-center justify-center px-1.5 py-1 text-center text-white">
+    <div
+      className="flex items-center justify-center px-1.5 py-1 text-center text-white"
+      style={style}
+    >
       <div className="inline-block">
         <MeshText
           text={name}
@@ -167,7 +204,31 @@ function ArtistSticker({ name }: { name: string }) {
 }
 
 export default function BrandsPage() {
+  const [brands, setBrands] = useState<BrandItem[]>(FALLBACK_BRAND_LOGOS);
+  const [artists, setArtists] = useState<ArtistItem[]>(FALLBACK_ARTISTS);
   const [paw, setPaw] = useState({ x: 0, y: 0, visible: false });
+
+  useEffect(() => {
+    fetch("/api/brands")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) {
+          if (Array.isArray(data.brands) && data.brands.length > 0) {
+            setBrands(data.brands);
+          }
+          if (Array.isArray(data.artists) && data.artists.length > 0) {
+            setArtists(data.artists);
+          }
+        }
+      })
+      .catch((err) => {
+        console.error("Error loading brands/artists:", err);
+      });
+  }, []);
+
+  const hasCustomCoordinates =
+    brands.some((b) => typeof b.posX === "number" && typeof b.posY === "number") ||
+    artists.some((a) => typeof a.posX === "number" && typeof a.posY === "number");
 
   return (
     <main
@@ -187,41 +248,91 @@ export default function BrandsPage() {
         }}
       />
 
-      <div className="absolute inset-0 z-10 overflow-y-auto overflow-x-hidden">
-        <div className="flex min-h-full w-full items-center justify-center px-4 py-16 sm:px-6 md:px-10">
-          <div className="flex w-full max-w-[1200px] flex-col items-center justify-center gap-8 sm:gap-10">
-            <section className="flex w-full flex-col items-center justify-center">
-              <h2 className="mb-5 font-sans text-[10px] font-bold uppercase tracking-[0.28em] text-white/55 sm:text-[11px]">
-                Brands
-              </h2>
+      {/* CUSTOM POSITIONED CANVAS LAYOUT */}
+      {hasCustomCoordinates ? (
+        <div className="absolute inset-0 z-10 overflow-hidden">
+          {brands.map((brand, idx) => {
+            const hasPos = typeof brand.posX === "number" && typeof brand.posY === "number";
+            const x = hasPos ? brand.posX! : 15 + (idx % 4) * 22;
+            const y = hasPos ? brand.posY! : 18 + Math.floor(idx / 4) * 16;
 
-              <div className="flex w-full flex-wrap items-center justify-center gap-3 sm:gap-4 md:gap-5">
-                {BRAND_LOGOS.map((brand) => (
-                  <BrandSticker
-                    key={brand.name}
-                    name={brand.name}
-                    image={brand.image}
-                  />
-                ))}
-              </div>
-            </section>
+            return (
+              <BrandSticker
+                key={brand.id || `${brand.name}-${idx}`}
+                name={brand.name}
+                image={brand.image}
+                style={{
+                  position: "absolute",
+                  left: `${x}%`,
+                  top: `${y}%`,
+                  transform: "translate(-50%, -50%)",
+                }}
+              />
+            );
+          })}
 
-            <div className="h-px w-20 bg-white/10" />
+          {artists.map((artist, idx) => {
+            const hasPos = typeof artist.posX === "number" && typeof artist.posY === "number";
+            const x = hasPos ? artist.posX! : 12 + (idx % 5) * 18;
+            const y = hasPos ? artist.posY! : 55 + Math.floor(idx / 5) * 10;
 
-            <section className="flex w-full flex-col items-center justify-center">
-              <h2 className="mb-5 font-sans text-[10px] font-bold uppercase tracking-[0.28em] text-white/55 sm:text-[11px]">
-                Artists
-              </h2>
+            return (
+              <ArtistSticker
+                key={artist.id || `${artist.name}-${idx}`}
+                name={artist.name}
+                style={{
+                  position: "absolute",
+                  left: `${x}%`,
+                  top: `${y}%`,
+                  transform: "translate(-50%, -50%)",
+                }}
+              />
+            );
+          })}
+        </div>
+      ) : (
+        /* DEFAULT AUTO FLOW LAYOUT */
+        <div className="absolute inset-0 z-10 overflow-y-auto overflow-x-hidden">
+          <div className="flex min-h-full w-full items-center justify-center px-4 py-16 sm:px-6 md:px-10">
+            <div className="flex w-full max-w-[1200px] flex-col items-center justify-center gap-8 sm:gap-10">
+              {/* BRAND LOGOS SECTION */}
+              <section className="flex w-full flex-col items-center justify-center">
+                <h2 className="mb-5 font-sans text-[10px] font-bold uppercase tracking-[0.28em] text-white/55 sm:text-[11px]">
+                  Brands
+                </h2>
 
-              <div className="flex w-full flex-wrap items-center justify-center gap-2.5 sm:gap-3.5">
-                {ARTISTS.map((artist) => (
-                  <ArtistSticker key={artist} name={artist} />
-                ))}
-              </div>
-            </section>
+                <div className="flex w-full flex-wrap items-center justify-center gap-3 sm:gap-4 md:gap-5">
+                  {brands.map((brand, idx) => (
+                    <BrandSticker
+                      key={brand.id || `${brand.name}-${idx}`}
+                      name={brand.name}
+                      image={brand.image}
+                    />
+                  ))}
+                </div>
+              </section>
+
+              <div className="h-px w-20 bg-white/10" />
+
+              {/* ARTISTS SECTION */}
+              <section className="flex w-full flex-col items-center justify-center">
+                <h2 className="mb-5 font-sans text-[10px] font-bold uppercase tracking-[0.28em] text-white/55 sm:text-[11px]">
+                  Artists
+                </h2>
+
+                <div className="flex w-full flex-wrap items-center justify-center gap-2.5 sm:gap-3.5">
+                  {artists.map((artist, idx) => (
+                    <ArtistSticker
+                      key={artist.id || `${artist.name}-${idx}`}
+                      name={artist.name}
+                    />
+                  ))}
+                </div>
+              </section>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {paw.visible && (
         <div

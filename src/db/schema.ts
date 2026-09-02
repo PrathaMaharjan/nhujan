@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, integer, boolean, real } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -60,6 +60,28 @@ export const projectGalleryImages = pgTable("project_gallery_images", {
   colSpan: text("col_span").notNull().default("col-span-12 md:col-span-6"), // layout: e.g. "col-span-12", "col-span-12 md:col-span-6", "col-span-12 md:col-span-4", "col-span-12 md:col-span-8"
   aspectRatio: text("aspect_ratio").notNull().default("aspect-[16/9]"), // aspect: e.g. "aspect-[16/9]", "aspect-[21/8]", "aspect-[4/3]", "aspect-[1/1]", "aspect-[9/16]"
   order: integer("order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const brandLogos = pgTable("brand_logos", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  imageUrl: text("image_url").notNull(),
+  publicId: text("public_id"),
+  order: integer("order").notNull().default(0),
+  posX: real("pos_x"),
+  posY: real("pos_y"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const artists = pgTable("artists", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  order: integer("order").notNull().default(0),
+  posX: real("pos_x"),
+  posY: real("pos_y"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

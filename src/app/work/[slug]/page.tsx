@@ -457,26 +457,16 @@ export default function WorkCategoryPage() {
                     cursor-pointer
                   "
                 >
-                  <div
-                    className="
-                      absolute
-                      inset-[-15%]
-                      opacity-30
-                      group-hover:opacity-50
-                      transition-opacity
-                      duration-500
-                      pointer-events-none
-                    "
-                    style={{
-                      background:
-                        "radial-gradient(ellipse at center, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.18) 35%, rgba(255,255,255,0) 70%)",
-                      filter: "blur(30px)",
-                    }}
-                  />
-
                   <div className="relative w-full h-full overflow-hidden">
                     {(() => {
                       const mediaUrl = project.gif || project.thumbnail;
+                      if (!mediaUrl) {
+                        return (
+                          <div className="absolute inset-0 w-full h-full bg-zinc-900 flex items-center justify-center text-zinc-600 text-xs tracking-widest uppercase">
+                            No Media
+                          </div>
+                        );
+                      }
                       return isVideoUrl(mediaUrl) ? (
                         <video
                           src={mediaUrl}
@@ -652,7 +642,7 @@ export default function WorkCategoryPage() {
                         pointer-events-none
                       "
                     />
-                  ) : (
+                  ) : project.thumbnail ? (
                     <img
                       src={project.thumbnail}
                       alt={project.title}
@@ -664,6 +654,10 @@ export default function WorkCategoryPage() {
                       "
                       draggable={false}
                     />
+                  ) : (
+                    <div className="w-full h-full bg-zinc-900 flex items-center justify-center text-zinc-600 text-[9px] uppercase tracking-widest">
+                      N/A
+                    </div>
                   )}
                 </button>
               );
