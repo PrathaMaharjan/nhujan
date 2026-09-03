@@ -204,9 +204,21 @@ export default function BrandsPage() {
   }, []);
 
   return (
-    <main className="relative min-h-[100dvh] h-screen h-[100dvh] w-full overflow-hidden bg-[#0b0b0b] text-white select-none">
-      {/* Ambient center glow — reduced to match contact page */}
-      <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.015),transparent_70%)]" />
+    <main className="relative min-h-[100dvh] h-screen h-[100dvh] w-full overflow-hidden bg-black text-white select-none">
+      {/* Translucent Frosted Glass Background Video */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <video
+          src="/showreel/showreel_preview.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          className="absolute inset-0 w-full h-full object-cover scale-110 filter blur-[22px] sm:blur-[28px] brightness-[0.5] contrast-[1.15] opacity-55 transform-gpu pointer-events-none"
+        />
+        {/* Deep Frosted Translucent Glass Overlay */}
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-[16px]" />
+      </div>
 
       <div className="absolute inset-0 z-10 overflow-y-auto overflow-x-hidden">
         <div className="flex min-h-full w-full items-center justify-center px-4 pt-20 pb-20 sm:px-6 sm:pt-24 sm:pb-24 md:px-10">

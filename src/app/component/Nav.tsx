@@ -57,6 +57,17 @@ export default function Nav() {
     setMobileOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
   /*
    * Paw Trail Mouse Listener
    */
@@ -139,9 +150,8 @@ export default function Nav() {
               style={{
                 left: `${paw.x}px`,
                 top: `${paw.y}px`,
-                transform: `translate(-50%, -50%) rotate(${paw.angle}deg) scale(${
-                  paw.isLeft ? 1 : -1
-                }, 1)`,
+                transform: `translate(-50%, -50%) rotate(${paw.angle}deg) scale(${paw.isLeft ? 1 : -1
+                  }, 1)`,
               }}
             >
               <svg
@@ -260,17 +270,16 @@ export default function Nav() {
           </nav>
 
           <div
-            className={`fixed inset-0 z-[110] bg-[#0b0b0b] transition-transform duration-300 ease-out md:hidden ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}
+            className={`fixed inset-0 z-[110] bg-[#0b0b0b] transition-all duration-300 ease-out md:hidden flex flex-col justify-between ${mobileOpen
+              ? "translate-x-0 opacity-100 pointer-events-auto"
+              : "-translate-x-full opacity-0 pointer-events-none"
+              }`}
             aria-hidden={!mobileOpen}
           >
-            <div className="flex h-full w-full flex-col px-6 py-5">
-              <div className="flex items-center justify-start">
-                <span className="font-mono text-[10px] tracking-[0.32em] uppercase text-white/50">
-                  Menu
-                </span>
-              </div>
+            <div className="flex h-full w-full flex-col px-6 py-6 sm:px-8">
 
-              <nav className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
+
+              <nav className="flex flex-1 flex-col items-center justify-center gap-6 text-center my-auto">
                 {mainNavLinks.map((link) => {
                   const isActive =
                     link.href === "/"
@@ -283,21 +292,34 @@ export default function Nav() {
                       href={link.href}
                       onClick={() => setMobileOpen(false)}
                       className={`
+                        group
+                        relative
                         font-sans
-                        text-[30px]
+                        text-[32px]
+                        sm:text-[38px]
                         font-black
                         uppercase
-                        tracking-[0.08em]
+                        tracking-[0.06em]
                         transition-all
-                        duration-200
-                        ${isActive ? "text-white" : "text-white/55 hover:text-white"}
+                        duration-300
+                        cursor-pointer
+                        pointer-events-auto
+                        ${isActive ? "text-white scale-105" : "text-white/50 hover:text-white hover:scale-105"}
                       `}
                     >
-                      {link.name}
+                      <span>{link.name}</span>
+                      <span
+                        className={`block h-0.5 bg-white transition-all duration-300 ${isActive ? "w-full" : "w-0 group-hover:w-full"
+                          }`}
+                      />
                     </Link>
                   );
                 })}
               </nav>
+
+              <div className="flex items-center justify-center pb-6 pt-2">
+
+              </div>
             </div>
           </div>
         </div>

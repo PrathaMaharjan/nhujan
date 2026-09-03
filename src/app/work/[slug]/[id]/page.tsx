@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import { isVideoUrl, parseYouTubeId, getOptimizedImageUrl } from "@/lib/media";
+import { isVideoUrl, parseYouTubeId, getOptimizedImageUrl, getOptimizedVideoUrl } from "@/lib/media";
 
 interface GalleryItem {
   id: string;
@@ -89,7 +89,7 @@ export default function ProjectDetailPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const W = "w-full max-w-[1400px] mx-auto px-4 sm:px-8 lg:px-16";
+  const W = "w-full max-w-[1650px] 2xl:max-w-[1850px] mx-auto px-2 sm:px-5 md:px-8 lg:px-12";
 
   if (loading) {
     return <div className="min-h-[100dvh] w-full bg-black" />;
@@ -116,11 +116,10 @@ export default function ProjectDetailPage() {
     <div className="min-h-[100dvh] w-full bg-black text-white selection:bg-white selection:text-black overflow-x-hidden">
       {/* HERO SECTION */}
       <div
-        className={`${W} pt-16 sm:pt-20 md:pt-24 pb-6 flex flex-col justify-center items-center overflow-hidden`}
-        style={{ minHeight: "100dvh" }}
+        className={`${W} pt-10 sm:pt-12 md:pt-14 pb-4 sm:pb-6 flex flex-col justify-center items-center overflow-hidden min-h-0 md:min-h-[100dvh]`}
       >
         {/* BACK TO CATEGORY BUTTON */}
-        <div className="w-full max-w-[1300px] mx-auto mb-2 flex items-center">
+        <div className="w-full mx-auto mb-1.5 sm:mb-2 flex items-center">
           <Link
             href={`/work/${slug || ""}`}
             className="group inline-flex items-center gap-2 font-mono text-[10px] sm:text-[11px] tracking-[0.25em] text-zinc-400 hover:text-white transition-all uppercase py-1"
@@ -132,7 +131,7 @@ export default function ProjectDetailPage() {
 
         <section
           onClick={() => setVideoModalOpen(true)}
-          className={`relative w-full max-w-[1300px] mx-auto aspect-video max-h-[90vh] bg-black overflow-hidden rounded-sm origin-center cursor-pointer group/hero ${revealed ? "animate-slit-open" : "opacity-0"
+          className={`relative w-full mx-auto aspect-video max-h-[92vh] bg-black overflow-hidden rounded-sm origin-center cursor-pointer group/hero ${revealed ? "animate-slit-open" : "opacity-0"
             }`}
         >
 
@@ -154,11 +153,12 @@ export default function ProjectDetailPage() {
             if (isVideoUrl(heroImage)) {
               return (
                 <video
-                  src={heroImage}
+                  src={getOptimizedVideoUrl(heroImage, { width: 1920 })}
                   autoPlay
                   loop
                   muted
                   playsInline
+                  preload="auto"
                   className="absolute inset-0 w-full h-full object-cover saturate-[0.85] brightness-[0.9] pointer-events-none"
                 />
               );
@@ -266,8 +266,8 @@ export default function ProjectDetailPage() {
 
       {/* BENTO BOX GALLERY */}
       {project.gallery && project.gallery.length > 0 && (
-        <section className={`${W} pb-28 sm:pb-36 pt-8 sm:pt-12`}>
-          <div className="w-full h-[1px] bg-white/[0.08] mb-6 sm:mb-8" />
+        <section className={`${W} pb-20 sm:pb-28 md:pb-36 pt-4 sm:pt-8 md:pt-12`}>
+          <div className="w-full h-[1px] bg-white/[0.08] mb-4 sm:mb-8" />
 
           <div className="grid grid-cols-12 auto-rows-auto gap-2 sm:gap-3">
             {project.gallery.map((item, index) => {
@@ -305,7 +305,7 @@ export default function ProjectDetailPage() {
           </button>
           {isVideoUrl(lightbox) ? (
             <video
-              src={lightbox}
+              src={getOptimizedVideoUrl(lightbox, { width: 1920 })}
               autoPlay
               loop
               muted
@@ -359,7 +359,7 @@ export default function ProjectDetailPage() {
               if (isVideoUrl(heroImage)) {
                 return (
                   <video
-                    src={heroImage}
+                    src={getOptimizedVideoUrl(heroImage, { width: 1920 })}
                     autoPlay
                     controls
                     playsInline
@@ -449,11 +449,12 @@ function GalleryCell({
     >
       {isVideoUrl(src) ? (
         <video
-          src={src}
+          src={getOptimizedVideoUrl(src, { width: 960 })}
           autoPlay
           loop
           muted
           playsInline
+          preload="metadata"
           className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04] saturate-[0.8] group-hover:saturate-100 brightness-[0.92] group-hover:brightness-100"
         />
       ) : src ? (

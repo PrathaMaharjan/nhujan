@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import MeshText from "@/app/component/MeshText";
-import { isVideoUrl, getOptimizedImageUrl } from "@/lib/media";
+import { isVideoUrl, getOptimizedImageUrl, getOptimizedVideoUrl } from "@/lib/media";
 import { slugify } from "@/lib/slug";
 
 interface Project {
@@ -507,7 +507,7 @@ export default function WorkCategoryPage() {
                       }
                       return isVideoUrl(mediaUrl) ? (
                         <video
-                          src={mediaUrl}
+                          src={getOptimizedVideoUrl(mediaUrl, { width: 1280 })}
                           autoPlay
                           loop
                           muted
@@ -742,7 +742,7 @@ export default function WorkCategoryPage() {
                 >
                   {isVideoUrl(project.thumbnail) ? (
                     <video
-                      src={project.thumbnail}
+                      src={getOptimizedVideoUrl(project.thumbnail, { width: 320 })}
                       autoPlay={isSelected}
                       loop
                       muted

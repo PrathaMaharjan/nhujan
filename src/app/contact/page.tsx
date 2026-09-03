@@ -131,8 +131,20 @@ export default function ContactPage() {
 
   return (
     <main className="relative min-h-[100dvh] h-screen h-[100dvh] w-full bg-black text-white flex flex-col items-center justify-center select-none px-4 pt-16 pb-28 sm:pt-20 sm:pb-32 overflow-hidden">
-      {/* Ambient center glow */}
-      <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.015),transparent_70%)]" />
+      {/* Translucent Frosted Glass Background Video */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <video
+          src="/showreel/showreel_preview.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          className="absolute inset-0 w-full h-full object-cover scale-110 filter blur-[22px] sm:blur-[28px] brightness-[0.5] contrast-[1.15] opacity-55 transform-gpu pointer-events-none"
+        />
+        {/* Deep Frosted Translucent Glass Overlay */}
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-[16px]" />
+      </div>
 
       {/* Center Stack */}
       <div className="relative z-10 flex flex-col items-center justify-center text-center my-auto">
@@ -140,10 +152,10 @@ export default function ContactPage() {
         <button
           type="button"
           onClick={handleCopyEmail}
-          className="group relative flex flex-col items-center justify-center cursor-pointer px-3 py-2 transition-all duration-300 max-w-[95vw]"
+          className="group relative flex flex-col items-center justify-center cursor-pointer px-2 sm:px-3 py-2 transition-all duration-300 max-w-[95vw]"
         >
           <div className="flex items-center gap-2 sm:gap-2.5">
-            <span className="font-mono text-[11px] xs:text-xs sm:text-sm md:text-base tracking-wider sm:tracking-widest text-zinc-300 group-hover:text-white transition-colors duration-300 break-all sm:break-normal">
+            <span className="font-mono text-xs sm:text-sm md:text-base lg:text-lg tracking-wider sm:tracking-widest text-zinc-300 group-hover:text-white transition-colors duration-300 break-all sm:break-normal">
               {email}
             </span>
 
@@ -167,7 +179,7 @@ export default function ContactPage() {
             </svg>
           </div>
 
-          <span className="mt-2 h-[1px] w-[250px] max-w-[80vw] bg-zinc-700 group-hover:bg-white transition-all duration-300" />
+          <span className="mt-2 h-[1px] w-full bg-zinc-700 group-hover:bg-white transition-all duration-300" />
 
           {/* "COPIED" label */}
           <span

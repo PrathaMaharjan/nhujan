@@ -47,7 +47,7 @@ export default function Preloader({ children }: PreloaderProps) {
     };
   }, [phase, skip]);
 
-  /* ---------------- LEFT/RIGHT SPLIT SCREEN ANIMATION ---------------- */
+  /* ---------------- LEFT/RIGHT SIMULTANEOUS SPLIT ANIMATION ---------------- */
   useEffect(() => {
     if (skip || phase !== "split") return;
 
@@ -65,37 +65,36 @@ export default function Preloader({ children }: PreloaderProps) {
       },
     });
 
-    // 1. Text splits outward & cat fades out
+    // Screen curtains, text, and cat split simultaneously at time 0
     tl.to(
-      leftText,
-      { xPercent: -120, opacity: 0, duration: 0.6, ease: "power3.inOut" },
+      leftPanel,
+      { xPercent: -100, duration: 0.85, ease: "power4.inOut" },
       0
     )
       .to(
+        rightPanel,
+        { xPercent: 100, duration: 0.85, ease: "power4.inOut" },
+        0
+      )
+      .to(
+        leftText,
+        { x: "-45vw", opacity: 0, duration: 0.85, ease: "power4.inOut" },
+        0
+      )
+      .to(
         rightText,
-        { xPercent: 120, opacity: 0, duration: 0.6, ease: "power3.inOut" },
+        { x: "45vw", opacity: 0, duration: 0.85, ease: "power4.inOut" },
         0
       )
       .to(
         cat,
-        { opacity: 0, scale: 0.9, duration: 0.45, ease: "power2.out" },
+        { opacity: 0, scale: 0.8, duration: 0.35, ease: "power2.out" },
         0
       )
       .to(
         centerContent,
         { opacity: 0, duration: 0.2 },
-        0.4
-      )
-      // 2. Left & Right split curtains slide open to reveal home page
-      .to(
-        leftPanel,
-        { xPercent: -100, duration: 0.9, ease: "power4.inOut" },
-        0.35
-      )
-      .to(
-        rightPanel,
-        { xPercent: 100, duration: 0.9, ease: "power4.inOut" },
-        0.35
+        0.6
       );
 
     return () => {
@@ -107,12 +106,17 @@ export default function Preloader({ children }: PreloaderProps) {
     setSkip(true);
     const leftPanel = leftPanelRef.current;
     const rightPanel = rightPanelRef.current;
+    const leftText = leftTextRef.current;
+    const rightText = rightTextRef.current;
+    const cat = catRef.current;
     const centerContent = centerContentRef.current;
 
-    gsap.to(centerContent, { opacity: 0, duration: 0.2 });
+    gsap.to([cat, centerContent], { opacity: 0, duration: 0.2 });
+    gsap.to(leftText, { x: "-45vw", opacity: 0, duration: 0.5, ease: "power3.inOut" });
+    gsap.to(rightText, { x: "45vw", opacity: 0, duration: 0.5, ease: "power3.inOut" });
     gsap.to([leftPanel, rightPanel], {
       xPercent: (i) => (i === 0 ? -100 : 100),
-      duration: 0.55,
+      duration: 0.5,
       ease: "power3.inOut",
       onComplete: () => {
         setPhase("done");

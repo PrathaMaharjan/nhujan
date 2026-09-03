@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { isVideoUrl } from '@/lib/media';
+import { isVideoUrl, getOptimizedImageUrl, getOptimizedVideoUrl } from '@/lib/media';
 
 interface WorkCategory {
   id: string;
@@ -208,17 +208,18 @@ export default function WorkSection() {
         >
           {isVideoUrl(defaultBgImage) ? (
             <video
-              src={defaultBgImage}
+              src={getOptimizedVideoUrl(defaultBgImage, { width: 1280 })}
               autoPlay
               loop
               muted
               playsInline
+              preload="auto"
               className="w-full h-full object-cover"
             />
           ) : (
             <div
               className="w-full h-full bg-cover bg-center"
-              style={{ backgroundImage: `url('${defaultBgImage}')` }}
+              style={{ backgroundImage: `url('${getOptimizedImageUrl(defaultBgImage, { width: 1920 })}')` }}
             />
           )}
         </div>
@@ -239,17 +240,18 @@ export default function WorkSection() {
             >
               {isVideoUrl(cat.image) ? (
                 <video
-                  src={cat.image}
-                  autoPlay
+                  src={getOptimizedVideoUrl(cat.image, { width: 1280 })}
+                  autoPlay={isActive}
                   loop
                   muted
                   playsInline
+                  preload={isActive ? "auto" : "none"}
                   className="w-full h-full object-cover"
                 />
               ) : (
                 <div
                   className="w-full h-full bg-cover bg-center"
-                  style={{ backgroundImage: `url('${cat.image}')` }}
+                  style={{ backgroundImage: `url('${getOptimizedImageUrl(cat.image, { width: 1920 })}')` }}
                 />
               )}
             </div>
@@ -277,17 +279,18 @@ export default function WorkSection() {
           >
             {isVideoUrl(defaultBgImage) ? (
               <video
-                src={defaultBgImage}
+                src={getOptimizedVideoUrl(defaultBgImage, { width: 1280 })}
                 autoPlay
                 loop
                 muted
                 playsInline
+                preload="auto"
                 className="w-full h-full object-cover"
               />
             ) : (
               <div
                 className="w-full h-full bg-cover bg-center"
-                style={{ backgroundImage: `url('${defaultBgImage}')` }}
+                style={{ backgroundImage: `url('${getOptimizedImageUrl(defaultBgImage, { width: 1920 })}')` }}
               />
             )}
           </div>
@@ -311,17 +314,18 @@ export default function WorkSection() {
               >
                 {isVideoUrl(cat.image) ? (
                   <video
-                    src={cat.image}
-                    autoPlay
+                    src={getOptimizedVideoUrl(cat.image, { width: 1280 })}
+                    autoPlay={isActive}
                     loop
                     muted
                     playsInline
+                    preload={isActive ? "auto" : "none"}
                     className="w-full h-full object-cover"
                   />
                 ) : (
                   <div
                     className="w-full h-full bg-cover bg-center"
-                    style={{ backgroundImage: `url('${cat.image}')` }}
+                    style={{ backgroundImage: `url('${getOptimizedImageUrl(cat.image, { width: 1920 })}')` }}
                   />
                 )}
               </div>
@@ -350,9 +354,9 @@ export default function WorkSection() {
 
       {/* Categories Layout Container */}
       <main className="relative z-30 flex w-full max-w-7xl mx-auto flex-col gap-6 sm:gap-8 my-auto text-slate-100">
-        {/* Top Row / Main Grid for Categories */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:w-full lg:items-center lg:justify-between gap-4 sm:gap-6 lg:gap-8">
-          {topRowCategories.map((item, index) => {
+        {/* MOBILE & TABLET (< lg): Centered Vertical Stack */}
+        <div className="flex flex-col items-center justify-center text-center w-full gap-5 sm:gap-6 md:gap-8 lg:hidden py-4">
+          {workCategories.map((item, index) => {
             const isSelected = activeIdx === index;
 
             return (
@@ -361,13 +365,13 @@ export default function WorkSection() {
                 href={item.slug}
                 onMouseEnter={() => handleCategoryHover(index)}
                 onTouchStart={() => handleCategoryHover(index)}
-                className="group flex flex-col items-start text-left py-2 sm:py-3 lg:py-4 transition-transform duration-300"
+                className="group flex flex-col items-center text-center py-2 sm:py-2.5 transition-transform duration-300"
               >
                 <h2
-                  className={`m-0 mb-1.5 sm:mb-2 lg:mb-3 p-0 text-left tracking-tight text-white drop-shadow-lg transition-all duration-500 ease-out ${
+                  className={`m-0 mb-1.5 sm:mb-2 p-0 text-center tracking-tight text-white drop-shadow-lg transition-all duration-500 ease-out ${
                     isSelected
-                      ? 'font-normal text-2xl sm:text-3xl md:text-4xl lg:text-5xl opacity-100'
-                      : 'font-extralight text-xl sm:text-2xl md:text-3xl lg:text-4xl opacity-40 hover:opacity-75 sm:opacity-50'
+                      ? 'font-normal text-2xl sm:text-3xl md:text-4xl opacity-100'
+                      : 'font-extralight text-xl sm:text-2xl md:text-3xl opacity-40 hover:opacity-75 sm:opacity-50'
                   }`}
                   style={{
                     fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
@@ -377,10 +381,10 @@ export default function WorkSection() {
                 </h2>
 
                 <p
-                  className={`m-0 p-0 text-left w-full whitespace-pre-line text-[9px] sm:text-[10px] font-semibold tracking-widest leading-relaxed text-slate-300 transition-all duration-500 ${
+                  className={`m-0 p-0 text-center max-w-xs sm:max-w-sm whitespace-pre-line text-[9px] sm:text-[10px] font-semibold tracking-widest leading-relaxed text-slate-300 transition-all duration-500 ${
                     isSelected
                       ? 'opacity-100 translate-y-0'
-                      : 'opacity-0 lg:opacity-0 translate-y-2 pointer-events-none'
+                      : 'opacity-0 translate-y-2 pointer-events-none'
                   }`}
                 >
                   {item.subtext}
@@ -390,26 +394,26 @@ export default function WorkSection() {
           })}
         </div>
 
-        {/* Bottom Row: Additional Items (5+) */}
-        {bottomRowCategories.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:w-full lg:items-center lg:justify-center gap-4 sm:gap-6 lg:gap-16">
-            {bottomRowCategories.map((item, idx) => {
-              const globalIdx = idx + 4;
-              const isSelected = activeIdx === globalIdx;
+        {/* DESKTOP (≥ lg): Horizontal Rows with Spotlight */}
+        <div className="hidden lg:flex lg:flex-col lg:gap-8 lg:w-full">
+          {/* Top Row / Main Grid for Categories */}
+          <div className="flex w-full items-center justify-between gap-8">
+            {topRowCategories.map((item, index) => {
+              const isSelected = activeIdx === index;
 
               return (
                 <Link
                   key={item.id}
                   href={item.slug}
-                  onMouseEnter={() => handleCategoryHover(globalIdx)}
-                  onTouchStart={() => handleCategoryHover(globalIdx)}
-                  className="group flex flex-col items-start text-left py-2 sm:py-3 lg:py-4 transition-transform duration-300"
+                  onMouseEnter={() => handleCategoryHover(index)}
+                  onTouchStart={() => handleCategoryHover(index)}
+                  className="group flex flex-col items-start text-left py-4 transition-transform duration-300"
                 >
                   <h2
-                    className={`m-0 mb-1.5 sm:mb-2 lg:mb-3 p-0 text-left tracking-tight text-white drop-shadow-lg transition-all duration-500 ease-out ${
+                    className={`m-0 mb-3 p-0 text-left tracking-tight text-white drop-shadow-lg transition-all duration-500 ease-out ${
                       isSelected
-                        ? 'font-normal text-2xl sm:text-3xl md:text-4xl lg:text-5xl opacity-100'
-                        : 'font-extralight text-xl sm:text-2xl md:text-3xl lg:text-4xl opacity-40 hover:opacity-75 sm:opacity-50'
+                        ? 'font-normal text-5xl opacity-100'
+                        : 'font-extralight text-4xl opacity-40 hover:opacity-75'
                     }`}
                     style={{
                       fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
@@ -419,10 +423,10 @@ export default function WorkSection() {
                   </h2>
 
                   <p
-                    className={`m-0 p-0 text-left w-full whitespace-pre-line text-[9px] sm:text-[10px] font-semibold tracking-widest leading-relaxed text-slate-300 transition-all duration-500 ${
+                    className={`m-0 p-0 text-left w-full whitespace-pre-line text-[10px] font-semibold tracking-widest leading-relaxed text-slate-300 transition-all duration-500 ${
                       isSelected
                         ? 'opacity-100 translate-y-0'
-                        : 'opacity-0 lg:opacity-0 translate-y-2 pointer-events-none'
+                        : 'opacity-0 translate-y-2 pointer-events-none'
                     }`}
                   >
                     {item.subtext}
@@ -431,7 +435,50 @@ export default function WorkSection() {
               );
             })}
           </div>
-        )}
+
+          {/* Bottom Row: Additional Items (5+) */}
+          {bottomRowCategories.length > 0 && (
+            <div className="flex w-full items-center justify-center gap-16">
+              {bottomRowCategories.map((item, idx) => {
+                const globalIdx = idx + 4;
+                const isSelected = activeIdx === globalIdx;
+
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.slug}
+                    onMouseEnter={() => handleCategoryHover(globalIdx)}
+                    onTouchStart={() => handleCategoryHover(globalIdx)}
+                    className="group flex flex-col items-start text-left py-4 transition-transform duration-300"
+                  >
+                    <h2
+                      className={`m-0 mb-3 p-0 text-left tracking-tight text-white drop-shadow-lg transition-all duration-500 ease-out ${
+                        isSelected
+                          ? 'font-normal text-5xl opacity-100'
+                          : 'font-extralight text-4xl opacity-40 hover:opacity-75'
+                      }`}
+                      style={{
+                        fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+                      }}
+                    >
+                      {item.title}
+                    </h2>
+
+                    <p
+                      className={`m-0 p-0 text-left w-full whitespace-pre-line text-[10px] font-semibold tracking-widest leading-relaxed text-slate-300 transition-all duration-500 ${
+                        isSelected
+                          ? 'opacity-100 translate-y-0'
+                          : 'opacity-0 translate-y-2 pointer-events-none'
+                      }`}
+                    >
+                      {item.subtext}
+                    </p>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </main>
     </section>
   );

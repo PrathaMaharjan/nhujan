@@ -66,3 +66,38 @@ export function getOptimizedImageUrl(
 
   return url;
 }
+
+export function getOptimizedVideoUrl(
+  url?: string | null,
+  options?: {
+    width?: number;
+    quality?: number | "auto";
+  }
+): string {
+  if (!url) return "";
+  if (
+    !url.includes("res.cloudinary.com") ||
+    url.includes("/q_auto") ||
+    url.includes("/vc_auto")
+  ) {
+    return url;
+  }
+
+  const { width = 1280, quality = "auto" } = options || {};
+  const transforms: string[] = [`q_${quality}`, "vc_auto", "f_auto"];
+  if (width) {
+    transforms.push(`w_${width}`);
+    transforms.push("c_limit");
+  }
+
+  const transformStr = transforms.join(",");
+
+  if (url.includes("/video/upload/")) {
+    return url.replace("/video/upload/", `/video/upload/${transformStr}/`);
+  }
+  if (url.includes("/image/upload/")) {
+    return url.replace("/image/upload/", `/video/upload/${transformStr}/`);
+  }
+
+  return url;
+}

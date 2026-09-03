@@ -36,8 +36,8 @@ export default function Footer() {
   return (
     <footer className="site-footer fixed inset-x-0 bottom-0 z-[100] pointer-events-none px-3 pb-3 pt-4 sm:px-6 sm:pb-4 md:px-8 md:pb-5">
       <div className="relative mx-auto flex max-w-[1600px] flex-col items-center justify-between gap-2 sm:flex-row sm:items-end sm:gap-3 md:gap-4">
-        
-        {/* DEVELOPERS (LEFT) */}
+
+        {/* DEVELOPERS (LEFT ON DESKTOP, BOTTOM ON MOBILE) */}
         <div
           onClick={toggleExpanded}
           onMouseEnter={() => {
@@ -46,19 +46,18 @@ export default function Footer() {
           onMouseLeave={() => {
             if (isHoverDevice) setExpanded(false);
           }}
-          className="pointer-events-auto flex min-w-0 cursor-pointer items-center justify-start gap-1 overflow-hidden font-mono text-[7px] tracking-[0.22em] text-white/60 uppercase transition-colors duration-200 hover:text-white sm:text-[8px] md:text-[10px]"
+          className="order-3 sm:order-1 pointer-events-auto flex min-w-0 cursor-pointer items-center justify-start gap-1 overflow-hidden font-mono text-[7px] tracking-[0.22em] text-white/60 uppercase transition-colors duration-200 hover:text-white sm:text-[8px] md:text-[10px]"
         >
           <span className="shrink-0">Developed by</span>
           <span className="shrink-0 text-white/75">[</span>
-          
+
           {/* Animated Expandable Links Container */}
           <div
-            className={`inline-flex items-center gap-1 overflow-hidden transition-all duration-700 ease-in-out ${
-              expanded ? "max-w-[40rem] opacity-100" : "max-w-0 opacity-0"
-            }`}
+            className={`inline-flex items-center gap-1 overflow-hidden transition-all duration-700 ease-in-out ${expanded ? "max-w-[40rem] opacity-100" : "max-w-0 opacity-0"
+              }`}
           >
             <a
-              href="https://www.linkedin.com/in/pratha-maharjan-252461342/" 
+              href="https://www.linkedin.com/in/pratha-maharjan-252461342/"
               target="_blank"
               rel="noreferrer"
               className="whitespace-nowrap hover:underline hover:text-white"
@@ -68,7 +67,7 @@ export default function Footer() {
             </a>
             <span className="text-white/40">//</span>
             <a
-              href="https://www.linkedin.com/in/pragunrajmaskey/" 
+              href="https://www.linkedin.com/in/pragunrajmaskey/"
               target="_blank"
               rel="noreferrer"
               className="whitespace-nowrap hover:underline hover:text-white"
@@ -81,17 +80,10 @@ export default function Footer() {
           <span className="shrink-0 text-white/75">]</span>
         </div>
 
-        {/* LOCATION (CENTER) - Hidden on /contact page */}
-        {!isContactPage && (
-          <div className="pointer-events-auto sm:absolute sm:left-1/2 sm:-translate-x-1/2">
-            <span className="font-mono text-[7px] tracking-[0.2em] text-white/60 uppercase sm:text-[8px] md:text-[10px]">
-              Based in Kathmandu, Nepal
-            </span>
-          </div>
-        )}
 
-        {/* SOCIAL LINKS (RIGHT) */}
-        <div className="pointer-events-auto flex items-center gap-3 sm:gap-4 md:gap-5">
+
+        {/* SOCIAL LINKS (RIGHT ON DESKTOP, MIDDLE ON MOBILE) */}
+        <div className="order-2 sm:order-3 pointer-events-auto flex items-center gap-3 sm:gap-4 md:gap-5">
           <a
             href="https://www.instagram.com/nhujan.d/"
             target="_blank"
