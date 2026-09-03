@@ -264,22 +264,10 @@ export default function Nav() {
             aria-hidden={!mobileOpen}
           >
             <div className="flex h-full w-full flex-col px-6 py-5">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-start">
                 <span className="font-mono text-[10px] tracking-[0.32em] uppercase text-white/50">
                   Menu
                 </span>
-
-                <button
-                  type="button"
-                  aria-label="Close navigation menu"
-                  onClick={() => setMobileOpen(false)}
-                  className="pointer-events-auto flex h-10 w-10 items-center justify-center border border-white/15 bg-black/20 transition-colors duration-300 hover:border-white/40"
-                >
-                  <span className="relative block h-4 w-4">
-                    <span className="absolute left-0 top-1/2 h-px w-4 -translate-y-1/2 rotate-45 bg-white" />
-                    <span className="absolute left-0 top-1/2 h-px w-4 -translate-y-1/2 -rotate-45 bg-white" />
-                  </span>
-                </button>
               </div>
 
               <nav className="flex flex-1 flex-col items-center justify-center gap-5 text-center">

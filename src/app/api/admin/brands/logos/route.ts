@@ -7,7 +7,8 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   await ensureBrandsTables();
 
@@ -19,13 +20,17 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   await ensureBrandsTables();
 
-  const { name, imageUrl, publicId, order, posX, posY } = await req.json();
+  const { name, imageUrl, publicId, order } = await req.json();
   if (!name || !imageUrl) {
-    return NextResponse.json({ error: "Name and image URL are required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Name and image URL are required" },
+      { status: 400 },
+    );
   }
 
   let finalOrder = typeof order === "number" ? order : null;
@@ -41,8 +46,6 @@ export async function POST(req: Request) {
       imageUrl: imageUrl.trim(),
       publicId: publicId?.trim() || null,
       order: finalOrder,
-      posX: typeof posX === "number" ? posX : null,
-      posY: typeof posY === "number" ? posY : null,
     })
     .returning();
 
@@ -51,22 +54,24 @@ export async function POST(req: Request) {
 
 export async function PUT(req: Request) {
   const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   await ensureBrandsTables();
 
   const { items } = await req.json();
   if (!Array.isArray(items)) {
-    return NextResponse.json({ error: "Invalid items payload" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid items payload" },
+      { status: 400 },
+    );
   }
 
-  // Update order and positions for each brand logo
+  // Update display order for each brand logo
   for (const item of items) {
     if (item.id) {
       const updateData: Record<string, any> = { updatedAt: new Date() };
       if (typeof item.order === "number") updateData.order = item.order;
-      if (item.posX !== undefined) updateData.posX = item.posX === null ? null : Number(item.posX);
-      if (item.posY !== undefined) updateData.posY = item.posY === null ? null : Number(item.posY);
 
       await db
         .update(brandLogos)

@@ -1,6 +1,10 @@
 import { db } from "@/db";
 import { brandLogos, artists } from "@/db/schema";
-import { ensureBrandsTables, DEFAULT_BRAND_LOGOS, DEFAULT_ARTISTS } from "@/lib/brands-db";
+import {
+  ensureBrandsTables,
+  DEFAULT_BRAND_LOGOS,
+  DEFAULT_ARTISTS,
+} from "@/lib/brands-db";
 import { asc } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
@@ -25,16 +29,12 @@ export async function GET() {
             name: b.name,
             image: b.imageUrl,
             order: b.order,
-            posX: b.posX,
-            posY: b.posY,
           }))
         : DEFAULT_BRAND_LOGOS.map((b, idx) => ({
             id: `default-brand-${idx}`,
             name: b.name,
             image: b.imageUrl,
             order: idx,
-            posX: null,
-            posY: null,
           }));
 
     const finalArtists =
@@ -43,15 +43,11 @@ export async function GET() {
             id: a.id,
             name: a.name,
             order: a.order,
-            posX: a.posX,
-            posY: a.posY,
           }))
         : DEFAULT_ARTISTS.map((name, idx) => ({
             id: `default-artist-${idx}`,
             name,
             order: idx,
-            posX: null,
-            posY: null,
           }));
 
     return NextResponse.json({
@@ -66,15 +62,11 @@ export async function GET() {
         name: b.name,
         image: b.imageUrl,
         order: idx,
-        posX: null,
-        posY: null,
       })),
       artists: DEFAULT_ARTISTS.map((name, idx) => ({
         id: `default-artist-${idx}`,
         name,
         order: idx,
-        posX: null,
-        posY: null,
       })),
     });
   }

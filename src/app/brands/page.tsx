@@ -8,16 +8,12 @@ interface BrandItem {
   name: string;
   image: string;
   order?: number;
-  posX?: number | null;
-  posY?: number | null;
 }
 
 interface ArtistItem {
   id?: string;
   name: string;
   order?: number;
-  posX?: number | null;
-  posY?: number | null;
 }
 
 const FALLBACK_BRAND_LOGOS: BrandItem[] = [
@@ -137,7 +133,7 @@ function BrandSticker({
       <div
         className="brand-logo"
         style={{
-          height: 64,
+          height: 36,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -155,7 +151,7 @@ function BrandSticker({
           alt={name}
           draggable={false}
           style={{
-            height: 64,
+            height: 36,
             width: "auto",
             display: "block",
             objectFit: "contain",
@@ -188,7 +184,7 @@ function ArtistSticker({
           font={{
             fontFamily: "Inter",
             fontWeight: 900,
-            fontSize: 20,
+            fontSize: 16,
             lineHeight: "1.05em",
             letterSpacing: "0.01em",
             textAlign: "left",
@@ -227,14 +223,6 @@ export default function BrandsPage() {
       });
   }, []);
 
-  const hasCustomCoordinates =
-    brands.some(
-      (b) => typeof b.posX === "number" && typeof b.posY === "number",
-    ) ||
-    artists.some(
-      (a) => typeof a.posX === "number" && typeof a.posY === "number",
-    );
-
   return (
     <main className="relative h-screen w-full overflow-hidden bg-[#0b0b0b] text-white select-none">
       <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05),transparent_42%)]" />
@@ -247,94 +235,46 @@ export default function BrandsPage() {
         }}
       />
 
-      {/* CUSTOM POSITIONED CANVAS LAYOUT */}
-      {hasCustomCoordinates ? (
-        <div className="absolute inset-0 z-10 overflow-hidden">
-          {brands.map((brand, idx) => {
-            const hasPos =
-              typeof brand.posX === "number" && typeof brand.posY === "number";
-            const x = hasPos ? brand.posX! : 15 + (idx % 4) * 22;
-            const y = hasPos ? brand.posY! : 18 + Math.floor(idx / 4) * 16;
+      <div className="absolute inset-0 z-10 overflow-y-auto overflow-x-hidden">
+        <div className="flex min-h-full w-full items-center justify-center px-4 py-16 sm:px-6 md:px-10">
+          <div className="flex w-full max-w-[1200px] flex-col items-center justify-center gap-8 sm:gap-10">
+            {/* BRAND LOGOS SECTION */}
+            <section className="flex w-full flex-col items-center justify-center">
+              <h2 className="mb-5 font-sans text-[10px] font-bold uppercase tracking-[0.28em] text-white/55 sm:text-[11px]">
+                Brands
+              </h2>
 
-            return (
-              <BrandSticker
-                key={brand.id || `${brand.name}-${idx}`}
-                name={brand.name}
-                image={brand.image}
-                style={{
-                  position: "absolute",
-                  left: `${x}%`,
-                  top: `${y}%`,
-                  transform: "translate(-50%, -50%)",
-                }}
-              />
-            );
-          })}
+              <div className="flex w-full flex-wrap items-center justify-center gap-10 sm:gap-12 md:gap-14">
+                {brands.map((brand, idx) => (
+                  <BrandSticker
+                    key={brand.id || `${brand.name}-${idx}`}
+                    name={brand.name}
+                    image={brand.image}
+                  />
+                ))}
+              </div>
+            </section>
 
-          {artists.map((artist, idx) => {
-            const hasPos =
-              typeof artist.posX === "number" &&
-              typeof artist.posY === "number";
-            const x = hasPos ? artist.posX! : 12 + (idx % 5) * 18;
-            const y = hasPos ? artist.posY! : 55 + Math.floor(idx / 5) * 10;
+            <div className="h-px w-20 bg-white/10" />
 
-            return (
-              <ArtistSticker
-                key={artist.id || `${artist.name}-${idx}`}
-                name={artist.name}
-                style={{
-                  position: "absolute",
-                  left: `${x}%`,
-                  top: `${y}%`,
-                  transform: "translate(-50%, -50%)",
-                }}
-              />
-            );
-          })}
-        </div>
-      ) : (
-        /* DEFAULT AUTO FLOW LAYOUT */
-        <div className="absolute inset-0 z-10 overflow-y-auto overflow-x-hidden">
-          <div className="flex min-h-full w-full items-center justify-center px-4 py-16 sm:px-6 md:px-10">
-            <div className="flex w-full max-w-[1200px] flex-col items-center justify-center gap-8 sm:gap-10">
-              {/* BRAND LOGOS SECTION */}
-              <section className="flex w-full flex-col items-center justify-center">
-                <h2 className="mb-5 font-sans text-[10px] font-bold uppercase tracking-[0.28em] text-white/55 sm:text-[11px]">
-                  Brands
-                </h2>
+            {/* ARTISTS SECTION */}
+            <section className="flex w-full flex-col items-center justify-center">
+              <h2 className="mb-5 font-sans text-[10px] font-bold uppercase tracking-[0.28em] text-white/55 sm:text-[11px]">
+                Artists
+              </h2>
 
-                <div className="flex w-full flex-wrap items-center justify-center gap-4 sm:gap-5 md:gap-6">
-                  {brands.map((brand, idx) => (
-                    <BrandSticker
-                      key={brand.id || `${brand.name}-${idx}`}
-                      name={brand.name}
-                      image={brand.image}
-                    />
-                  ))}
-                </div>
-              </section>
-
-              <div className="h-px w-20 bg-white/10" />
-
-              {/* ARTISTS SECTION */}
-              <section className="flex w-full flex-col items-center justify-center">
-                <h2 className="mb-5 font-sans text-[10px] font-bold uppercase tracking-[0.28em] text-white/55 sm:text-[11px]">
-                  Artists
-                </h2>
-
-                <div className="flex w-full flex-wrap items-center justify-center gap-2.5 sm:gap-3.5">
-                  {artists.map((artist, idx) => (
-                    <ArtistSticker
-                      key={artist.id || `${artist.name}-${idx}`}
-                      name={artist.name}
-                    />
-                  ))}
-                </div>
-              </section>
-            </div>
+              <div className="flex w-full flex-wrap items-center justify-center gap-4 sm:gap-5 md:gap-6">
+                {artists.map((artist, idx) => (
+                  <ArtistSticker
+                    key={artist.id || `${artist.name}-${idx}`}
+                    name={artist.name}
+                  />
+                ))}
+              </div>
+            </section>
           </div>
         </div>
-      )}
+      </div>
     </main>
   );
 }

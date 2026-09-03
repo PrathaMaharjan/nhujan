@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Script from "next/script";
 import { generateCloudinarySignature } from "@/lib/cloudinary-client";
 import {
@@ -17,11 +17,6 @@ import {
   Sparkles,
   RefreshCw,
   Image as ImageIcon,
-  Move,
-  Layout,
-  Save,
-  RotateCcw,
-  Layers,
   Eye,
 } from "lucide-react";
 
@@ -31,16 +26,12 @@ interface BrandLogo {
   imageUrl: string;
   publicId?: string | null;
   order: number;
-  posX?: number | null;
-  posY?: number | null;
 }
 
 interface Artist {
   id: string;
   name: string;
   order: number;
-  posX?: number | null;
-  posY?: number | null;
 }
 
 declare global {
@@ -50,7 +41,7 @@ declare global {
 }
 
 export default function BrandsAdminPage() {
-  const [tab, setTab] = useState<"canvas" | "logos" | "artists">("canvas");
+  const [tab, setTab] = useState<"logos" | "artists">("logos");
 
   // Data state
   const [logos, setLogos] = useState<BrandLogo[]>([]);
@@ -70,26 +61,12 @@ export default function BrandsAdminPage() {
   const [editingArtistId, setEditingArtistId] = useState<string | null>(null);
   const [editingArtistName, setEditingArtistName] = useState("");
 
-  // Canvas / Drag state
-  const canvasRef = useRef<HTMLDivElement>(null);
-  const [canvasItems, setCanvasItems] = useState<
-    Array<{
-      id: string;
-      type: "logo" | "artist";
-      name: string;
-      image?: string;
-      x: number; // percentage 0 - 100
-      y: number; // percentage 0 - 100
-    }>
-  >([]);
-  const [activeDragId, setActiveDragId] = useState<string | null>(null);
-  const [canvasFilter, setCanvasFilter] = useState<"all" | "logos" | "artists">("all");
-  const [hasUnsavedCanvas, setHasUnsavedCanvas] = useState(false);
-
   // Saving / feedback state
   const [savingOrder, setSavingOrder] = useState(false);
-  const [savingCanvas, setSavingCanvas] = useState(false);
-  const [feedbackMsg, setFeedbackMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const [feedbackMsg, setFeedbackMsg] = useState<{
+    text: string;
+    type: "success" | "error";
+  } | null>(null);
   const [seeding, setSeeding] = useState(false);
 
   const showToast = (text: string, type: "success" | "error" = "success") => {
@@ -135,53 +112,15 @@ export default function BrandsAdminPage() {
     fetchArtists();
   }, [fetchLogos, fetchArtists]);
 
-  // Sync canvas items when logos or artists are fetched
-  useEffect(() => {
-    const items: Array<{
-      id: string;
-      type: "logo" | "artist";
-      name: string;
-      image?: string;
-      x: number;
-      y: number;
-    }> = [];
-
-    // Calculate initial grid positions if not set
-    logos.forEach((logo, idx) => {
-      const defaultX = 15 + (idx % 4) * 22;
-      const defaultY = 18 + Math.floor(idx / 4) * 16;
-      items.push({
-        id: logo.id,
-        type: "logo",
-        name: logo.name,
-        image: logo.imageUrl,
-        x: typeof logo.posX === "number" ? logo.posX : defaultX,
-        y: typeof logo.posY === "number" ? logo.posY : defaultY,
-      });
-    });
-
-    artists.forEach((artist, idx) => {
-      const defaultX = 12 + (idx % 5) * 18;
-      const defaultY = 55 + Math.floor(idx / 5) * 10;
-      items.push({
-        id: artist.id,
-        type: "artist",
-        name: artist.name,
-        x: typeof artist.posX === "number" ? artist.posX : defaultX,
-        y: typeof artist.posY === "number" ? artist.posY : defaultY,
-      });
-    });
-
-    setCanvasItems(items);
-    setHasUnsavedCanvas(false);
-  }, [logos, artists]);
-
   /* ----------------------------------------------------
    * CLOUDINARY UPLOAD WIDGET
    * ---------------------------------------------------- */
   const openUploadWidget = (isEditing = false) => {
     if (!window.cloudinary) {
-      showToast("Cloudinary widget is still loading. Please try again.", "error");
+      showToast(
+        "Cloudinary widget is still loading. Please try again.",
+        "error",
+      );
       return;
     }
 
@@ -214,121 +153,9 @@ export default function BrandsAdminPage() {
             }
           }
         }
-      }
+      },
     );
     widget.open();
-  };
-
-  /* ----------------------------------------------------
-   * CANVAS DRAGGING & PLACEMENT LOGIC
-   * ---------------------------------------------------- */
-  const handlePointerDown = (id: string, e: React.PointerEvent<HTMLDivElement>) => {
-    e.stopPropagation();
-    setActiveDragId(id);
-    e.currentTarget.setPointerCapture(e.pointerId);
-  };
-
-  const handlePointerMove = (id: string, e: React.PointerEvent<HTMLDivElement>) => {
-    if (activeDragId !== id || !canvasRef.current) return;
-
-    const rect = canvasRef.current.getBoundingClientRect();
-    const clientX = e.clientX;
-    const clientY = e.clientY;
-
-    let xPercent = ((clientX - rect.left) / rect.width) * 100;
-    let yPercent = ((clientY - rect.top) / rect.height) * 100;
-
-    // Clamp coordinates safely within canvas
-    xPercent = Math.max(4, Math.min(96, Number(xPercent.toFixed(1))));
-    yPercent = Math.max(6, Math.min(94, Number(yPercent.toFixed(1))));
-
-    setCanvasItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, x: xPercent, y: yPercent } : item))
-    );
-    setHasUnsavedCanvas(true);
-  };
-
-  const handlePointerUp = (id: string, e: React.PointerEvent<HTMLDivElement>) => {
-    if (activeDragId === id) {
-      setActiveDragId(null);
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    }
-  };
-
-  const saveCanvasPositions = async () => {
-    setSavingCanvas(true);
-    try {
-      const logoItems = canvasItems
-        .filter((item) => item.type === "logo")
-        .map((item) => ({
-          id: item.id,
-          posX: item.x,
-          posY: item.y,
-        }));
-
-      const artistItems = canvasItems
-        .filter((item) => item.type === "artist")
-        .map((item) => ({
-          id: item.id,
-          posX: item.x,
-          posY: item.y,
-        }));
-
-      await Promise.all([
-        fetch("/api/admin/brands/logos", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: logoItems }),
-        }),
-        fetch("/api/admin/brands/artists", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: artistItems }),
-        }),
-      ]);
-
-      setHasUnsavedCanvas(false);
-      showToast("Screen placement coordinates saved!");
-      fetchLogos();
-      fetchArtists();
-    } catch {
-      showToast("Failed to save screen layout", "error");
-    } finally {
-      setSavingCanvas(false);
-    }
-  };
-
-  const resetToFlowLayout = async () => {
-    if (!confirm("Clear custom screen coordinates and revert to automatic responsive layout?")) {
-      return;
-    }
-
-    setSavingCanvas(true);
-    try {
-      const logoItems = logos.map((l) => ({ id: l.id, posX: null, posY: null }));
-      const artistItems = artists.map((a) => ({ id: a.id, posX: null, posY: null }));
-
-      await Promise.all([
-        fetch("/api/admin/brands/logos", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: logoItems }),
-        }),
-        fetch("/api/admin/brands/artists", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: artistItems }),
-        }),
-      ]);
-
-      showToast("Reverted to automatic flow layout");
-      fetchLogos();
-      fetchArtists();
-    } catch {
-      showToast("Error resetting layout", "error");
-    } finally {
-      setSavingCanvas(false);
-    }
   };
 
   /* ----------------------------------------------------
@@ -370,7 +197,12 @@ export default function BrandsAdminPage() {
 
   const handleUpdateLogo = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingLogo || !editingLogo.name.trim() || !editingLogo.imageUrl.trim()) return;
+    if (
+      !editingLogo ||
+      !editingLogo.name.trim() ||
+      !editingLogo.imageUrl.trim()
+    )
+      return;
 
     try {
       const res = await fetch(`/api/admin/brands/logos/${editingLogo.id}`, {
@@ -380,8 +212,6 @@ export default function BrandsAdminPage() {
           name: editingLogo.name.trim(),
           imageUrl: editingLogo.imageUrl.trim(),
           publicId: editingLogo.publicId,
-          posX: editingLogo.posX,
-          posY: editingLogo.posY,
         }),
       });
 
@@ -401,7 +231,9 @@ export default function BrandsAdminPage() {
     if (!confirm(`Are you sure you want to delete "${logo.name}"?`)) return;
 
     try {
-      const res = await fetch(`/api/admin/brands/logos/${logo.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/brands/logos/${logo.id}`, {
+        method: "DELETE",
+      });
       if (res.ok) {
         showToast(`Deleted "${logo.name}"`);
         fetchLogos();
@@ -461,7 +293,9 @@ export default function BrandsAdminPage() {
 
       if (res.ok) {
         setNewArtistInput("");
-        showToast(names.length > 1 ? `Added ${names.length} artists` : "Artist added");
+        showToast(
+          names.length > 1 ? `Added ${names.length} artists` : "Artist added",
+        );
         fetchArtists();
       } else {
         const data = await res.json();
@@ -499,7 +333,9 @@ export default function BrandsAdminPage() {
     if (!confirm(`Delete artist "${artist.name}"?`)) return;
 
     try {
-      const res = await fetch(`/api/admin/brands/artists/${artist.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/brands/artists/${artist.id}`, {
+        method: "DELETE",
+      });
       if (res.ok) {
         showToast(`Deleted "${artist.name}"`);
         fetchArtists();
@@ -544,7 +380,7 @@ export default function BrandsAdminPage() {
   const handleSeedDefaults = async () => {
     if (
       !confirm(
-        "Import default Brand Logos and Artist names from template? This adds missing items into the database."
+        "Import default Brand Logos and Artist names from template? This adds missing items into the database.",
       )
     ) {
       return;
@@ -554,7 +390,9 @@ export default function BrandsAdminPage() {
     try {
       const res = await fetch("/api/admin/brands/seed", { method: "POST" });
       const data = await res.json();
-      showToast(`Imported ${data.addedLogos} logos and ${data.addedArtists} artists`);
+      showToast(
+        `Imported ${data.addedLogos} logos and ${data.addedArtists} artists`,
+      );
       fetchLogos();
       fetchArtists();
     } catch {
@@ -564,15 +402,12 @@ export default function BrandsAdminPage() {
     }
   };
 
-  const visibleCanvasItems = canvasItems.filter((item) => {
-    if (canvasFilter === "logos") return item.type === "logo";
-    if (canvasFilter === "artists") return item.type === "artist";
-    return true;
-  });
-
   return (
     <div className="space-y-6 max-w-6xl pb-24 text-white select-none">
-      <Script src="https://upload-widget.cloudinary.com/global/all.js" strategy="lazyOnload" />
+      <Script
+        src="https://upload-widget.cloudinary.com/global/all.js"
+        strategy="lazyOnload"
+      />
 
       {/* TOAST NOTIFICATION */}
       {feedbackMsg && (
@@ -590,9 +425,9 @@ export default function BrandsAdminPage() {
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-5">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Brands & Artists Placement</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Brands & Artists</h1>
           <p className="text-sm text-zinc-400 mt-1">
-            Drag items anywhere on the interactive screen canvas to place them exactly where you want on the website.
+            Manage the logos, artists, and their display order.
           </p>
         </div>
 
@@ -623,21 +458,6 @@ export default function BrandsAdminPage() {
       {/* TAB SELECTOR */}
       <div className="flex items-center justify-between border-b border-white/10">
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setTab("canvas")}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors -mb-px ${
-              tab === "canvas"
-                ? "border-white text-white font-bold"
-                : "border-transparent text-zinc-400 hover:text-zinc-200"
-            }`}
-          >
-            <Move size={16} />
-            <span>Visual Screen Canvas (Drag & Place)</span>
-            {hasUnsavedCanvas && (
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" title="Unsaved changes" />
-            )}
-          </button>
-
           <button
             onClick={() => setTab("logos")}
             className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors -mb-px ${
@@ -671,186 +491,16 @@ export default function BrandsAdminPage() {
       </div>
 
       {/* ============================================================ */}
-      {/* TAB: VISUAL SCREEN CANVAS (DRAG & DROP POSITIONING) */}
-      {/* ============================================================ */}
-      {tab === "canvas" && (
-        <div className="space-y-4">
-          {/* Controls toolbar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-900/80 border border-white/10 p-3.5 rounded-xl">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider mr-1">
-                Filter:
-              </span>
-              <button
-                type="button"
-                onClick={() => setCanvasFilter("all")}
-                className={`px-3 py-1 text-xs rounded-md transition font-medium ${
-                  canvasFilter === "all"
-                    ? "bg-white text-black"
-                    : "bg-white/5 text-zinc-400 hover:text-white"
-                }`}
-              >
-                All ({canvasItems.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setCanvasFilter("logos")}
-                className={`px-3 py-1 text-xs rounded-md transition font-medium ${
-                  canvasFilter === "logos"
-                    ? "bg-white text-black"
-                    : "bg-white/5 text-zinc-400 hover:text-white"
-                }`}
-              >
-                Logos ({logos.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setCanvasFilter("artists")}
-                className={`px-3 py-1 text-xs rounded-md transition font-medium ${
-                  canvasFilter === "artists"
-                    ? "bg-white text-black"
-                    : "bg-white/5 text-zinc-400 hover:text-white"
-                }`}
-              >
-                Artists ({artists.length})
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                onClick={resetToFlowLayout}
-                disabled={savingCanvas}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-zinc-400 hover:text-white border border-white/15 rounded-lg hover:bg-white/5 transition"
-                title="Reset custom coordinates to automatic responsive flow layout"
-              >
-                <RotateCcw size={13} />
-                <span>Reset Flow Layout</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={saveCanvasPositions}
-                disabled={savingCanvas}
-                className={`inline-flex items-center gap-2 px-4 py-1.5 text-xs font-bold rounded-lg transition shadow-lg ${
-                  hasUnsavedCanvas
-                    ? "bg-amber-400 text-black hover:bg-amber-300 animate-pulse"
-                    : "bg-white text-black hover:bg-zinc-200"
-                }`}
-              >
-                <Save size={14} />
-                <span>{savingCanvas ? "Saving Placements…" : hasUnsavedCanvas ? "Save Changes" : "Saved"}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Interactive Screen Canvas */}
-          <div className="relative border border-white/15 rounded-2xl overflow-hidden shadow-2xl bg-[#0b0b0b]">
-            {/* Aspect container (16:10 ratio like public layout) */}
-            <div
-              ref={canvasRef}
-              className="relative w-full aspect-[16/9] min-h-[520px] max-h-[75vh] overflow-hidden"
-              style={{
-                backgroundImage:
-                  "radial-gradient(circle at center, rgba(255,255,255,0.06), transparent 50%), linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px)",
-                backgroundSize: "100% 100%, 40px 40px, 40px 40px",
-              }}
-            >
-              {/* Center divider line simulation */}
-              <div className="absolute inset-x-0 top-1/2 h-[1px] bg-white/[0.04] pointer-events-none" />
-              <div className="absolute inset-y-0 left-1/2 w-[1px] bg-white/[0.04] pointer-events-none" />
-
-              {/* Watermark instructions */}
-              <div className="absolute top-4 left-4 pointer-events-none z-0">
-                <span className="text-[10px] font-mono tracking-widest text-white/30 uppercase block">
-                  ✦ Screen Viewport Canvas
-                </span>
-                <span className="text-[10px] text-white/20 block mt-0.5">
-                  Click and drag any brand or artist sticker to place it on the screen
-                </span>
-              </div>
-
-              {/* Draggable items */}
-              {visibleCanvasItems.map((item) => {
-                const isDragging = activeDragId === item.id;
-
-                return (
-                  <div
-                    key={item.id}
-                    onPointerDown={(e) => handlePointerDown(item.id, e)}
-                    onPointerMove={(e) => handlePointerMove(item.id, e)}
-                    onPointerUp={(e) => handlePointerUp(item.id, e)}
-                    style={{
-                      left: `${item.x}%`,
-                      top: `${item.y}%`,
-                      transform: `translate(-50%, -50%) scale(${isDragging ? 1.08 : 1})`,
-                      zIndex: isDragging ? 50 : 20,
-                    }}
-                    className={`absolute cursor-grab active:cursor-grabbing group transition-transform duration-75 ${
-                      isDragging ? "shadow-2xl ring-2 ring-white/70" : ""
-                    }`}
-                  >
-                    {item.type === "logo" ? (
-                      /* BRAND LOGO CARD */
-                      <div className="flex flex-col items-center">
-                        <div
-                          className="bg-black/90 border border-white/30 hover:border-white/80 p-2.5 rounded-lg shadow-lg flex items-center justify-center transition-colors"
-                          style={{
-                            minWidth: 80,
-                            minHeight: 46,
-                          }}
-                        >
-                          {item.image ? (
-                            <img
-                              src={item.image}
-                              alt={item.name}
-                              draggable={false}
-                              className="max-h-8 max-w-[90px] object-contain filter brightness-0 invert pointer-events-none"
-                            />
-                          ) : (
-                            <span className="text-xs font-bold text-white tracking-widest pointer-events-none">
-                              {item.name}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Coordinates pill */}
-                        <div className="mt-1 opacity-0 group-hover:opacity-100 transition-opacity bg-zinc-900/90 border border-white/20 px-2 py-0.5 rounded text-[9px] font-mono text-zinc-300 pointer-events-none whitespace-nowrap">
-                          {item.name} ({item.x}%, {item.y}%)
-                        </div>
-                      </div>
-                    ) : (
-                      /* ARTIST STICKER CARD */
-                      <div className="flex flex-col items-center">
-                        <div className="bg-black/80 hover:bg-black border border-white/25 hover:border-white/80 px-3 py-1.5 rounded-md shadow-lg transition-colors flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-white/70" />
-                          <span className="font-sans font-black text-xs md:text-sm text-white tracking-wide uppercase pointer-events-none">
-                            {item.name}
-                          </span>
-                        </div>
-
-                        {/* Coordinates pill */}
-                        <div className="mt-1 opacity-0 group-hover:opacity-100 transition-opacity bg-zinc-900/90 border border-white/20 px-2 py-0.5 rounded text-[9px] font-mono text-zinc-300 pointer-events-none whitespace-nowrap">
-                          {item.x}%, {item.y}%
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ============================================================ */}
       {/* TAB: BRAND LOGOS LIST */}
       {/* ============================================================ */}
       {tab === "logos" && (
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-zinc-900/60 border border-white/10 p-4 rounded-xl">
             <div className="text-sm text-zinc-400">
-              <span className="font-semibold text-white">Brand Logos Management:</span> Upload logo images, rename brands, or reposition display order.
+              <span className="font-semibold text-white">
+                Brand Logos Management:
+              </span>{" "}
+              Upload logo images, rename brands, or reposition display order.
             </div>
 
             <button
@@ -876,7 +526,9 @@ export default function BrandsAdminPage() {
           ) : logos.length === 0 ? (
             <div className="py-16 text-center border border-dashed border-white/15 rounded-xl p-8 space-y-3">
               <ImageIcon size={32} className="mx-auto text-zinc-600" />
-              <p className="text-zinc-400 text-sm">No brand logos in database yet.</p>
+              <p className="text-zinc-400 text-sm">
+                No brand logos in database yet.
+              </p>
               <div className="flex items-center justify-center gap-3 pt-2">
                 <button
                   onClick={() => setShowAddLogoModal(true)}
@@ -939,11 +591,6 @@ export default function BrandsAdminPage() {
                       alt={logo.name}
                       className="max-h-16 max-w-full object-contain filter brightness-0 invert opacity-95 transition-transform group-hover/preview:scale-105"
                     />
-                    {typeof logo.posX === "number" && typeof logo.posY === "number" && (
-                      <span className="absolute bottom-1 left-2 text-[9px] font-mono text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-800">
-                        Pos: {logo.posX}%, {logo.posY}%
-                      </span>
-                    )}
                   </div>
 
                   {/* Actions */}
@@ -990,11 +637,15 @@ export default function BrandsAdminPage() {
             className="bg-zinc-900/60 border border-white/10 p-4 sm:p-5 rounded-xl space-y-3"
           >
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-              <label htmlFor="artistInput" className="text-sm font-semibold text-white">
+              <label
+                htmlFor="artistInput"
+                className="text-sm font-semibold text-white"
+              >
                 Add New Artist
               </label>
               <span className="text-xs text-zinc-400">
-                Tip: Enter multiple names separated by commas (e.g. <i>Artist A, Artist B</i>)
+                Tip: Enter multiple names separated by commas (e.g.{" "}
+                <i>Artist A, Artist B</i>)
               </span>
             </div>
 
@@ -1027,7 +678,9 @@ export default function BrandsAdminPage() {
           ) : artists.length === 0 ? (
             <div className="py-16 text-center border border-dashed border-white/15 rounded-xl p-8 space-y-3">
               <Users size={32} className="mx-auto text-zinc-600" />
-              <p className="text-zinc-400 text-sm">No artists in database yet.</p>
+              <p className="text-zinc-400 text-sm">
+                No artists in database yet.
+              </p>
               <button
                 onClick={handleSeedDefaults}
                 className="px-4 py-2 text-xs border border-white/20 text-white rounded-lg hover:bg-white/10"
@@ -1060,9 +713,12 @@ export default function BrandsAdminPage() {
                           <input
                             type="text"
                             value={editingArtistName}
-                            onChange={(e) => setEditingArtistName(e.target.value)}
+                            onChange={(e) =>
+                              setEditingArtistName(e.target.value)
+                            }
                             onKeyDown={(e) => {
-                              if (e.key === "Enter") handleUpdateArtist(artist.id);
+                              if (e.key === "Enter")
+                                handleUpdateArtist(artist.id);
                               if (e.key === "Escape") setEditingArtistId(null);
                             }}
                             className="bg-black border border-white/30 rounded px-2.5 py-1 text-sm text-white w-full focus:outline-none focus:border-white"
@@ -1090,11 +746,6 @@ export default function BrandsAdminPage() {
                           <span className="text-sm font-semibold text-white tracking-wide">
                             {artist.name}
                           </span>
-                          {typeof artist.posX === "number" && typeof artist.posY === "number" && (
-                            <span className="text-[9px] font-mono text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-800">
-                              Pos: {artist.posX}%, {artist.posY}%
-                            </span>
-                          )}
                         </div>
                       )}
                     </div>
@@ -1194,7 +845,9 @@ export default function BrandsAdminPage() {
                   className="w-full border border-dashed border-white/25 hover:border-white/50 bg-white/5 hover:bg-white/10 rounded-lg p-4 flex flex-col items-center justify-center gap-2 transition text-zinc-300 hover:text-white"
                 >
                   <Upload size={20} />
-                  <span className="text-xs font-medium">Click to upload logo image</span>
+                  <span className="text-xs font-medium">
+                    Click to upload logo image
+                  </span>
                 </button>
               </div>
 
@@ -1268,7 +921,9 @@ export default function BrandsAdminPage() {
                 <input
                   type="text"
                   value={editingLogo.name}
-                  onChange={(e) => setEditingLogo({ ...editingLogo, name: e.target.value })}
+                  onChange={(e) =>
+                    setEditingLogo({ ...editingLogo, name: e.target.value })
+                  }
                   required
                   className="w-full bg-black/80 border border-white/15 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-white"
                 />
@@ -1284,7 +939,9 @@ export default function BrandsAdminPage() {
                   className="w-full border border-dashed border-white/25 hover:border-white/50 bg-white/5 hover:bg-white/10 rounded-lg p-3 flex items-center justify-center gap-2 transition text-zinc-300 hover:text-white"
                 >
                   <Upload size={16} />
-                  <span className="text-xs font-medium">Upload new image to replace</span>
+                  <span className="text-xs font-medium">
+                    Upload new image to replace
+                  </span>
                 </button>
               </div>
 
@@ -1295,7 +952,9 @@ export default function BrandsAdminPage() {
                 <input
                   type="text"
                   value={editingLogo.imageUrl}
-                  onChange={(e) => setEditingLogo({ ...editingLogo, imageUrl: e.target.value })}
+                  onChange={(e) =>
+                    setEditingLogo({ ...editingLogo, imageUrl: e.target.value })
+                  }
                   required
                   className="w-full bg-black/80 border border-white/15 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-white"
                 />
@@ -1321,7 +980,9 @@ export default function BrandsAdminPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={!editingLogo.name.trim() || !editingLogo.imageUrl.trim()}
+                  disabled={
+                    !editingLogo.name.trim() || !editingLogo.imageUrl.trim()
+                  }
                   className="px-5 py-2 text-xs font-semibold rounded-lg bg-white text-black hover:bg-zinc-200 transition"
                 >
                   Update Logo

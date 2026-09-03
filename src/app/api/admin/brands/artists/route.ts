@@ -7,7 +7,8 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   await ensureBrandsTables();
 
@@ -19,11 +20,12 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   await ensureBrandsTables();
 
-  const { name, names, order, posX, posY } = await req.json();
+  const { name, names, order } = await req.json();
 
   // Support batch creation if `names` array is supplied
   if (Array.isArray(names) && names.length > 0) {
@@ -47,7 +49,10 @@ export async function POST(req: Request) {
   }
 
   if (!name || !String(name).trim()) {
-    return NextResponse.json({ error: "Artist name is required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Artist name is required" },
+      { status: 400 },
+    );
   }
 
   let finalOrder = typeof order === "number" ? order : null;
@@ -61,8 +66,6 @@ export async function POST(req: Request) {
     .values({
       name: String(name).trim(),
       order: finalOrder,
-      posX: typeof posX === "number" ? posX : null,
-      posY: typeof posY === "number" ? posY : null,
     })
     .returning();
 
@@ -71,27 +74,26 @@ export async function POST(req: Request) {
 
 export async function PUT(req: Request) {
   const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   await ensureBrandsTables();
 
   const { items } = await req.json();
   if (!Array.isArray(items)) {
-    return NextResponse.json({ error: "Invalid items payload" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid items payload" },
+      { status: 400 },
+    );
   }
 
-  // Update placement order and positions for each artist
+  // Update display order for each artist
   for (const item of items) {
     if (item.id) {
       const updateData: Record<string, any> = { updatedAt: new Date() };
       if (typeof item.order === "number") updateData.order = item.order;
-      if (item.posX !== undefined) updateData.posX = item.posX === null ? null : Number(item.posX);
-      if (item.posY !== undefined) updateData.posY = item.posY === null ? null : Number(item.posY);
 
-      await db
-        .update(artists)
-        .set(updateData)
-        .where(eq(artists.id, item.id));
+      await db.update(artists).set(updateData).where(eq(artists.id, item.id));
     }
   }
 
