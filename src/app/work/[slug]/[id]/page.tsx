@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useParams } from "next/navigation";
-import { isVideoUrl, parseYouTubeId } from "@/lib/media";
+import { isVideoUrl, parseYouTubeId, getOptimizedImageUrl } from "@/lib/media";
 
 interface GalleryItem {
   id: string;
@@ -164,11 +165,14 @@ export default function ProjectDetailPage() {
             }
             if (heroImage) {
               return (
-                <img
-                  src={heroImage}
+                <Image
+                  src={getOptimizedImageUrl(heroImage, { width: 1920, quality: 85 })}
                   alt={project.title}
+                  fill
+                  priority
+                  sizes="100vw"
                   draggable={false}
-                  className="absolute inset-0 w-full h-full object-cover saturate-[0.85] brightness-[0.9] pointer-events-none"
+                  className="object-cover saturate-[0.85] brightness-[0.9] pointer-events-none"
                 />
               );
             }
@@ -312,7 +316,7 @@ export default function ProjectDetailPage() {
             />
           ) : (
             <img
-              src={lightbox}
+              src={getOptimizedImageUrl(lightbox, { width: 1920, quality: 90 })}
               alt=""
               className="max-w-full max-h-[90vh] object-contain"
               onClick={(e) => e.stopPropagation()}
@@ -366,7 +370,7 @@ export default function ProjectDetailPage() {
               if (heroImage) {
                 return (
                   <img
-                    src={heroImage}
+                    src={getOptimizedImageUrl(heroImage, { width: 1920, quality: 90 })}
                     alt={project.title}
                     className="w-full h-full object-contain"
                   />
@@ -453,11 +457,13 @@ function GalleryCell({
           className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04] saturate-[0.8] group-hover:saturate-100 brightness-[0.92] group-hover:brightness-100"
         />
       ) : src ? (
-        <img
-          src={src}
+        <Image
+          src={getOptimizedImageUrl(src, { width: 1200, quality: 80 })}
           alt=""
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           draggable={false}
-          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04] saturate-[0.8] group-hover:saturate-100 brightness-[0.92] group-hover:brightness-100"
+          className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04] saturate-[0.8] group-hover:saturate-100 brightness-[0.92] group-hover:brightness-100"
         />
       ) : null}
       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500" />

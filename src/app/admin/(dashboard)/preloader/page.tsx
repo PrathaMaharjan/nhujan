@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Script from "next/script";
 import { generateCloudinarySignature } from "@/lib/cloudinary-client";
+import { getOptimizedImageUrl } from "@/lib/media";
 
 type PreloaderImage = {
   id: string;
@@ -87,7 +88,7 @@ export default function PreloaderAdminPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
           {images.map((img) => (
             <div key={img.id} className="relative group rounded overflow-hidden bg-zinc-900 border border-white/10">
-              <img src={img.url} alt="" className="w-full aspect-square object-cover" />
+              <img src={getOptimizedImageUrl(img.url, { width: 300, quality: 75 })} alt="" className="w-full aspect-square object-cover" />
               <button
                 onClick={() => handleDelete(img.id)}
                 className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-xs px-2.5 py-1 rounded transition opacity-100 sm:opacity-0 group-hover:opacity-100"

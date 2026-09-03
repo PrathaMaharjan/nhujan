@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import MeshText from "@/app/component/MeshText";
+import { getOptimizedImageUrl } from "@/lib/media";
 
 interface BrandItem {
   id?: string;
@@ -146,9 +148,12 @@ function BrandSticker({
           cursor: "grab",
         }}
       >
-        <img
-          src={image}
+        <Image
+          src={getOptimizedImageUrl(image, { width: 200, quality: 80 })}
           alt={name}
+          width={160}
+          height={40}
+          unoptimized={typeof image === "string" && image.endsWith(".svg")}
           draggable={false}
           className="h-7 sm:h-8 md:h-9 w-auto object-contain pointer-events-none select-none"
         />

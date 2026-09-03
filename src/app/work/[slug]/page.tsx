@@ -2,9 +2,10 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import MeshText from "@/app/component/MeshText";
-import { isVideoUrl } from "@/lib/media";
+import { isVideoUrl, getOptimizedImageUrl } from "@/lib/media";
 import { slugify } from "@/lib/slug";
 
 interface Project {
@@ -523,16 +524,13 @@ export default function WorkCategoryPage() {
                           "
                         />
                       ) : (
-                        <img
-                          src={mediaUrl}
+                        <Image
+                          src={getOptimizedImageUrl(mediaUrl, { width: 1200, quality: 80 })}
                           alt={project.title}
-                          loading={isNearActive ? "eager" : "lazy"}
-                          decoding="async"
+                          fill
+                          sizes="(max-width: 768px) 95vw, 65vw"
+                          priority={isNearActive}
                           className="
-                            absolute
-                            inset-0
-                            w-full
-                            h-full
                             object-cover
                             pointer-events-none
                             transform-gpu
@@ -758,14 +756,13 @@ export default function WorkCategoryPage() {
                       "
                     />
                   ) : project.thumbnail ? (
-                    <img
-                      src={project.thumbnail}
+                    <Image
+                      src={getOptimizedImageUrl(project.thumbnail, { width: 250, quality: 75 })}
                       alt={project.title}
+                      fill
+                      sizes="120px"
                       loading="lazy"
-                      decoding="async"
                       className="
-                        w-full
-                        h-full
                         object-cover
                         pointer-events-none
                       "

@@ -6,7 +6,6 @@ import {
   projectGalleryImages,
   brandLogos,
   artists,
-  preloaderImages,
 } from "@/db/schema";
 import { count, desc, eq } from "drizzle-orm";
 import {
@@ -15,7 +14,6 @@ import {
   Layers,
   Tag,
   Users,
-  Loader,
   ArrowUpRight,
   Plus,
   Sparkles,
@@ -31,7 +29,6 @@ export default async function AdminDashboard() {
   let totalGalleryMedia = 0;
   let totalBrands = 0;
   let totalArtists = 0;
-  let totalPreloader = 0;
   let allCategories: any[] = [];
   let recentProjects: any[] = [];
   let categoryStats: any[] = [];
@@ -43,7 +40,6 @@ export default async function AdminDashboard() {
       galleryCountRes,
       brandsCountRes,
       artistsCountRes,
-      preloaderCountRes,
       categoriesList,
       recentList,
     ] = await Promise.all([
@@ -52,7 +48,6 @@ export default async function AdminDashboard() {
       db.select({ value: count() }).from(projectGalleryImages),
       db.select({ value: count() }).from(brandLogos),
       db.select({ value: count() }).from(artists),
-      db.select({ value: count() }).from(preloaderImages),
       db.query.workCategories.findMany({
         where: eq(workCategories.isDefault, false),
         orderBy: (c, { asc }) => [asc(c.order)],
@@ -68,7 +63,6 @@ export default async function AdminDashboard() {
     totalGalleryMedia = galleryCountRes[0]?.value || 0;
     totalBrands = brandsCountRes[0]?.value || 0;
     totalArtists = artistsCountRes[0]?.value || 0;
-    totalPreloader = preloaderCountRes[0]?.value || 0;
     allCategories = categoriesList || [];
     recentProjects = recentList || [];
 
@@ -134,15 +128,6 @@ export default async function AdminDashboard() {
       icon: Briefcase,
       color: "from-cyan-500/20 to-sky-500/5",
       border: "hover:border-cyan-500/40",
-    },
-    {
-      title: "Preloader Frames",
-      value: totalPreloader,
-      subtext: "Loading sequence assets",
-      href: "/admin/preloader",
-      icon: Loader,
-      color: "from-zinc-500/20 to-neutral-500/5",
-      border: "hover:border-zinc-500/40",
     },
   ];
 
@@ -309,13 +294,6 @@ export default async function AdminDashboard() {
               >
                 <Tag size={15} className="text-white/60" />
                 <span>Manage Brands</span>
-              </Link>
-              <Link
-                href="/admin/preloader"
-                className="p-3 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/30 text-xs font-medium text-white transition flex flex-col gap-1"
-              >
-                <Loader size={15} className="text-white/60" />
-                <span>Preloader Images</span>
               </Link>
             </div>
           </div>

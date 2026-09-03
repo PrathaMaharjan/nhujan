@@ -30,3 +30,39 @@ export function parseYouTubeId(input?: string | null): string | null {
 
   return null;
 }
+
+export function getOptimizedImageUrl(
+  url?: string | null,
+  options?: {
+    width?: number;
+    quality?: number | "auto";
+    format?: string;
+  }
+): string {
+  if (!url) return "";
+  if (
+    !url.includes("res.cloudinary.com") ||
+    url.includes("/f_auto") ||
+    url.includes("/q_auto")
+  ) {
+    return url;
+  }
+
+  const { width, quality = "auto", format = "auto" } = options || {};
+  const transforms: string[] = [`f_${format}`, `q_${quality}`];
+  if (width) {
+    transforms.push(`w_${width}`);
+    transforms.push("c_limit");
+  }
+
+  const transformStr = transforms.join(",");
+
+  if (url.includes("/image/upload/")) {
+    return url.replace("/image/upload/", `/image/upload/${transformStr}/`);
+  }
+  if (url.includes("/video/upload/")) {
+    return url.replace("/video/upload/", `/video/upload/${transformStr}/`);
+  }
+
+  return url;
+}

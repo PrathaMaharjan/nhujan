@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
     LayoutDashboard,
-    Loader,
     Briefcase,
     Tag,
     FolderKanban,
@@ -13,13 +12,10 @@ import {
 
 const links = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-    { href: "/admin/preloader", label: "Preloader", icon: Loader },
     { href: "/admin/work", label: "Work", icon: Briefcase },
-
     { href: "/admin/projects", label: "Projects", icon: FolderKanban },
-  
     { href: "/admin/brands", label: "Brands", icon: Tag },
-      { href: "/admin/settings", label: "Settings", icon: Settings },
+    { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
