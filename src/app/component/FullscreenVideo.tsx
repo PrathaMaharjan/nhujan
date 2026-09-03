@@ -107,7 +107,9 @@ export default function FullscreenVideo({
     const previousCursor = document.body.style.cursor;
     const previousFullscreenState = document.body.dataset.fullscreen;
 
-    document.body.style.cursor = "none";
+    if (window.innerWidth >= 768) {
+      document.body.style.cursor = "none";
+    }
     document.body.dataset.fullscreen = "true";
 
     return () => {
@@ -355,7 +357,7 @@ export default function FullscreenVideo({
         w-[100dvw]
         overflow-hidden
         bg-black
-        cursor-none
+        md:cursor-none
       "
       onMouseMove={revealControls}
     >
@@ -374,7 +376,8 @@ export default function FullscreenVideo({
           inset-0
           h-[100dvh]
           w-[100dvw]
-          cursor-none
+          cursor-pointer
+          md:cursor-none
         "
         onClick={togglePlayback}
       />
@@ -487,8 +490,10 @@ export default function FullscreenVideo({
           left-0
           right-0
           z-[10001]
-          px-7
+          px-4
+          sm:px-7
           pb-6
+          sm:pb-6
           pt-16
           transition-opacity
           duration-300
@@ -516,10 +521,10 @@ export default function FullscreenVideo({
             CONTROL ROW
         ================================================= */}
 
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-3 sm:mt-4 flex items-center justify-between gap-3">
           {/* LEFT */}
 
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-3 sm:gap-5">
             {/* PLAY */}
 
             <button
@@ -586,7 +591,7 @@ export default function FullscreenVideo({
               max="100"
               value={volume * 100}
               onChange={changeVolume}
-              className="fullscreen-volume"
+              className="fullscreen-volume hidden sm:block"
               aria-label="Volume"
             />
 
@@ -595,8 +600,10 @@ export default function FullscreenVideo({
             <span
               className="
                 font-mono
-                text-[9px]
-                tracking-[0.15em]
+                text-[8px]
+                sm:text-[9px]
+                tracking-[0.12em]
+                sm:tracking-[0.15em]
                 text-white/70
               "
             >
@@ -621,6 +628,8 @@ export default function FullscreenVideo({
               text-white/70
               transition-colors
               hover:text-white
+              px-2
+              py-1
             "
           >
             Close
@@ -641,7 +650,7 @@ export default function FullscreenVideo({
           background: #555;
           border-radius: 999px;
           outline: none;
-          cursor: none;
+          cursor: pointer;
           display: block;
         }
 
@@ -678,7 +687,7 @@ export default function FullscreenVideo({
           border-radius: 50%;
           background: #fff;
           border: none;
-          cursor: none;
+          cursor: pointer;
         }
 
         .fullscreen-progress::-moz-range-thumb {
@@ -687,7 +696,7 @@ export default function FullscreenVideo({
           border-radius: 50%;
           background: #fff;
           border: none;
-          cursor: none;
+          cursor: pointer;
         }
 
         .fullscreen-volume {
@@ -698,7 +707,7 @@ export default function FullscreenVideo({
           background: #555;
           border-radius: 999px;
           outline: none;
-          cursor: none;
+          cursor: pointer;
         }
 
         .fullscreen-volume::-webkit-slider-thumb {
@@ -726,7 +735,7 @@ export default function FullscreenVideo({
           border: 0;
           background: transparent;
           color: white;
-          cursor: none;
+          cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -734,6 +743,16 @@ export default function FullscreenVideo({
           transition:
             opacity 150ms ease,
             transform 150ms ease;
+        }
+
+        @media (min-width: 768px) {
+          .fullscreen-progress,
+          .fullscreen-progress::-webkit-slider-thumb,
+          .fullscreen-progress::-moz-range-thumb,
+          .fullscreen-volume,
+          .fullscreen-control {
+            cursor: none;
+          }
         }
 
         .fullscreen-control:hover {

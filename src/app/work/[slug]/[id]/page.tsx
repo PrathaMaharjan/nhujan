@@ -88,15 +88,15 @@ export default function ProjectDetailPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const W = "w-full max-w-[1400px] mx-auto px-5 sm:px-10 lg:px-16";
+  const W = "w-full max-w-[1400px] mx-auto px-4 sm:px-8 lg:px-16";
 
   if (loading) {
-    return <div className="min-h-screen w-full bg-black" />;
+    return <div className="min-h-[100dvh] w-full bg-black" />;
   }
 
   if (!project) {
     return (
-      <div className="min-h-screen w-full bg-black text-white flex flex-col items-center justify-center gap-4">
+      <div className="min-h-[100dvh] w-full bg-black text-white flex flex-col items-center justify-center gap-4">
         <p className="text-xs tracking-[0.3em] text-white/40 uppercase">Project not found</p>
         <Link
           href={`/work/${slug || ""}`}
@@ -112,17 +112,17 @@ export default function ProjectDetailPage() {
     project.heroImageUrl || project.thumbnailUrl || project.gifUrl || "/placeholder.jpg";
 
   return (
-    <div className="min-h-screen w-full bg-black text-white selection:bg-white selection:text-black overflow-x-hidden">
+    <div className="min-h-[100dvh] w-full bg-black text-white selection:bg-white selection:text-black overflow-x-hidden">
       {/* HERO SECTION */}
       <div
-        className={`${W} pt-11 sm:pt-13 md:pt-16 pb-6 flex flex-col justify-center items-center overflow-hidden`}
-        style={{ minHeight: "100vh" }}
+        className={`${W} pt-16 sm:pt-20 md:pt-24 pb-6 flex flex-col justify-center items-center overflow-hidden`}
+        style={{ minHeight: "100dvh" }}
       >
         {/* BACK TO CATEGORY BUTTON */}
         <div className="w-full max-w-[1300px] mx-auto mb-2 flex items-center">
           <Link
             href={`/work/${slug || ""}`}
-            className="group inline-flex items-center gap-2 font-mono text-[10px] sm:text-[11px] tracking-[0.25em] text-zinc-400 hover:text-white transition-all uppercase"
+            className="group inline-flex items-center gap-2 font-mono text-[10px] sm:text-[11px] tracking-[0.25em] text-zinc-400 hover:text-white transition-all uppercase py-1"
           >
             <span className="text-sm transition-transform duration-300 group-hover:-translate-x-1">←</span>
             <span>BACK</span>
@@ -131,7 +131,7 @@ export default function ProjectDetailPage() {
 
         <section
           onClick={() => setVideoModalOpen(true)}
-          className={`relative w-full max-w-[1300px] mx-auto aspect-video max-h-[96vh] bg-black overflow-hidden rounded-sm origin-center cursor-pointer group/hero ${revealed ? "animate-slit-open" : "opacity-0"
+          className={`relative w-full max-w-[1300px] mx-auto aspect-video max-h-[90vh] bg-black overflow-hidden rounded-sm origin-center cursor-pointer group/hero ${revealed ? "animate-slit-open" : "opacity-0"
             }`}
         >
 
@@ -199,7 +199,7 @@ export default function ProjectDetailPage() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent pointer-events-none" />
 
           {/* ANIMATED INFO PANEL */}
-          <div className="absolute inset-0 z-10 flex items-end p-6 sm:p-12 pointer-events-none">
+          <div className="absolute inset-0 z-10 flex items-end p-4 sm:p-8 md:p-12 pointer-events-none">
             <div
               onClick={(e) => e.stopPropagation()}
               className={`w-full max-w-3xl pointer-events-auto transition-all duration-1000 ease-out ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
@@ -207,21 +207,21 @@ export default function ProjectDetailPage() {
             >
               {(project.categoryLabel || project.year) && (
                 <p
-                  className={`font-mono m-1 text-[9px] tracking-[0.4em] text-zinc-400 uppercase mb-3 transition-all duration-1000 delay-100 ease-out ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+                  className={`font-mono m-1 text-[8px] sm:text-[9px] tracking-[0.4em] text-zinc-400 uppercase mb-2 sm:mb-3 transition-all duration-1000 delay-100 ease-out ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
                     }`}
                 >
                   {project.categoryLabel} {project.categoryLabel && project.year && " · "} {project.year}
                 </p>
               )}
               <h1
-                className={`font-sans font-black text-[clamp(1.8rem,4vw,3rem)] leading-[1] tracking-tight text-white mb-4 transition-all duration-1000 delay-200 ease-out ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+                className={`font-sans font-black text-[clamp(1.5rem,4vw,3rem)] leading-[1.05] tracking-tight text-white mb-3 sm:mb-4 transition-all duration-1000 delay-200 ease-out ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                   }`}
               >
                 {project.title}
               </h1>
               {project.description && (
                 <p
-                  className={`font-sans text-[13px] sm:text-[14px] leading-[1.7] text-zinc-300 max-w-2xl mb-6 font-normal transition-all duration-1000 delay-300 ease-out ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+                  className={`font-sans text-[12px] sm:text-[14px] leading-[1.6] text-zinc-300 max-w-2xl mb-4 sm:mb-6 font-normal transition-all duration-1000 delay-300 ease-out ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                     }`}
                 >
                   {project.description}
@@ -230,25 +230,25 @@ export default function ProjectDetailPage() {
 
               {(project.director || project.client) && (
                 <div
-                  className={`flex flex-wrap gap-x-12 gap-y-4 transition-all duration-1000 delay-500 ease-out ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+                  className={`flex flex-wrap gap-x-6 sm:gap-x-12 gap-y-3 sm:gap-y-4 transition-all duration-1000 delay-500 ease-out ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                     }`}
                 >
                   {project.director && (
                     <div>
-                      <p className="font-mono text-[8px] tracking-[0.35em] text-zinc-500 uppercase mb-1">
+                      <p className="font-mono text-[8px] tracking-[0.35em] text-zinc-500 uppercase mb-0.5 sm:mb-1">
                         Director
                       </p>
-                      <p className="font-sans text-[13px] font-medium text-zinc-100">
+                      <p className="font-sans text-[12px] sm:text-[13px] font-medium text-zinc-100">
                         {project.director}
                       </p>
                     </div>
                   )}
                   {project.client && (
                     <div>
-                      <p className="font-mono text-[8px] tracking-[0.35em] text-zinc-500 uppercase mb-1">
+                      <p className="font-mono text-[8px] tracking-[0.35em] text-zinc-500 uppercase mb-0.5 sm:mb-1">
                         Client
                       </p>
-                      <p className="font-sans text-[13px] font-medium text-zinc-100">
+                      <p className="font-sans text-[12px] sm:text-[13px] font-medium text-zinc-100">
                         {project.client}
                       </p>
                     </div>
@@ -262,8 +262,8 @@ export default function ProjectDetailPage() {
 
       {/* BENTO BOX GALLERY */}
       {project.gallery && project.gallery.length > 0 && (
-        <section className={`${W} pb-32 pt-12`}>
-          <div className="w-full h-[1px] bg-white/[0.08] mb-8" />
+        <section className={`${W} pb-28 sm:pb-36 pt-8 sm:pt-12`}>
+          <div className="w-full h-[1px] bg-white/[0.08] mb-6 sm:mb-8" />
 
           <div className="grid grid-cols-12 auto-rows-auto gap-2 sm:gap-3">
             {project.gallery.map((item, index) => {
@@ -283,7 +283,7 @@ export default function ProjectDetailPage() {
             })}
           </div>
 
-          <div className="w-full h-[1px] bg-white/[0.08] mt-16" />
+          <div className="w-full h-[1px] bg-white/[0.08] mt-12 sm:mt-16" />
         </section>
       )}
 
@@ -379,13 +379,13 @@ export default function ProjectDetailPage() {
       )}
 
       {/* CENTERED WHITE FILL-UP BACK TO TOP BUTTON */}
-      <div className="fixed bottom-8 left-0 right-0 z-[80] flex justify-center pointer-events-none">
+      <div className="fixed bottom-14 sm:bottom-8 left-0 right-0 z-[80] flex justify-center pointer-events-none">
         <button
           onClick={scrollToTop}
           aria-label="Back to top"
           className={`
             relative group overflow-hidden
-            w-12 h-12 rounded-full
+            w-11 h-11 sm:w-12 sm:h-12 rounded-full
             flex items-center justify-center
             border border-white/20 bg-black/60 backdrop-blur-md
             transition-all duration-500 ease-out

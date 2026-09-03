@@ -66,13 +66,16 @@ export default function PreloaderAdminPage() {
     <div>
       <Script src="https://upload-widget.cloudinary.com/global/all.js" strategy="lazyOnload" />
 
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-xl">Preloader Images</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8 pb-4 border-b border-white/10">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-light tracking-tight">Preloader Images</h1>
+          <p className="text-xs text-white/40 mt-0.5">Upload images shown during initial website preloading.</p>
+        </div>
         <button
           onClick={openUploadWidget}
-          className="px-4 py-2 border border-white/30 text-sm hover:bg-white hover:text-black transition"
+          className="px-4 py-2 bg-white text-black font-semibold text-xs sm:text-sm hover:bg-white/90 transition rounded-sm shrink-0 self-start sm:self-auto"
         >
-          Upload Image
+          + Upload Images
         </button>
       </div>
 
@@ -81,13 +84,13 @@ export default function PreloaderAdminPage() {
       ) : images.length === 0 ? (
         <p className="text-white/50 text-sm">No images yet. Upload some above.</p>
       ) : (
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
           {images.map((img) => (
-            <div key={img.id} className="relative group">
+            <div key={img.id} className="relative group rounded overflow-hidden bg-zinc-900 border border-white/10">
               <img src={img.url} alt="" className="w-full aspect-square object-cover" />
               <button
                 onClick={() => handleDelete(img.id)}
-                className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition"
+                className="absolute top-2 right-2 bg-black/80 hover:bg-red-600 text-white text-xs px-2.5 py-1 rounded transition opacity-100 sm:opacity-0 group-hover:opacity-100"
               >
                 Delete
               </button>

@@ -2,7 +2,6 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
-import gsap from 'gsap';
 import { isVideoUrl } from '@/lib/media';
 
 interface WorkCategory {
@@ -46,10 +45,10 @@ export default function WorkSection() {
                 slug: `/work/${c.slug}`,
                 subtext: c.subtext
                   ? c.subtext
-                    .split('\n')
-                    .map((l: string) => l.trim())
-                    .filter(Boolean)
-                    .join('\n')
+                      .split('\n')
+                      .map((l: string) => l.trim())
+                      .filter(Boolean)
+                      .join('\n')
                   : '',
                 image: c.image,
               }))
@@ -68,14 +67,33 @@ export default function WorkSection() {
   };
 
   useEffect(() => {
-    const boxWidth = 384;
-    const boxHeight = 216;
+    const updateDimensions = () => {
+      const isMobile = window.innerWidth < 768;
+      const boxWidth = isMobile ? Math.min(320, window.innerWidth - 32) : 384;
+      const boxHeight = (boxWidth * 9) / 16;
+      return { boxWidth, boxHeight };
+    };
+
+    let { boxWidth, boxHeight } = updateDimensions();
+
+    const handleResize = () => {
+      const dims = updateDimensions();
+      boxWidth = dims.boxWidth;
+      boxHeight = dims.boxHeight;
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    let isRunning = false;
 
     const render = () => {
       if (targetPos.current && currentPos.current) {
-        const ease = 0.12;
-        currentPos.current.x += (targetPos.current.x - currentPos.current.x) * ease;
-        currentPos.current.y += (targetPos.current.y - currentPos.current.y) * ease;
+        const ease = 0.14;
+        const dx = targetPos.current.x - currentPos.current.x;
+        const dy = targetPos.current.y - currentPos.current.y;
+
+        currentPos.current.x += dx * ease;
+        currentPos.current.y += dy * ease;
 
         const top = currentPos.current.y - boxHeight / 2;
         const left = currentPos.current.x - boxWidth / 2;
@@ -89,14 +107,31 @@ export default function WorkSection() {
         if (spotlightInnerRef.current) {
           spotlightInnerRef.current.style.transform = `translate3d(${-left}px, ${-top}px, 0px)`;
         }
+
+        if (Math.abs(dx) > 0.08 || Math.abs(dy) > 0.08) {
+          animFrameId.current = requestAnimationFrame(render);
+          return;
+        }
       }
 
-      animFrameId.current = requestAnimationFrame(render);
+      isRunning = false;
+      animFrameId.current = null;
     };
 
-    animFrameId.current = requestAnimationFrame(render);
+    const triggerRender = () => {
+      if (!isRunning) {
+        isRunning = true;
+        animFrameId.current = requestAnimationFrame(render);
+      }
+    };
+
+    // Attach trigger to window mousemove
+    const onMove = () => triggerRender();
+    window.addEventListener('mousemove', onMove, { passive: true });
 
     return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('mousemove', onMove);
       if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
     };
   }, []);
@@ -153,18 +188,23 @@ export default function WorkSection() {
     setIsHovered(true);
   };
 
+  const topRowCategories = workCategories.slice(0, 4);
+  const bottomRowCategories = workCategories.slice(4);
+
   return (
     <section
       ref={containerRef}
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={() => setIsHovered(false)}
-      className="relative flex min-h-screen w-full flex-col justify-center overflow-hidden bg-black px-6 uppercase selection:bg-white selection:text-black md:px-16"
+      className="relative flex min-h-[100dvh] w-full flex-col justify-center overflow-x-hidden overflow-y-auto bg-black px-4 sm:px-8 md:px-16 pt-20 sm:pt-24 pb-20 sm:pb-24 uppercase selection:bg-white selection:text-black"
     >
+      {/* Background Layers */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
-          className={`absolute inset-0 transition-opacity duration-[1800ms] ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden ${activeIdx === null ? 'opacity-100' : 'opacity-0'
-            }`}
+          className={`absolute inset-0 transition-opacity duration-[1800ms] ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden ${
+            activeIdx === null ? 'opacity-100' : 'opacity-0'
+          }`}
         >
           {isVideoUrl(defaultBgImage) ? (
             <video
@@ -189,12 +229,13 @@ export default function WorkSection() {
           return (
             <div
               key={cat.id}
-              className={`absolute inset-0 transition-all duration-[1800ms] ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden ${isActive
-                ? 'opacity-100 translate-x-0'
-                : activeIdx !== null && index < activeIdx
+              className={`absolute inset-0 transition-all duration-[1800ms] ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden ${
+                isActive
+                  ? 'opacity-100 translate-x-0'
+                  : activeIdx !== null && index < activeIdx
                   ? '-translate-x-full opacity-0'
                   : 'translate-x-full opacity-0'
-                }`}
+              }`}
             >
               {isVideoUrl(cat.image) ? (
                 <video
@@ -218,15 +259,18 @@ export default function WorkSection() {
 
       <div className="absolute inset-0 bg-black/80 z-10 pointer-events-none" />
 
+      {/* HUD Frame / Spotlight */}
       <div
         ref={hudFrameRef}
-        className={`pointer-events-none absolute left-0 top-0 z-20 overflow-hidden rounded border border-white/20 transition-opacity duration-300 ease-out ${isHovered && currentPos.current ? 'opacity-100' : 'opacity-0'
-          }`}
+        className={`pointer-events-none absolute left-0 top-0 z-20 overflow-hidden rounded border border-white/20 transition-opacity duration-300 ease-out hidden md:block ${
+          isHovered && currentPos.current ? 'opacity-100' : 'opacity-0'
+        }`}
       >
         <div ref={spotlightInnerRef} className="absolute inset-0 h-screen w-screen">
           <div
-            className={`absolute inset-0 h-full w-full transition-opacity duration-[1800ms] ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden ${activeIdx === null ? 'opacity-100' : 'opacity-0'
-              }`}
+            className={`absolute inset-0 h-full w-full transition-opacity duration-[1800ms] ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden ${
+              activeIdx === null ? 'opacity-100' : 'opacity-0'
+            }`}
             style={{
               filter: 'brightness(1.2) contrast(1.05)',
             }}
@@ -254,12 +298,13 @@ export default function WorkSection() {
             return (
               <div
                 key={`spotlight-${cat.id}`}
-                className={`absolute inset-0 h-full w-full transition-all duration-[1800ms] ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden ${isActive
-                  ? 'opacity-100 translate-x-0'
-                  : activeIdx !== null && index < activeIdx
+                className={`absolute inset-0 h-full w-full transition-all duration-[1800ms] ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden ${
+                  isActive
+                    ? 'opacity-100 translate-x-0'
+                    : activeIdx !== null && index < activeIdx
                     ? '-translate-x-full opacity-0'
                     : 'translate-x-full opacity-0'
-                  }`}
+                }`}
                 style={{
                   filter: 'brightness(1.2) contrast(1.05)',
                 }}
@@ -303,40 +348,90 @@ export default function WorkSection() {
         </div>
       </div>
 
-      <main className="relative z-30 flex w-full max-w-7xl mx-auto items-center justify-between px-4 text-slate-100">
-        {workCategories.map((item, index) => {
-          const isSelected = activeIdx === index;
+      {/* Categories Layout Container */}
+      <main className="relative z-30 flex w-full max-w-7xl mx-auto flex-col gap-6 sm:gap-8 my-auto text-slate-100">
+        {/* Top Row / Main Grid for Categories */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:w-full lg:items-center lg:justify-between gap-4 sm:gap-6 lg:gap-8">
+          {topRowCategories.map((item, index) => {
+            const isSelected = activeIdx === index;
 
-          return (
-            <Link
-              key={item.id}
-              href={item.slug}
-              onMouseEnter={() => handleCategoryHover(index)}
-              className="group flex flex-col items-start text-left py-8"
-            >
-              <h2
-                className={`m-0 mb-3 p-0 text-left tracking-tight text-white drop-shadow-lg transition-all duration-500 ease-out ${isSelected
-                  ? 'font-normal text-3xl md:text-4xl lg:text-5xl opacity-100'
-                  : 'font-extralight text-2xl md:text-3xl lg:text-4xl opacity-40 hover:opacity-75'
-                  }`}
-                style={{
-                  fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
-                }}
+            return (
+              <Link
+                key={item.id}
+                href={item.slug}
+                onMouseEnter={() => handleCategoryHover(index)}
+                onTouchStart={() => handleCategoryHover(index)}
+                className="group flex flex-col items-start text-left py-2 sm:py-3 lg:py-4 transition-transform duration-300"
               >
-                {item.title}
-              </h2>
+                <h2
+                  className={`m-0 mb-1.5 sm:mb-2 lg:mb-3 p-0 text-left tracking-tight text-white drop-shadow-lg transition-all duration-500 ease-out ${
+                    isSelected
+                      ? 'font-normal text-2xl sm:text-3xl md:text-4xl lg:text-5xl opacity-100'
+                      : 'font-extralight text-xl sm:text-2xl md:text-3xl lg:text-4xl opacity-40 hover:opacity-75 sm:opacity-50'
+                  }`}
+                  style={{
+                    fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+                  }}
+                >
+                  {item.title}
+                </h2>
 
-              <p
-                className={`m-1 p-0 text-left w-full whitespace-pre-line text-[9px] font-semibold tracking-widest leading-relaxed text-slate-300 transition-all duration-500 ${isSelected
-                  ? 'opacity-100 translate-y-0'
-                  : 'opacity-0 translate-y-2 pointer-events-none'
+                <p
+                  className={`m-0 p-0 text-left w-full whitespace-pre-line text-[9px] sm:text-[10px] font-semibold tracking-widest leading-relaxed text-slate-300 transition-all duration-500 ${
+                    isSelected
+                      ? 'opacity-100 translate-y-0'
+                      : 'opacity-0 lg:opacity-0 translate-y-2 pointer-events-none'
                   }`}
-              >
-                {item.subtext}
-              </p>
-            </Link>
-          );
-        })}
+                >
+                  {item.subtext}
+                </p>
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Bottom Row: Additional Items (5+) */}
+        {bottomRowCategories.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:w-full lg:items-center lg:justify-center gap-4 sm:gap-6 lg:gap-16">
+            {bottomRowCategories.map((item, idx) => {
+              const globalIdx = idx + 4;
+              const isSelected = activeIdx === globalIdx;
+
+              return (
+                <Link
+                  key={item.id}
+                  href={item.slug}
+                  onMouseEnter={() => handleCategoryHover(globalIdx)}
+                  onTouchStart={() => handleCategoryHover(globalIdx)}
+                  className="group flex flex-col items-start text-left py-2 sm:py-3 lg:py-4 transition-transform duration-300"
+                >
+                  <h2
+                    className={`m-0 mb-1.5 sm:mb-2 lg:mb-3 p-0 text-left tracking-tight text-white drop-shadow-lg transition-all duration-500 ease-out ${
+                      isSelected
+                        ? 'font-normal text-2xl sm:text-3xl md:text-4xl lg:text-5xl opacity-100'
+                        : 'font-extralight text-xl sm:text-2xl md:text-3xl lg:text-4xl opacity-40 hover:opacity-75 sm:opacity-50'
+                    }`}
+                    style={{
+                      fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+                    }}
+                  >
+                    {item.title}
+                  </h2>
+
+                  <p
+                    className={`m-0 p-0 text-left w-full whitespace-pre-line text-[9px] sm:text-[10px] font-semibold tracking-widest leading-relaxed text-slate-300 transition-all duration-500 ${
+                      isSelected
+                        ? 'opacity-100 translate-y-0'
+                        : 'opacity-0 lg:opacity-0 translate-y-2 pointer-events-none'
+                    }`}
+                  >
+                    {item.subtext}
+                  </p>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </main>
     </section>
   );

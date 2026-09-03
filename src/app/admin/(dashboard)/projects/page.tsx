@@ -182,7 +182,14 @@ export default function ProjectsAdminPage() {
           });
           fetchRows(activeSlug);
         }
-        if (result?.event === "success" || error) {
+        if (
+          error ||
+          result?.event === "success" ||
+          result?.event === "close" ||
+          result?.event === "abort" ||
+          result?.event === "queues-end" ||
+          (result?.event === "display-changed" && result?.info === "hidden")
+        ) {
           setUploadingTarget(null);
         }
       }
@@ -214,7 +221,14 @@ export default function ProjectsAdminPage() {
           });
           fetchRows(activeSlug);
         }
-        if (result?.event === "success" || error) {
+        if (
+          error ||
+          result?.event === "success" ||
+          result?.event === "close" ||
+          result?.event === "abort" ||
+          result?.event === "queues-end" ||
+          (result?.event === "display-changed" && result?.info === "hidden")
+        ) {
           setUploadingTarget(null);
         }
       }
@@ -448,29 +462,38 @@ export default function ProjectsAdminPage() {
             <p className="text-white/30 text-xs tracking-widest">LOADING</p>
           ) : rows.length === 0 ? (
             <p className="text-white/25 text-xs tracking-widest py-10">
-              NO PROJECTS YET FOR THIS CATEGORY
+              NO PROJECTS IN THIS CATEGORY YET
             </p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-14">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
               {rows.map((row, index) => (
-                <div key={row.id} className="group border border-white/10 p-4 rounded bg-white/[0.015]">
-                  {/* Action bar */}
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-[10px] font-mono tracking-widest text-white/30">
-                      #{index + 1 < 10 ? `0${index + 1}` : index + 1}
-                    </span>
-                    <div className="flex gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
-                      <IconButton onClick={() => moveProject(index, "up")} disabled={index === 0} title="Move up">
+                <div
+                  key={row.id}
+                  className="border border-white/10 p-4 sm:p-5 rounded-sm bg-white/[0.01] flex flex-col justify-between"
+                >
+                  {/* Top Bar: Reorder & Delete */}
+                  <div className="flex items-center justify-between mb-4 pb-2 border-b border-white/5">
+                    <span className="font-mono text-xs text-white/40">#{index + 1}</span>
+                    <div className="flex gap-1.5">
+                      <IconButton
+                        onClick={() => moveProject(index, "up")}
+                        disabled={index === 0}
+                        title="Move Up"
+                      >
                         <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                           <path d="M1 6.5L5 2.5L9 6.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </IconButton>
-                      <IconButton onClick={() => moveProject(index, "down")} disabled={index === rows.length - 1} title="Move down">
+                      <IconButton
+                        onClick={() => moveProject(index, "down")}
+                        disabled={index === rows.length - 1}
+                        title="Move Down"
+                      >
                         <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                           <path d="M1 3.5L5 7.5L9 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </IconButton>
-                      <IconButton onClick={() => handleDelete(row.id)} title="Delete">
+                      <IconButton onClick={() => handleDelete(row.id)} title="Delete Project">
                         <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                           <path d="M1.5 1.5L8.5 8.5M8.5 1.5L1.5 8.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
                         </svg>
@@ -478,11 +501,11 @@ export default function ProjectsAdminPage() {
                     </div>
                   </div>
 
-                  {/* 1. Center GIF / Video */}
+                  {/* 1. Main Media (GIF / Video) */}
                   <div className="mb-4">
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-[9px] tracking-[0.25em] text-white/40 uppercase">
-                        Center Media (GIF / MP4)
+                        Main Display Media (Video / GIF)
                       </span>
                     </div>
                     <div className="relative aspect-[16/10] overflow-hidden bg-white/[0.03] rounded-sm group/media">
@@ -509,11 +532,11 @@ export default function ProjectsAdminPage() {
                         </div>
                       )}
 
-                      <div className="absolute inset-0 bg-black/0 group-hover/media:bg-black/60 transition-all duration-300 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-black/40 sm:bg-black/0 group-hover/media:bg-black/60 transition-all duration-300 flex items-center justify-center">
                         <button
                           onClick={() => openGifUploadWidget(row.id)}
                           disabled={uploadingTarget === `${row.id}-gif`}
-                          className="opacity-0 group-hover/media:opacity-100 transition-opacity duration-300 text-[10px] tracking-[0.2em] text-white border-b border-white/40 pb-0.5 hover:border-white disabled:opacity-40"
+                          className="opacity-100 sm:opacity-0 group-hover/media:opacity-100 transition-opacity duration-300 text-[10px] tracking-[0.2em] text-white border-b border-white/40 pb-0.5 hover:border-white disabled:opacity-40"
                         >
                           {uploadingTarget === `${row.id}-gif` ? "UPLOADING…" : row.gifUrl ? "CHANGE MEDIA" : "+ UPLOAD MEDIA"}
                         </button>
@@ -552,11 +575,11 @@ export default function ProjectsAdminPage() {
                         </div>
                       )}
 
-                      <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/60 transition-all duration-300 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-black/40 sm:bg-black/0 group-hover/thumb:bg-black/60 transition-all duration-300 flex items-center justify-center">
                         <button
                           onClick={() => openThumbnailUploadWidget(row.id)}
                           disabled={uploadingTarget === `${row.id}-thumb`}
-                          className="opacity-0 group-hover/thumb:opacity-100 transition-opacity duration-300 text-[10px] tracking-[0.2em] text-white border-b border-white/40 pb-0.5 hover:border-white disabled:opacity-40"
+                          className="opacity-100 sm:opacity-0 group-hover/thumb:opacity-100 transition-opacity duration-300 text-[10px] tracking-[0.2em] text-white border-b border-white/40 pb-0.5 hover:border-white disabled:opacity-40"
                         >
                           {uploadingTarget === `${row.id}-thumb` ? "UPLOADING…" : row.thumbnailUrl ? "CHANGE THUMBNAIL" : "+ UPLOAD THUMBNAIL"}
                         </button>
@@ -658,28 +681,28 @@ export default function ProjectsAdminPage() {
 
       {/* BENTO BOX GALLERY MODAL */}
       {activeGalleryProject && (
-        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex justify-center items-center p-4 sm:p-8">
-          <div className="bg-zinc-950 border border-white/20 w-full max-w-5xl max-h-[90vh] flex flex-col rounded-lg overflow-hidden shadow-2xl">
+        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex justify-center items-center p-2 sm:p-4 md:p-8">
+          <div className="bg-zinc-950 border border-white/20 w-full max-w-5xl max-h-[92vh] flex flex-col rounded-lg overflow-hidden shadow-2xl">
             {/* Modal Header */}
-            <div className="p-6 border-b border-white/10 flex items-center justify-between bg-black">
+            <div className="p-4 sm:p-6 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-black">
               <div>
-                <p className="text-[10px] tracking-[0.3em] text-white/40 uppercase">
+                <p className="text-[9px] sm:text-[10px] tracking-[0.3em] text-white/40 uppercase">
                   BENTO BOX GALLERY MANAGER
                 </p>
-                <h2 className="text-xl font-light text-white tracking-tight mt-1">
+                <h2 className="text-lg sm:text-xl font-light text-white tracking-tight mt-0.5 sm:mt-1 truncate max-w-[280px] sm:max-w-md">
                   {activeGalleryProject.title}
                 </h2>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 self-end sm:self-auto">
                 <button
                   onClick={() => openGalleryUploadWidget(activeGalleryProject.id)}
-                  className="text-xs tracking-[0.2em] px-4 py-2 bg-white text-black font-medium hover:bg-white/90 transition rounded-sm uppercase"
+                  className="text-[11px] sm:text-xs tracking-[0.15em] sm:tracking-[0.2em] px-3 sm:px-4 py-1.5 sm:py-2 bg-white text-black font-medium hover:bg-white/90 transition rounded-sm uppercase"
                 >
-                  + Upload Cloudinary Pics
+                  + Upload Pics
                 </button>
                 <button
                   onClick={closeGalleryModal}
-                  className="text-white/60 hover:text-white text-sm font-mono tracking-widest"
+                  className="text-white/60 hover:text-white text-xs sm:text-sm font-mono tracking-widest px-2 py-1"
                 >
                   ✕ CLOSE
                 </button>

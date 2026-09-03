@@ -37,7 +37,7 @@ export default function ContactPage() {
     const osc = ctx.createOscillator();
     osc.type = "sawtooth";
 
-    // Vibrato (gives it a "voiced" wavering quality instead of a clean sweep)
+    // Vibrato
     const vibrato = ctx.createOscillator();
     vibrato.type = "sine";
     vibrato.frequency.value = 7;
@@ -46,7 +46,7 @@ export default function ContactPage() {
     vibrato.connect(vibratoGain);
     vibratoGain.connect(osc.frequency);
 
-    // Formant-style bandpass filter to shape the vowel ("ow") color
+    // Formant-style bandpass filter
     const filter = ctx.createBiquadFilter();
     filter.type = "bandpass";
     filter.Q.value = 6;
@@ -57,13 +57,13 @@ export default function ContactPage() {
     filter.connect(gain);
     gain.connect(ctx.destination);
 
-    // Pitch contour: nasal "mrr" onset -> rising "ee" -> falling "ow"
+    // Pitch contour
     osc.frequency.setValueAtTime(320, now);
     osc.frequency.linearRampToValueAtTime(280, now + 0.06);
     osc.frequency.exponentialRampToValueAtTime(520, now + 0.22);
     osc.frequency.exponentialRampToValueAtTime(210, now + 0.55);
 
-    // Filter sweep tracks the vowel shift
+    // Filter sweep
     filter.frequency.setValueAtTime(600, now);
     filter.frequency.linearRampToValueAtTime(1400, now + 0.22);
     filter.frequency.exponentialRampToValueAtTime(500, now + 0.55);
@@ -108,7 +108,6 @@ export default function ContactPage() {
         const dy = mouseY - eyeCenterY;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        // Maximum pixel distance the pupil can shift inside the eye
         const maxRadius = 10;
         const moveRadius = Math.min(maxRadius, dist * 0.05);
 
@@ -131,19 +130,20 @@ export default function ContactPage() {
   }, []);
 
   return (
-    <main className="relative h-screen w-full bg-black text-white flex flex-col items-center justify-center select-none px-4 overflow-hidden">
+    <main className="relative min-h-[100dvh] h-screen h-[100dvh] w-full bg-black text-white flex flex-col items-center justify-center select-none px-4 pt-16 pb-28 sm:pt-20 sm:pb-32 overflow-hidden">
       {/* Ambient center glow */}
       <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.015),transparent_70%)]" />
 
-      {/* Clickable Email in the middle */}
-      <div className="relative z-10 flex flex-col items-center justify-center text-center">
+      {/* Center Stack */}
+      <div className="relative z-10 flex flex-col items-center justify-center text-center my-auto">
+        {/* Clickable Email */}
         <button
           type="button"
           onClick={handleCopyEmail}
-          className="group relative flex flex-col items-center justify-center cursor-pointer px-4 py-2 transition-all duration-300"
+          className="group relative flex flex-col items-center justify-center cursor-pointer px-3 py-2 transition-all duration-300 max-w-[95vw]"
         >
-          <div className="flex items-center gap-2.5">
-            <span className="font-mono text-xs sm:text-sm md:text-base tracking-widest text-zinc-300 group-hover:text-white transition-colors duration-300">
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            <span className="font-mono text-[11px] xs:text-xs sm:text-sm md:text-base tracking-wider sm:tracking-widest text-zinc-300 group-hover:text-white transition-colors duration-300 break-all sm:break-normal">
               {email}
             </span>
 
@@ -156,7 +156,7 @@ export default function ContactPage() {
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className={`w-4 h-4 transition-all duration-300 ${
+              className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 transition-all duration-300 ${
                 copied
                   ? "text-white scale-110"
                   : "text-zinc-500 group-hover:text-white"
@@ -168,6 +168,17 @@ export default function ContactPage() {
           </div>
 
           <span className="mt-2 h-[1px] w-[250px] max-w-[80vw] bg-zinc-700 group-hover:bg-white transition-all duration-300" />
+
+          {/* "COPIED" label */}
+          <span
+            className={`mt-2 font-mono text-[8px] sm:text-xs tracking-[0.2em] text-white/60 transition-all duration-300 ${
+              copied
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 -translate-y-1 pointer-events-none"
+            }`}
+          >
+            COPIED
+          </span>
         </button>
       </div>
 
@@ -182,7 +193,7 @@ export default function ContactPage() {
         >
           {/* Meow speech bubble */}
           <span
-            className={`pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 font-mono text-[10px] sm:text-xs tracking-widest text-white transition-all duration-300 ${
+            className={`pointer-events-none absolute -top-5 sm:-top-6 left-1/2 -translate-x-1/2 font-mono text-[9px] sm:text-xs tracking-widest text-white transition-all duration-300 ${
               showMeow ? "opacity-100 -translate-y-1" : "opacity-0 translate-y-0"
             }`}
           >
@@ -194,7 +205,7 @@ export default function ContactPage() {
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
             onClick={handleCatClick}
-            className="pointer-events-auto cursor-pointer w-[220px] h-[95px] sm:w-[280px] sm:h-[121px] md:w-[330px] md:h-[143px] drop-shadow-[0_-4px_15px_rgba(255,255,255,0.08)]"
+            className="pointer-events-auto cursor-pointer w-[190px] h-[82px] sm:w-[260px] sm:h-[112px] md:w-[330px] md:h-[143px] drop-shadow-[0_-4px_15px_rgba(255,255,255,0.08)]"
           >
             {/* Outline Cat Head Silhouette */}
             <path
@@ -215,45 +226,17 @@ export default function ContactPage() {
 
             {/* Left Eye Container */}
             <g ref={leftEyeRef}>
-              {/* Solid White Eye Socket */}
-              <ellipse
-                cx="140"
-                cy="132"
-                rx="24"
-                ry="28"
-                fill="#FFFFFF"
-              />
-              {/* Black Pupil */}
+              <ellipse cx="140" cy="132" rx="24" ry="28" fill="#FFFFFF" />
               <g ref={leftPupilRef} className="will-change-transform">
-                <ellipse
-                  cx="140"
-                  cy="132"
-                  rx="10"
-                  ry="12"
-                  fill="#000000"
-                />
+                <ellipse cx="140" cy="132" rx="10" ry="12" fill="#000000" />
               </g>
             </g>
 
             {/* Right Eye Container */}
             <g ref={rightEyeRef}>
-              {/* Solid White Eye Socket */}
-              <ellipse
-                cx="260"
-                cy="132"
-                rx="24"
-                ry="28"
-                fill="#FFFFFF"
-              />
-              {/* Black Pupil */}
+              <ellipse cx="260" cy="132" rx="24" ry="28" fill="#FFFFFF" />
               <g ref={rightPupilRef} className="will-change-transform">
-                <ellipse
-                  cx="260"
-                  cy="132"
-                  rx="10"
-                  ry="12"
-                  fill="#000000"
-                />
+                <ellipse cx="260" cy="132" rx="10" ry="12" fill="#000000" />
               </g>
             </g>
           </svg>

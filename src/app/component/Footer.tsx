@@ -26,6 +26,8 @@ export default function Footer() {
     return null;
   }
 
+  const isContactPage = pathname === "/contact";
+
   const toggleExpanded = () => {
     if (isHoverDevice) return;
     setExpanded((prev) => !prev);
@@ -56,7 +58,7 @@ export default function Footer() {
             }`}
           >
             <a
-              href="https://github.com/prathamaharjan" 
+              href="https://www.linkedin.com/in/pratha-maharjan-252461342/" 
               target="_blank"
               rel="noreferrer"
               className="whitespace-nowrap hover:underline hover:text-white"
@@ -66,7 +68,7 @@ export default function Footer() {
             </a>
             <span className="text-white/40">//</span>
             <a
-              href="https://github.com/pragunrajmaskey" 
+              href="https://www.linkedin.com/in/pragunrajmaskey/" 
               target="_blank"
               rel="noreferrer"
               className="whitespace-nowrap hover:underline hover:text-white"
@@ -79,12 +81,14 @@ export default function Footer() {
           <span className="shrink-0 text-white/75">]</span>
         </div>
 
-        {/* LOCATION (CENTER) */}
-        <div className="pointer-events-auto sm:absolute sm:left-1/2 sm:-translate-x-1/2">
-          <span className="font-mono text-[7px] tracking-[0.2em] text-white/60 uppercase sm:text-[8px] md:text-[10px]">
-            Based in Kathmandu, Nepal
-          </span>
-        </div>
+        {/* LOCATION (CENTER) - Hidden on /contact page */}
+        {!isContactPage && (
+          <div className="pointer-events-auto sm:absolute sm:left-1/2 sm:-translate-x-1/2">
+            <span className="font-mono text-[7px] tracking-[0.2em] text-white/60 uppercase sm:text-[8px] md:text-[10px]">
+              Based in Kathmandu, Nepal
+            </span>
+          </div>
+        )}
 
         {/* SOCIAL LINKS (RIGHT) */}
         <div className="pointer-events-auto flex items-center gap-3 sm:gap-4 md:gap-5">

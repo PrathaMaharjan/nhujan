@@ -18,8 +18,15 @@ export async function GET() {
       image: r.imageUrl,
     }));
 
-  return NextResponse.json({
-    defaultImage: defaultRow?.imageUrl ?? null,
-    categories,
-  });
+  return NextResponse.json(
+    {
+      defaultImage: defaultRow?.imageUrl ?? null,
+      categories,
+    },
+    {
+      headers: {
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+      },
+    }
+  );
 }

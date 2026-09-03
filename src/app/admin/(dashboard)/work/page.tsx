@@ -89,7 +89,14 @@ export default function WorkAdminPage() {
           });
           fetchRows();
         }
-        if (result?.event === "success" || error) {
+        if (
+          error ||
+          result?.event === "success" ||
+          result?.event === "close" ||
+          result?.event === "abort" ||
+          result?.event === "queues-end" ||
+          (result?.event === "display-changed" && result?.info === "hidden")
+        ) {
           setUploadingId(null);
         }
       }
@@ -164,9 +171,9 @@ export default function WorkAdminPage() {
       <Script src="https://upload-widget.cloudinary.com/global/all.js" strategy="lazyOnload" />
 
       {/* Header */}
-      <div className="mb-16">
-        <p className="text-[10px] tracking-[0.3em] text-white/40 mb-2">WORK PAGE</p>
-        <h1 className="text-3xl md:text-4xl font-extralight tracking-tight text-white">
+      <div className="mb-10 sm:mb-16">
+        <p className="text-[10px] tracking-[0.3em] text-white/40 mb-1.5 sm:mb-2">WORK PAGE</p>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-extralight tracking-tight text-white">
           Categories
         </h1>
       </div>
@@ -177,11 +184,11 @@ export default function WorkAdminPage() {
         <>
           {/* Default background — full-width hero row */}
           {defaultRow && (
-            <div className="mb-20">
-              <p className="text-[10px] tracking-[0.3em] text-white/40 mb-4">
+            <div className="mb-12 sm:mb-20">
+              <p className="text-[10px] tracking-[0.3em] text-white/40 mb-3 sm:mb-4">
                 DEFAULT BACKGROUND
               </p>
-              <div className="relative w-full aspect-[21/9] group overflow-hidden bg-white/[0.02]">
+              <div className="relative w-full aspect-[16/9] sm:aspect-[21/9] group overflow-hidden bg-white/[0.02] rounded-sm">
                 {defaultRow.imageUrl ? (
                   isVideoUrl(defaultRow.imageUrl) ? (
                     <video
@@ -204,16 +211,16 @@ export default function WorkAdminPage() {
                     NO MEDIA SET
                   </div>
                 )}
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-all duration-500 flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/40 sm:bg-black/0 group-hover:bg-black/60 transition-all duration-500 flex items-center justify-center">
                   <button
                     onClick={() => openUploadWidget(defaultRow.id)}
                     disabled={uploadingId === defaultRow.id}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-[11px] tracking-[0.25em] text-white border-b border-white/40 pb-1 hover:border-white disabled:opacity-40"
+                    className="opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-[11px] tracking-[0.25em] text-white border-b border-white/40 pb-1 hover:border-white disabled:opacity-40"
                   >
                     {uploadingId === defaultRow.id ? "UPLOADING…" : "CHANGE MEDIA"}
                   </button>
                 </div>
-                <div className="absolute bottom-4 left-4 text-[10px] tracking-[0.25em] text-white/50">
+                <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 text-[9px] sm:text-[10px] tracking-[0.25em] text-white/60 sm:text-white/50 bg-black/40 px-2 py-0.5 rounded">
                   SHOWN BEFORE HOVER
                 </div>
               </div>
@@ -233,9 +240,9 @@ export default function WorkAdminPage() {
 
           {/* Add form — inline, minimal */}
           {showAddForm && (
-            <div className="mb-10 pb-10 border-b border-white/10 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="mb-10 pb-10 border-b border-white/10 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
               <div>
-                <label className="text-[10px] tracking-[0.25em] text-white/40 block mb-3">
+                <label className="text-[10px] tracking-[0.25em] text-white/40 block mb-2 sm:mb-3">
                   TITLE
                 </label>
                 <input
@@ -243,11 +250,11 @@ export default function WorkAdminPage() {
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="Fashion Films"
                   autoFocus
-                  className="w-full bg-transparent border-b border-white/20 py-2 text-lg font-extralight outline-none focus:border-white/60 transition placeholder:text-white/20"
+                  className="w-full bg-transparent border-b border-white/20 py-2 text-base sm:text-lg font-extralight outline-none focus:border-white/60 transition placeholder:text-white/20"
                 />
               </div>
               <div>
-                <label className="text-[10px] tracking-[0.25em] text-white/40 block mb-3">
+                <label className="text-[10px] tracking-[0.25em] text-white/40 block mb-2 sm:mb-3">
                   SUBTEXT — ONE TAG PER LINE
                 </label>
                 <textarea
@@ -262,7 +269,7 @@ export default function WorkAdminPage() {
                 <button
                   onClick={handleAddCategory}
                   disabled={adding || !newTitle.trim()}
-                  className="text-[11px] tracking-[0.25em] text-black bg-white px-6 py-2.5 disabled:opacity-30 hover:bg-white/90 transition"
+                  className="text-[11px] tracking-[0.25em] text-black bg-white px-5 sm:px-6 py-2.5 disabled:opacity-30 hover:bg-white/90 transition w-full sm:w-auto"
                 >
                   {adding ? "CREATING…" : "CREATE CATEGORY"}
                 </button>
@@ -276,11 +283,11 @@ export default function WorkAdminPage() {
               NO CATEGORIES YET
             </p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-14">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 sm:gap-x-8 gap-y-10 sm:gap-y-14">
               {categoryRows.map((row, index) => (
                 <div key={row.id} className="group">
                   {/* Media card */}
-                  <div className="relative aspect-[4/3] overflow-hidden bg-white/[0.02] mb-4">
+                  <div className="relative aspect-[16/10] sm:aspect-[4/3] overflow-hidden bg-white/[0.02] mb-3 sm:mb-4 rounded-sm">
                     {row.imageUrl ? (
                       isVideoUrl(row.imageUrl) ? (
                         <video
@@ -304,18 +311,18 @@ export default function WorkAdminPage() {
                       </div>
                     )}
 
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-all duration-500 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/40 sm:bg-black/0 group-hover:bg-black/60 transition-all duration-500 flex items-center justify-center">
                       <button
                         onClick={() => openUploadWidget(row.id)}
                         disabled={uploadingId === row.id}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-[11px] tracking-[0.25em] text-white border-b border-white/40 pb-1 hover:border-white disabled:opacity-40"
+                        className="opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-[11px] tracking-[0.25em] text-white border-b border-white/40 pb-1 hover:border-white disabled:opacity-40"
                       >
                         {uploadingId === row.id ? "UPLOADING…" : "CHANGE MEDIA"}
                       </button>
                     </div>
 
                     {/* Reorder / delete controls */}
-                    <div className="absolute top-3 right-3 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="absolute top-2 right-2 sm:top-3 sm:right-3 flex gap-1.5 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <IconButton
                         onClick={() => moveCategory(index, "up")}
                         disabled={index === 0}

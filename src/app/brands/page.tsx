@@ -120,8 +120,8 @@ function BrandSticker({
 
   return (
     <div
-      className="flex items-center justify-center"
-      style={style}
+      className="flex items-center justify-center select-none"
+      style={{ ...style, touchAction: "pan-y" }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -133,7 +133,7 @@ function BrandSticker({
       <div
         className="brand-logo"
         style={{
-          height: 36,
+          height: 34,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -150,15 +150,7 @@ function BrandSticker({
           src={image}
           alt={name}
           draggable={false}
-          style={{
-            height: 36,
-            width: "auto",
-            display: "block",
-            objectFit: "contain",
-            opacity: 1,
-            userSelect: "none",
-            pointerEvents: "none",
-          }}
+          className="h-7 sm:h-8 md:h-9 w-auto object-contain pointer-events-none select-none"
         />
       </div>
     </div>
@@ -174,29 +166,12 @@ function ArtistSticker({
 }) {
   return (
     <div
-      className="flex items-center justify-center px-1.5 py-1 text-center text-white"
+      className="group flex items-center justify-center px-2 py-1 text-center text-white select-none cursor-pointer transition-transform duration-300 hover:scale-105"
       style={style}
     >
-      <div className="inline-block">
-        <MeshText
-          text={name}
-          color="#ffffff"
-          font={{
-            fontFamily: "Inter",
-            fontWeight: 900,
-            fontSize: 16,
-            lineHeight: "1.05em",
-            letterSpacing: "0.01em",
-            textAlign: "left",
-          }}
-          glitchMode={false}
-          enableHover={true}
-          hoverIntensity={2.5}
-          baseIntensity={0}
-          fuzzRange={12}
-          fps={60}
-        />
-      </div>
+      <span className="font-sans text-[13px] sm:text-[14px] md:text-[16px] font-black uppercase tracking-[0.02em] text-white/80 transition-colors duration-300 group-hover:text-white">
+        {name}
+      </span>
     </div>
   );
 }
@@ -224,27 +199,20 @@ export default function BrandsPage() {
   }, []);
 
   return (
-    <main className="relative h-screen w-full overflow-hidden bg-[#0b0b0b] text-white select-none">
-      <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05),transparent_42%)]" />
-
-      <div
-        className="pointer-events-none absolute inset-0 z-[1] opacity-[0.08] mix-blend-soft-light"
-        style={{
-          backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E\")",
-        }}
-      />
+    <main className="relative min-h-[100dvh] h-screen h-[100dvh] w-full overflow-hidden bg-[#0b0b0b] text-white select-none">
+      {/* Ambient center glow — reduced to match contact page */}
+      <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.015),transparent_70%)]" />
 
       <div className="absolute inset-0 z-10 overflow-y-auto overflow-x-hidden">
-        <div className="flex min-h-full w-full items-center justify-center px-4 py-16 sm:px-6 md:px-10">
-          <div className="flex w-full max-w-[1200px] flex-col items-center justify-center gap-8 sm:gap-10">
+        <div className="flex min-h-full w-full items-center justify-center px-4 pt-20 pb-20 sm:px-6 sm:pt-24 sm:pb-24 md:px-10">
+          <div className="flex w-full max-w-[1200px] flex-col items-center justify-center gap-8 sm:gap-10 my-auto">
             {/* BRAND LOGOS SECTION */}
             <section className="flex w-full flex-col items-center justify-center">
-              <h2 className="mb-5 font-sans text-[10px] font-bold uppercase tracking-[0.28em] text-white/55 sm:text-[11px]">
+              <h2 className="mb-4 sm:mb-5 font-sans text-[9px] sm:text-[10px] md:text-[11px] font-bold uppercase tracking-[0.28em] text-white/55">
                 Brands
               </h2>
 
-              <div className="flex w-full flex-wrap items-center justify-center gap-10 sm:gap-12 md:gap-14">
+              <div className="flex w-full flex-wrap items-center justify-center gap-6 sm:gap-10 md:gap-14">
                 {brands.map((brand, idx) => (
                   <BrandSticker
                     key={brand.id || `${brand.name}-${idx}`}
@@ -259,11 +227,11 @@ export default function BrandsPage() {
 
             {/* ARTISTS SECTION */}
             <section className="flex w-full flex-col items-center justify-center">
-              <h2 className="mb-5 font-sans text-[10px] font-bold uppercase tracking-[0.28em] text-white/55 sm:text-[11px]">
+              <h2 className="mb-4 sm:mb-5 font-sans text-[9px] sm:text-[10px] md:text-[11px] font-bold uppercase tracking-[0.28em] text-white/55">
                 Artists
               </h2>
 
-              <div className="flex w-full flex-wrap items-center justify-center gap-4 sm:gap-5 md:gap-6">
+              <div className="flex w-full flex-wrap items-center justify-center gap-3 sm:gap-4 md:gap-6">
                 {artists.map((artist, idx) => (
                   <ArtistSticker
                     key={artist.id || `${artist.name}-${idx}`}

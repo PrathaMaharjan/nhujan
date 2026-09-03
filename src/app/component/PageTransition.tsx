@@ -32,9 +32,9 @@ function isTopLevel(pathname: string): boolean {
   return pathname in TOP_LEVEL_ORDER;
 }
 
-// Ultra-smooth, luxurious quintic deceleration curve for soft, cinematic arrival
-const EASE_SMOOTH: [number, number, number, number] = [0.16, 1, 0.3, 1];
-const DURATION = 1.15; // Soft and gracefully paced
+// Ultra-smooth, fast and snappy quintic deceleration curve for immediate, fluid navigation
+const EASE_SMOOTH: [number, number, number, number] = [0.22, 1, 0.36, 1];
+const DURATION = 1; // Snappy and responsive
 
 const slideVariants = {
   initial: (direction: number) => ({
@@ -45,10 +45,6 @@ const slideVariants = {
     width: "100%",
     height: "100%",
     zIndex: 2,
-    boxShadow:
-      direction >= 0
-        ? "-30px 0 60px rgba(0,0,0,0.65)"
-        : "30px 0 60px rgba(0,0,0,0.65)",
     willChange: "transform",
   }),
   animate: {
@@ -59,11 +55,9 @@ const slideVariants = {
     width: "100%",
     height: "100%",
     zIndex: 2,
-    boxShadow: "0px 0 0px rgba(0,0,0,0)",
     willChange: "transform",
     transition: {
       x: { duration: DURATION, ease: EASE_SMOOTH },
-      boxShadow: { duration: DURATION, ease: EASE_SMOOTH },
     },
   },
   exit: (direction: number) => ({

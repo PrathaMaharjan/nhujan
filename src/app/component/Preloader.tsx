@@ -12,9 +12,6 @@ const FALLBACK_IMAGES: string[] = [
   "/preloader/still-1.jpg",
   "/preloader/still-2.jpg",
   "/preloader/still-3.jpg",
-  "/preloader/still-4.jpg",
-  "/preloader/still-5.jpg",
-  "/preloader/still-6.jpg",
 ];
 
 type Phase = "counting" | "split" | "gallery" | "zoom" | "done";
@@ -53,18 +50,18 @@ export default function Preloader({ children }: PreloaderProps) {
     fetch("/api/preloader")
       .then((res) => res.json())
       .then((urls: string[]) => {
-        if (Array.isArray(urls) && urls.length > 0) setGalleryImages(urls);
+        if (Array.isArray(urls) && urls.length > 0) {
+          setGalleryImages(urls);
+        }
       })
       .catch(() => {
         // silently keep fallback images
       });
   }, []);
 
-  const loopedImages = useMemo(
-    () => [...galleryImages, ...galleryImages, ...galleryImages],
-    [galleryImages]
-  );
-  const targetIndex = loopedImages.length - 1;
+  // Display each fetched image exactly once with zero looping/duplication
+  const singlePassImages = useMemo(() => galleryImages, [galleryImages]);
+  const targetIndex = singlePassImages.length - 1;
 
   /* ---------------- COUNTING 0 -> 100 (gsap tween, eased) ---------------- */
   useEffect(() => {
@@ -86,7 +83,7 @@ export default function Preloader({ children }: PreloaderProps) {
     };
   }, [phase, skip]);
 
-  /* ---------------- SPLIT THEN FULL TOP-TO-BOTTOM SCROLL ---------------- */
+  /* ---------------- SPLIT THEN SINGLE PASS SCROLL ---------------- */
   useEffect(() => {
     if (skip || phase !== "split") return;
 
@@ -113,24 +110,24 @@ export default function Preloader({ children }: PreloaderProps) {
     // 1. Text splits outward completely
     tl.to(
       leftTextRef.current,
-      { xPercent: -140, opacity: 0, duration: 0.65, ease: "power4.inOut" },
+      { xPercent: -140, opacity: 0, duration: 0.8, ease: "power4.inOut" },
       0
     )
       .to(
         rightTextRef.current,
-        { xPercent: 140, opacity: 0, duration: 0.65, ease: "power4.inOut" },
+        { xPercent: 140, opacity: 0, duration: 0.8, ease: "power4.inOut" },
         0
       )
       .to(
         catRef.current,
-        { opacity: 0, scale: 0.92, duration: 0.5, ease: "power2.out" },
+        { opacity: 0, scale: 0.92, duration: 0.6, ease: "power2.out" },
         0.05
       )
-      // 2. Fast continuous scroll from above viewport down to target image
+      // 2. Single smooth scroll passing through the sequence once
       .to(
         track,
-        { y: finalY, duration: 3.0, ease: "power4.out" },
-        0.55
+        { y: finalY, duration: 2.5, ease: "power3.out" },
+        0.45
       );
 
     return () => {
@@ -245,7 +242,7 @@ export default function Preloader({ children }: PreloaderProps) {
                     willChange: "transform",
                   }}
                 >
-                  {loopedImages.map((src, i) => (
+                  {singlePassImages.map((src, i) => (
                     <div
                       key={i}
                       ref={i === targetIndex ? targetRef : undefined}

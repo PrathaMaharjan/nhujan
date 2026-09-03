@@ -95,48 +95,71 @@ body {
   }
 }
 
-@keyframes crtTurnOnCentered {
+@keyframes stageReveal {
   0% {
-    transform: scale(0.001, 0.004);
     opacity: 0;
-  }
-
-  8% {
-    opacity: 1;
-    transform: scale(0.3, 0.004);
-  }
-
-  30% {
-    transform: scale(1, 0.006);
-    opacity: 1;
-  }
-
-  50% {
-    transform: scale(1, 0.08);
-    opacity: 1;
+    transform: scale3d(0.96, 0.96, 1) translateY(12px);
   }
 
   100% {
-    transform: scale(1, 1);
     opacity: 1;
+    transform: scale3d(1, 1, 1) translateY(0);
   }
 }
 
-@keyframes tvFlash {
+.animate-stage-reveal {
+  will-change: transform, opacity;
+  animation: stageReveal 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+@keyframes crtTurnOnCentered {
   0% {
     opacity: 0;
+    transform: scale3d(0.02, 0.005, 1);
   }
 
-  20% {
-    opacity: 0.85;
+  18% {
+    opacity: 1;
+    transform: scale3d(0.9, 0.005, 1);
   }
 
-  45% {
-    opacity: 0.45;
+  38% {
+    opacity: 1;
+    transform: scale3d(1, 0.02, 1);
+  }
+
+  65% {
+    opacity: 1;
+    transform: scale3d(1, 0.6, 1);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale3d(1, 1, 1);
+  }
+}
+
+@keyframes tvFlashBeam {
+  0% {
+    opacity: 0.8;
+    transform: scale3d(1, 0.02, 1);
+  }
+
+  25% {
+    opacity: 0.4;
+    transform: scale3d(1, 0.25, 1);
+  }
+
+  60% {
+    opacity: 0.15;
+    transform: scale3d(1, 0.8, 1);
   }
 
   100% {
     opacity: 0;
+    transform: scale3d(1, 1, 1);
   }
 }
 
@@ -157,17 +180,19 @@ body {
 .animate-crt-turn-on {
   will-change: transform, opacity;
   transform-origin: center center;
-  animation: crtTurnOn 0.9s cubic-bezier(0.19, 1, 0.22, 1) both;
+  animation: crtTurnOn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-crt-turn-on-centered {
   will-change: transform, opacity;
   transform-origin: center center;
-  animation: crtTurnOnCentered 0.9s cubic-bezier(0.19, 1, 0.22, 1) both;
+  animation: crtTurnOnCentered 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .animate-tv-flash {
-  animation: tvFlash 0.9s ease-out both;
+  animation: tvFlashBeam 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-signal-1 {
@@ -197,7 +222,7 @@ body {
     opacity: 0;
   }
 
-  8% {
+  10% {
     opacity: 1;
   }
 
@@ -209,7 +234,7 @@ body {
 
 .animate-slit-open {
   will-change: clip-path, opacity;
-  animation: slitOpenMiddleToSides 1.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: slitOpenMiddleToSides 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes titleIn {

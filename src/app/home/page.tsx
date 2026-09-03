@@ -9,30 +9,23 @@ export default function HomePage() {
   const [videoTime, setVideoTime] = useState(0);
   const [wasPlaying, setWasPlaying] = useState(true);
 
-  const [mouse, setMouse] = useState({
-    x: 0,
-    y: 0,
-  });
-
-  const [mouseInside, setMouseInside] = useState(false);
-
   const videoContainerRef = useRef<HTMLDivElement>(null);
+  const cursorRef = useRef<HTMLDivElement>(null);
 
   /*
    * -------------------------------------------------------
-   * MOUSE
+   * MOUSE (Zero React Re-renders on Move)
    * -------------------------------------------------------
    */
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
-      setMouse({
-        x: event.clientX,
-        y: event.clientY,
-      });
+      if (cursorRef.current) {
+        cursorRef.current.style.transform = `translate3d(${event.clientX}px, ${event.clientY}px, 0) translate(-50%, -50%)`;
+      }
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
@@ -68,7 +61,7 @@ export default function HomePage() {
    */
 
   return (
-    <main className="relative h-screen w-full overflow-hidden bg-black">
+    <main className="relative min-h-[100dvh] h-screen h-[100dvh] w-full overflow-hidden bg-black">
       {/* =================================================
           SHOWREEL PREVIEW
       ================================================= */}
@@ -77,16 +70,16 @@ export default function HomePage() {
         <div
           ref={videoContainerRef}
           className="
+            group
             absolute
             inset-0
             h-full
             w-full
             overflow-hidden
-            cursor-none
+            cursor-pointer
+            md:cursor-none
           "
           onClick={openFullscreen}
-          onMouseEnter={() => setMouseInside(true)}
-          onMouseLeave={() => setMouseInside(false)}
         >
           {/* =================================================
               VIDEO
@@ -227,22 +220,22 @@ export default function HomePage() {
           ================================================= */}
 
           <div
-            className={`
+            ref={cursorRef}
+            className="
               pointer-events-none
               fixed
+              top-0
+              left-0
               z-40
               text-white
               transition-opacity
               duration-300
               hidden
               md:block
-              ${mouseInside ? "opacity-100" : "opacity-0"}
-            `}
-            style={{
-              left: mouse.x,
-              top: mouse.y,
-              transform: "translate(-50%, -50%)",
-            }}
+              opacity-0
+              group-hover:opacity-100
+              will-change-transform
+            "
           >
             <div className="relative flex items-center justify-center">
               <div

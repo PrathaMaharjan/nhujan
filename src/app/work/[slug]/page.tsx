@@ -16,7 +16,7 @@ interface Project {
   gif?: string;
 }
 
-const SIDEBAR_COPIES = 7;
+const SIDEBAR_COPIES = 5;
 const TRANSITION_MS = 700;
 
 export default function WorkCategoryPage() {
@@ -45,7 +45,7 @@ export default function WorkCategoryPage() {
       .then((cat) => {
         if (cat?.title) setCategoryTitle(cat.title);
       })
-      .catch(() => {});
+      .catch(() => { });
 
     fetch(`/api/work-projects/${slug}`)
       .then((res) => res.json())
@@ -148,7 +148,7 @@ export default function WorkCategoryPage() {
         };
 
         if (ctx.state === "suspended") {
-          ctx.resume().then(fire).catch(() => {});
+          ctx.resume().then(fire).catch(() => { });
         } else {
           fire();
         }
@@ -163,7 +163,7 @@ export default function WorkCategoryPage() {
     const unlock = () => {
       const ctx = getAudioCtx();
       if (ctx.state === "suspended") {
-        ctx.resume().catch(() => {});
+        ctx.resume().catch(() => { });
       }
     };
     window.addEventListener("pointerdown", unlock, { passive: true });
@@ -404,13 +404,42 @@ export default function WorkCategoryPage() {
     setSidebarPos(clickedAbsIndex);
   };
 
+  /*
+   * --------------------------------------------------------
+   * TOUCH SWIPE SUPPORT FOR MOBILE & TABLETS
+   * --------------------------------------------------------
+   */
+  const touchStartY = useRef<number | null>(null);
+  const touchStartTime = useRef<number>(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+    touchStartTime.current = Date.now();
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartY.current === null) return;
+    const endY = e.changedTouches[0].clientY;
+    const diffY = touchStartY.current - endY;
+    const diffTime = Date.now() - touchStartTime.current;
+
+    if (Math.abs(diffY) > 40 && diffTime < 600) {
+      if (diffY > 0) {
+        goTo(1);
+      } else {
+        goTo(-1);
+      }
+    }
+    touchStartY.current = null;
+  };
+
   if (loading) {
-    return <main className="h-screen w-full bg-black" />;
+    return <main className="h-screen h-[100dvh] w-full bg-black" />;
   }
 
   if (N === 0 || !activeProject) {
     return (
-      <main className="h-screen w-full bg-black text-white flex items-center justify-center">
+      <main className="h-screen h-[100dvh] w-full bg-black text-white flex items-center justify-center">
         <p className="text-xs tracking-[0.3em] text-white/30 uppercase">
           {categoryTitle ? `No projects yet in ${categoryTitle}` : "No projects yet"}
         </p>
@@ -419,17 +448,22 @@ export default function WorkCategoryPage() {
   }
 
   return (
-    <main className="relative h-screen w-full overflow-hidden bg-black text-white select-none">
+    <main
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      className="relative h-screen h-[100dvh] w-full overflow-hidden bg-black text-white select-none"
+    >
       {/* ==================================================
           MAIN CENTER TRACK — GIFs play directly, no video layer
           ================================================== */}
       <div className="absolute inset-0 flex justify-center items-center pointer-events-none z-10 overflow-hidden">
         <div
-          className={`w-full max-w-xl md:max-w-2xl h-screen flex flex-col items-center origin-center relative overflow-hidden ${mounted ? "animate-crt-turn-on-centered" : "opacity-0 scale-0"
-            }`}
+          className={`w-full max-w-xl md:max-w-2xl h-screen h-[100dvh] flex flex-col items-center origin-center relative overflow-hidden ${
+            mounted ? "animate-slit-open" : "opacity-0"
+          }`}
         >
           <div
-            className="w-full h-screen flex flex-col items-center"
+            className="w-full h-screen h-[100dvh] flex flex-col items-center"
             onTransitionEnd={handleTransitionEnd}
             style={{
               transform: `translateY(-${trackIndex * 100}vh)`,
@@ -442,14 +476,16 @@ export default function WorkCategoryPage() {
             {EXTENDED_PROJECTS.map((project, idx) => (
               <div
                 key={`main-track-${project.id}-${idx}`}
-                className="w-full h-screen flex-shrink-0 flex items-center justify-center"
-                style={{ padding: "24px 20px" }}
+                className="w-full h-screen h-[100dvh] flex-shrink-0 flex items-center justify-center p-4 sm:p-6 md:p-8"
               >
                 <Link
                   href={`/work/${slug}/${project.slug || slugify(project.title) || project.id}`}
                   className="
                     relative
                     w-full
+                    max-w-[92vw]
+                    sm:max-w-lg
+                    md:max-w-full
                     aspect-[16/10]
                     pointer-events-auto
                     group
@@ -457,9 +493,10 @@ export default function WorkCategoryPage() {
                     cursor-pointer
                   "
                 >
-                  <div className="relative w-full h-full overflow-hidden">
+                  <div className="relative w-full h-full overflow-hidden rounded-sm shadow-2xl transform-gpu backface-hidden will-change-transform">
                     {(() => {
                       const mediaUrl = project.gif || project.thumbnail;
+                      const isNearActive = Math.abs(idx - trackIndex) <= 1;
                       if (!mediaUrl) {
                         return (
                           <div className="absolute inset-0 w-full h-full bg-zinc-900 flex items-center justify-center text-zinc-600 text-xs tracking-widest uppercase">
@@ -474,6 +511,7 @@ export default function WorkCategoryPage() {
                           loop
                           muted
                           playsInline
+                          preload={isNearActive ? "auto" : "none"}
                           className="
                             absolute
                             inset-0
@@ -481,12 +519,15 @@ export default function WorkCategoryPage() {
                             h-full
                             object-cover
                             pointer-events-none
+                            transform-gpu
                           "
                         />
                       ) : (
                         <img
                           src={mediaUrl}
                           alt={project.title}
+                          loading={isNearActive ? "eager" : "lazy"}
+                          decoding="async"
                           className="
                             absolute
                             inset-0
@@ -494,6 +535,7 @@ export default function WorkCategoryPage() {
                             h-full
                             object-cover
                             pointer-events-none
+                            transform-gpu
                           "
                           draggable={false}
                         />
@@ -508,10 +550,82 @@ export default function WorkCategoryPage() {
       </div>
 
       {/* ==================================================
-          GRID OVERLAY CONTROLS
+          MOBILE OVERLAY (Visible on screens < md)
+          ================================================== */}
+      <div className="md:hidden absolute inset-0 z-20 pointer-events-none flex flex-col justify-between pt-16 pb-16 px-4 sm:px-6">
+        {/* Top Info Bar: Title & Category + Counter */}
+        <div className="flex items-start justify-between gap-4 pointer-events-auto animate-signal-ui">
+          <div className="max-w-[70%]">
+            <div key={`mobile-title-${activeProject.id}`} className="animate-title-in">
+              <MeshText
+                text={activeProject.title}
+                color="#ffffff"
+                font={{
+                  fontFamily: "Inter",
+                  fontWeight: 900,
+                  fontSize: 18,
+                  lineHeight: "1.1em",
+                  letterSpacing: "0.01em",
+                  textAlign: "left",
+                }}
+                glitchMode={false}
+                enableHover={true}
+                hoverIntensity={2.5}
+                baseIntensity={0}
+                fuzzRange={12}
+                fps={60}
+              />
+            </div>
+            <p
+              key={`mobile-sub-${activeProject.id}`}
+              className="mt-1 text-[9px] font-mono tracking-[0.2em] text-zinc-400 uppercase animate-subtitle-in"
+            >
+              {activeProject.category}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-1.5 font-mono text-zinc-400">
+            <span className="text-xl font-bold text-white tracking-tighter">
+              {selectedIndex + 1 < 10 ? `0${selectedIndex + 1}` : selectedIndex + 1}
+            </span>
+            <span className="text-xs text-red-500 font-bold">/</span>
+            <span className="text-xs text-zinc-500">
+              {N < 10 ? `0${N}` : N}
+            </span>
+          </div>
+        </div>
+
+        {/* Bottom Touch Navigation Controls */}
+        <div className="flex items-center justify-between pointer-events-auto animate-signal-ui">
+          <button
+            type="button"
+            onClick={() => goTo(-1)}
+            aria-label="Previous Project"
+            className="flex items-center gap-1.5 font-mono text-[9px] tracking-[0.2em] uppercase text-zinc-400 hover:text-white bg-zinc-950/70 border border-white/15 px-3 py-1.5 rounded backdrop-blur-sm active:scale-95 transition-all"
+          >
+            <span>↑</span>
+            <span>PREV</span>
+          </button>
+
+
+
+          <button
+            type="button"
+            onClick={() => goTo(1)}
+            aria-label="Next Project"
+            className="flex items-center gap-1.5 font-mono text-[9px] tracking-[0.2em] uppercase text-zinc-400 hover:text-white bg-zinc-950/70 border border-white/15 px-3 py-1.5 rounded backdrop-blur-sm active:scale-95 transition-all"
+          >
+            <span>NEXT</span>
+            <span>↓</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ==================================================
+          DESKTOP GRID OVERLAY CONTROLS (md and up)
           ================================================== */}
       <div
-        className="h-full w-full grid grid-cols-12 items-center relative z-20 pointer-events-none"
+        className="hidden md:grid h-full w-full grid-cols-12 items-center relative z-20 pointer-events-none"
         style={{ padding: "0 4%" }}
       >
         <div
@@ -631,10 +745,11 @@ export default function WorkCategoryPage() {
                   {isVideoUrl(project.thumbnail) ? (
                     <video
                       src={project.thumbnail}
-                      autoPlay
+                      autoPlay={isSelected}
                       loop
                       muted
                       playsInline
+                      preload={isSelected ? "auto" : "none"}
                       className="
                         w-full
                         h-full
@@ -646,6 +761,8 @@ export default function WorkCategoryPage() {
                     <img
                       src={project.thumbnail}
                       alt={project.title}
+                      loading="lazy"
+                      decoding="async"
                       className="
                         w-full
                         h-full

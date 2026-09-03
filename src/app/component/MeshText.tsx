@@ -1,5 +1,5 @@
 // Text Noise — Originkit
-// Originkit preset `custom-style` — props baked into the default export.
+// Optimized high-performance version: sleeps when idle (0% CPU/GPU at rest)
 "use client";
 
 import * as React from "react";
@@ -81,23 +81,24 @@ function __OriginkitBase_FuzzyText({
     useGradient = false,
     gradientEnd = "#888888",
 
-    baseIntensity = 2,
-    hoverIntensity = 5,
+    baseIntensity = 0,
+    hoverIntensity = 3,
 
     clickEffect = false,
     clickIntensity = 1,
 
-    fuzzRange = 30,
-    fps = 60,
+    fuzzRange = 15,
+    fps = 40,
 
     enableHover = true,
 
     glitchMode = false,
-    glitchInterval = 2000,
-    glitchDuration = 200,
+    glitchInterval = 5500,
+    glitchDuration = 1000,
 }: Props) {
     const canvasRef = useRef<FuzzyCanvas>(null);
     const interactionRef = useRef({ hovering: false, clicking: false });
+    const triggerRenderRef = useRef<(() => void) | null>(null);
     const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
         undefined
     );
@@ -105,25 +106,30 @@ function __OriginkitBase_FuzzyText({
     const handlePointerEnter = () => {
         if (!enableHover) return;
         interactionRef.current.hovering = true;
+        triggerRenderRef.current?.();
     };
 
     const handlePointerLeave = () => {
         interactionRef.current.hovering = false;
+        triggerRenderRef.current?.();
     };
 
     const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
         if (!clickEffect) return;
         e.preventDefault();
         interactionRef.current.clicking = true;
+        triggerRenderRef.current?.();
         clearTimeout(clickTimeoutRef.current);
         clickTimeoutRef.current = setTimeout(() => {
             interactionRef.current.clicking = false;
+            triggerRenderRef.current?.();
         }, 400);
     };
 
     useEffect(() => {
         let animationFrameId = 0;
         let isCancelled = false;
+        let isRunning = false;
         let glitchTimeoutId: ReturnType<typeof setTimeout> | undefined;
         let glitchEndTimeoutId: ReturnType<typeof setTimeout> | undefined;
 
@@ -134,7 +140,7 @@ function __OriginkitBase_FuzzyText({
         interactionRef.current.clicking = false;
 
         const init = async () => {
-            const ctx = canvas.getContext("2d");
+            const ctx = canvas.getContext("2d", { willReadFrequently: false });
             if (!ctx) return;
 
             const fontSizeStr = parseFontSize(font.fontSize);
@@ -143,14 +149,16 @@ function __OriginkitBase_FuzzyText({
             const computedFontFamily =
                 font.fontFamily && font.fontFamily !== "inherit"
                     ? String(font.fontFamily)
-                    : window.getComputedStyle(canvas).fontFamily || "sans-serif";
+                    : "sans-serif";
 
             const fontString = `${fontWeight} ${fontSizeStr} ${computedFontFamily}`;
 
             try {
-                await document.fonts.load(fontString);
+                if (document.fonts?.check && !document.fonts.check(fontString)) {
+                    await document.fonts.load(fontString);
+                }
             } catch {
-                await document.fonts.ready;
+                // Ignore font load errors
             }
             if (isCancelled) return;
 
@@ -158,13 +166,7 @@ function __OriginkitBase_FuzzyText({
             if (typeof font.fontSize === "number") {
                 numericFontSize = font.fontSize;
             } else {
-                const temp = document.createElement("span");
-                temp.style.fontSize = fontSizeStr;
-                document.body.appendChild(temp);
-                numericFontSize = Number.parseFloat(
-                    window.getComputedStyle(temp).fontSize
-                );
-                document.body.removeChild(temp);
+                numericFontSize = Number.parseFloat(fontSizeStr) || 16;
             }
 
             const offscreen = document.createElement("canvas");
@@ -245,29 +247,17 @@ function __OriginkitBase_FuzzyText({
             let lastFrameTime = 0;
             const frameDuration = 1000 / fps;
 
-            const startGlitchLoop = () => {
-                if (!glitchMode || isCancelled) return;
-                glitchTimeoutId = setTimeout(() => {
-                    if (isCancelled) return;
-                    isGlitching = true;
-                    glitchEndTimeoutId = setTimeout(() => {
-                        isGlitching = false;
-                        startGlitchLoop();
-                    }, glitchDuration);
-                }, glitchInterval);
+            const drawClean = () => {
+                ctx.clearRect(
+                    -fuzzRange - 20,
+                    -fuzzRange - 10,
+                    offscreenWidth + 2 * (fuzzRange + 20),
+                    tightHeight + 2 * (fuzzRange + 10)
+                );
+                ctx.drawImage(offscreen, 0, 0);
             };
 
-            if (glitchMode) startGlitchLoop();
-
-            const run = (timestamp: number) => {
-                if (isCancelled) return;
-
-                if (timestamp - lastFrameTime < frameDuration) {
-                    animationFrameId = window.requestAnimationFrame(run);
-                    return;
-                }
-                lastFrameTime = timestamp;
-
+            const drawDistorted = (intensity: number) => {
                 ctx.clearRect(
                     -fuzzRange - 20,
                     -fuzzRange - 10,
@@ -275,17 +265,14 @@ function __OriginkitBase_FuzzyText({
                     tightHeight + 2 * (fuzzRange + 10)
                 );
 
-                const { hovering, clicking } = interactionRef.current;
-                let currentIntensity = baseIntensity / 10;
-                if (clicking || isGlitching) {
-                    currentIntensity = clicking ? clickIntensity : 1;
-                } else if (hovering) {
-                    currentIntensity = hoverIntensity / 10;
+                if (intensity <= 0) {
+                    ctx.drawImage(offscreen, 0, 0);
+                    return;
                 }
 
                 for (let j = 0; j < tightHeight; j++) {
                     const dx = Math.floor(
-                        currentIntensity * (Math.random() - 0.5) * fuzzRange
+                        intensity * (Math.random() - 0.5) * fuzzRange
                     );
                     ctx.drawImage(
                         offscreen,
@@ -299,11 +286,79 @@ function __OriginkitBase_FuzzyText({
                         1
                     );
                 }
+            };
+
+            const startGlitchLoop = () => {
+                if (!glitchMode || isCancelled) return;
+                glitchTimeoutId = setTimeout(() => {
+                    if (isCancelled) return;
+                    isGlitching = true;
+                    checkLoop();
+                    glitchEndTimeoutId = setTimeout(() => {
+                        isGlitching = false;
+                        checkLoop();
+                        startGlitchLoop();
+                    }, glitchDuration);
+                }, glitchInterval);
+            };
+
+            if (glitchMode) startGlitchLoop();
+
+            const run = (timestamp: number) => {
+                if (isCancelled) return;
+
+                const { hovering, clicking } = interactionRef.current;
+                const shouldAnimate =
+                    baseIntensity > 0 || hovering || clicking || isGlitching;
+
+                if (!shouldAnimate) {
+                    isRunning = false;
+                    drawClean();
+                    return;
+                }
+
+                if (timestamp - lastFrameTime >= frameDuration) {
+                    lastFrameTime = timestamp;
+
+                    let currentIntensity = baseIntensity / 10;
+                    if (clicking || isGlitching) {
+                        currentIntensity = clicking ? clickIntensity : 1;
+                    } else if (hovering) {
+                        currentIntensity = hoverIntensity / 10;
+                    }
+
+                    drawDistorted(currentIntensity);
+                }
 
                 animationFrameId = window.requestAnimationFrame(run);
             };
 
-            animationFrameId = window.requestAnimationFrame(run);
+            const checkLoop = () => {
+                const { hovering, clicking } = interactionRef.current;
+                const shouldAnimate =
+                    baseIntensity > 0 || hovering || clicking || isGlitching;
+
+                if (shouldAnimate && !isRunning) {
+                    isRunning = true;
+                    lastFrameTime = 0;
+                    animationFrameId = window.requestAnimationFrame(run);
+                } else if (!shouldAnimate && isRunning) {
+                    isRunning = false;
+                    window.cancelAnimationFrame(animationFrameId);
+                    drawClean();
+                } else if (!shouldAnimate && !isRunning) {
+                    drawClean();
+                }
+            };
+
+            triggerRenderRef.current = checkLoop;
+
+            // Initial render
+            if (baseIntensity > 0 || glitchMode) {
+                checkLoop();
+            } else {
+                drawClean();
+            }
 
             canvas.cleanupFuzzyText = () => {
                 window.cancelAnimationFrame(animationFrameId);
@@ -378,24 +433,29 @@ function __OriginkitBase_FuzzyText({
 }
 
 const __originkitPresetProps = {
-    "font": {
-        "variant": "Bold",
-        "fontSize": "120px",
-        "textAlign": "left",
-        "fontFamily": "Inter",
-        "fontWeight": 700,
-        "lineHeight": "1.1em",
-        "letterSpacing": "0em"
+    font: {
+        variant: "Bold",
+        fontSize: "120px",
+        textAlign: "left",
+        fontFamily: "Inter",
+        fontWeight: 700,
+        lineHeight: "1.1em",
+        letterSpacing: "0em",
     },
-    "baseIntensity": 0,
-    "hoverIntensity": 3,
-    "fuzzRange": 15,
-    "fps": 40,
-    "glitchMode": true,
-    "glitchInterval": 5500,
-    "glitchDuration": 1000
+    baseIntensity: 0,
+    hoverIntensity: 3,
+    fuzzRange: 15,
+    fps: 40,
+    glitchMode: true,
+    glitchInterval: 5500,
+    glitchDuration: 1000,
 };
 
 export default function FuzzyText(props: Record<string, unknown>) {
-    return <__OriginkitBase_FuzzyText {...(__originkitPresetProps as Record<string, unknown>)} {...props} />;
+    return (
+        <__OriginkitBase_FuzzyText
+            {...(__originkitPresetProps as Record<string, unknown>)}
+            {...props}
+        />
+    );
 }
