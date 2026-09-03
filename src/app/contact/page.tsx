@@ -158,13 +158,13 @@ export default function ContactPage() {
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="w-3 h-3 shrink-0 text-zinc-600 group-hover:text-zinc-300 transition-colors duration-300"
+            className="w-3 h-3 shrink-0 text-zinc-600 group-hover:text-zinc-400 transition-colors duration-300"
           >
             <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
             <circle cx="12" cy="10" r="3" />
           </svg>
-          <span className="font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.25em] text-zinc-600 group-hover:text-zinc-300 transition-colors duration-300">
-            Kathmandu, Nepal
+          <span className="font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.25em] text-zinc-600 group-hover:text-zinc-400 transition-colors duration-300">
+            Kathmandu / Nepal
           </span>
         </div>
 
@@ -175,7 +175,7 @@ export default function ContactPage() {
           className="group relative flex flex-col items-center justify-center cursor-pointer px-2 sm:px-3 py-2 transition-all duration-300 max-w-[95vw]"
         >
           <div className="flex items-center gap-2.5 sm:gap-3">
-            <span className="font-mono font-light text-xs sm:text-sm md:text-base lg:text-lg tracking-wide text-zinc-200 group-hover:text-white transition-colors duration-300 break-all sm:break-normal">
+            <span className="font-mono font-light text-xs sm:text-sm md:text-base lg:text-lg tracking-wide text-zinc-500 group-hover:text-white transition-colors duration-300 break-all sm:break-normal">
               {email}
             </span>
 
@@ -188,10 +188,11 @@ export default function ContactPage() {
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 transition-all duration-300 ease-out group-hover:scale-125 group-hover:-rotate-6 ${copied
+              className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 transition-all duration-300 ease-out group-hover:scale-125 group-hover:-rotate-6 ${
+                copied
                   ? "text-white scale-125 rotate-12"
                   : "text-zinc-500 group-hover:text-white"
-                }`}
+              }`}
             >
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
@@ -199,27 +200,29 @@ export default function ContactPage() {
           </div>
 
           {/* Divider line — grows in from center on hover */}
-          <div className="relative mt-3 h-[1px] w-full bg-zinc-700 overflow-hidden">
+          <div className="relative mt-3 h-[1px] w-full bg-zinc-800 overflow-hidden">
             <span
-              className={`absolute inset-0 bg-white origin-center transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${copied ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-                }`}
+              className={`absolute inset-0 bg-white origin-center transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                copied ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+              }`}
             />
           </div>
 
           {/* "COPIED" label */}
           <span
-            className={`mt-2 font-mono text-[8px] sm:text-xs tracking-[0.2em] text-white/60 transition-all duration-300 ${copied
+            className={`mt-2 font-mono text-[8px] sm:text-xs tracking-[0.2em] text-white/60 transition-all duration-300 ${
+              copied
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 -translate-y-1 pointer-events-none"
-              }`}
+            }`}
           >
             COPIED
           </span>
         </button>
       </div>
 
-      {/* Minimalist Peeking Wireframe Cat Outline with White Eyes */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-20 pointer-events-none overflow-hidden">
+      {/* Minimalist Peeking Wireframe Cat Outline with White Eyes (Hidden on mobile) */}
+      <div className="hidden sm:block absolute bottom-0 left-1/2 -translate-x-1/2 z-20 pointer-events-none overflow-hidden">
         <div
           className={`relative transition-all duration-[1500ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${catLoaded
               ? "translate-y-0 opacity-100"

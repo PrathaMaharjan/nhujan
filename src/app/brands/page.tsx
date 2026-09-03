@@ -205,7 +205,7 @@ export default function BrandsPage() {
 
   return (
     <main className="relative min-h-[100dvh] h-screen h-[100dvh] w-full overflow-hidden bg-black text-white select-none">
-      {/* Translucent Frosted Glass Background Video */}
+      {/* Translucent Frosted Glass Background Video (Grayscale / No Red Tint) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         <video
           src="/showreel/showreel_preview.mp4"
@@ -214,7 +214,7 @@ export default function BrandsPage() {
           muted
           playsInline
           preload="auto"
-          className="absolute inset-0 w-full h-full object-cover scale-110 filter blur-[22px] sm:blur-[28px] brightness-[0.5] contrast-[1.15] opacity-55 transform-gpu pointer-events-none"
+          className="absolute inset-0 w-full h-full object-cover scale-110 filter grayscale blur-[22px] sm:blur-[28px] brightness-[0.5] contrast-[1.15] opacity-55 transform-gpu pointer-events-none"
         />
         {/* Deep Frosted Translucent Glass Overlay */}
         <div className="absolute inset-0 bg-black/60 backdrop-blur-[16px]" />

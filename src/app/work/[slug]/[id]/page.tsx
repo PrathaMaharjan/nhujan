@@ -211,10 +211,15 @@ export default function ProjectDetailPage() {
             >
               {(project.categoryLabel || project.year) && (
                 <p
-                  className={`font-mono m-1 text-[8px] sm:text-[9px] tracking-[0.4em] text-zinc-400 uppercase mb-2 sm:mb-3 transition-all duration-1000 delay-100 ease-out ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-                    }`}
+                  className={`font-mono m-1 text-[8px] sm:text-[9px] tracking-[0.4em] text-zinc-400 uppercase mb-2 sm:mb-3 transition-all duration-1000 delay-100 ease-out ${
+                    showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+                  }`}
                 >
-                  {project.categoryLabel} {project.categoryLabel && project.year && " · "} {project.year}
+                  {project.categoryLabel}
+                  {project.categoryLabel && project.year && (
+                    <span className="text-red-500 font-bold mx-1.5">/</span>
+                  )}
+                  {project.year}
                 </p>
               )}
               <h1
