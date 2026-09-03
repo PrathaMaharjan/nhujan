@@ -26,53 +26,68 @@ import { isVideoUrl } from "@/lib/media";
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboard() {
-  // Fetch real-time counts concurrently
-  const [
-    projectsCountRes,
-    categoriesCountRes,
-    galleryCountRes,
-    brandsCountRes,
-    artistsCountRes,
-    preloaderCountRes,
-    allCategories,
-    recentProjects,
-  ] = await Promise.all([
-    db.select({ value: count() }).from(workProjects),
-    db.select({ value: count() }).from(workCategories).where(eq(workCategories.isDefault, false)),
-    db.select({ value: count() }).from(projectGalleryImages),
-    db.select({ value: count() }).from(brandLogos),
-    db.select({ value: count() }).from(artists),
-    db.select({ value: count() }).from(preloaderImages),
-    db.query.workCategories.findMany({
-      where: eq(workCategories.isDefault, false),
-      orderBy: (c, { asc }) => [asc(c.order)],
-    }),
-    db.query.workProjects.findMany({
-      limit: 5,
-      orderBy: (p, { desc }) => [desc(p.updatedAt)],
-    }),
-  ]);
+  let totalProjects = 0;
+  let totalCategories = 0;
+  let totalGalleryMedia = 0;
+  let totalBrands = 0;
+  let totalArtists = 0;
+  let totalPreloader = 0;
+  let allCategories: any[] = [];
+  let recentProjects: any[] = [];
+  let categoryStats: any[] = [];
 
-  const totalProjects = projectsCountRes[0]?.value || 0;
-  const totalCategories = categoriesCountRes[0]?.value || 0;
-  const totalGalleryMedia = galleryCountRes[0]?.value || 0;
-  const totalBrands = brandsCountRes[0]?.value || 0;
-  const totalArtists = artistsCountRes[0]?.value || 0;
-  const totalPreloader = preloaderCountRes[0]?.value || 0;
+  try {
+    const [
+      projectsCountRes,
+      categoriesCountRes,
+      galleryCountRes,
+      brandsCountRes,
+      artistsCountRes,
+      preloaderCountRes,
+      categoriesList,
+      recentList,
+    ] = await Promise.all([
+      db.select({ value: count() }).from(workProjects),
+      db.select({ value: count() }).from(workCategories).where(eq(workCategories.isDefault, false)),
+      db.select({ value: count() }).from(projectGalleryImages),
+      db.select({ value: count() }).from(brandLogos),
+      db.select({ value: count() }).from(artists),
+      db.select({ value: count() }).from(preloaderImages),
+      db.query.workCategories.findMany({
+        where: eq(workCategories.isDefault, false),
+        orderBy: (c, { asc }) => [asc(c.order)],
+      }),
+      db.query.workProjects.findMany({
+        limit: 5,
+        orderBy: (p, { desc }) => [desc(p.updatedAt)],
+      }),
+    ]);
 
-  // Projects per category breakdown
-  const categoryStats = await Promise.all(
-    allCategories.map(async (cat) => {
-      const [res] = await db
-        .select({ value: count() })
-        .from(workProjects)
-        .where(eq(workProjects.categorySlug, cat.slug));
-      return {
-        ...cat,
-        projectCount: res?.value || 0,
-      };
-    })
-  );
+    totalProjects = projectsCountRes[0]?.value || 0;
+    totalCategories = categoriesCountRes[0]?.value || 0;
+    totalGalleryMedia = galleryCountRes[0]?.value || 0;
+    totalBrands = brandsCountRes[0]?.value || 0;
+    totalArtists = artistsCountRes[0]?.value || 0;
+    totalPreloader = preloaderCountRes[0]?.value || 0;
+    allCategories = categoriesList || [];
+    recentProjects = recentList || [];
+
+    // Projects per category breakdown
+    categoryStats = await Promise.all(
+      allCategories.map(async (cat) => {
+        const [res] = await db
+          .select({ value: count() })
+          .from(workProjects)
+          .where(eq(workProjects.categorySlug, cat.slug));
+        return {
+          ...cat,
+          projectCount: res?.value || 0,
+        };
+      })
+    );
+  } catch (error) {
+    console.error("Failed to fetch admin stats during render:", error);
+  }
 
   const stats = [
     {
