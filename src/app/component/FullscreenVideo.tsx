@@ -339,7 +339,7 @@ export default function FullscreenVideo({
         src={src}
         playsInline
         loop
-        preload="auto"
+        preload="metadata"
         onLoadedMetadata={handleLoadedMetadata}
         onDurationChange={handleDurationChange}
         onTimeUpdate={handleTimeUpdate}
