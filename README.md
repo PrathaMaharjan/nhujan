@@ -20,14 +20,10 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 ## Showreel Media
 
-Set these public environment variables to the corresponding Vercel Blob URLs in `.env.local` and Vercel:
+Showreel media is served from Cloudflare:
 
-```env
-NEXT_PUBLIC_SHOWREEL_PREVIEW_URL=https://your-blob-url/showreel-preview.gif
-NEXT_PUBLIC_SHOWREEL_URL=https://your-blob-url/showreel.mp4
-```
-
-The local showreel files are used as fallbacks when these variables are not set.
+- Preview: `https://media.nhujandongol.com.np/showreel_preview.mp4`
+- Fullscreen: `https://media.nhujandongol.com.np/EditorsShowreel.mp4`
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
