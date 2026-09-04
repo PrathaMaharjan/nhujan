@@ -1,5 +1,7 @@
-const cloudflarePreviewUrl = "https://nhujandongol.com.np/showreel_preview.mp4";
-const cloudflareShowreelUrl = "https://nhujandongol.com.np/EditorsShowreel.mp4";
+const cloudflarePreviewUrl =
+  "https://media.nhujandongol.com.np/showreel_preview.mp4";
+const cloudflareShowreelUrl =
+  "https://media.nhujandongol.com.np/EditorsShowreel.mp4";
 
 const isUsableMediaUrl = (value: string | undefined) =>
   Boolean(value && !value.includes(".private.blob.vercel-storage.com"));
