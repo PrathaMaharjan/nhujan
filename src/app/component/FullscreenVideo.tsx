@@ -18,77 +18,33 @@ export default function FullscreenVideo({
   onClose,
 }: FullscreenVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const [isPlaying, setIsPlaying] = useState(wasPlaying);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [showControls, setShowControls] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
-
-  const [cursor, setCursor] = useState({
-    x: 0,
-    y: 0,
-  });
-
+  const [cursor, setCursor] = useState({ x: 0, y: 0 });
   const [cursorVisible, setCursorVisible] = useState(false);
-
-  /*
-   * -------------------------------------------------------
-   * CONTROLS VISIBILITY
-   * -------------------------------------------------------
-   */
 
   const revealControls = useCallback(() => {
     setShowControls(true);
-
-    if (controlsTimeoutRef.current) {
-      clearTimeout(controlsTimeoutRef.current);
-    }
-
-    controlsTimeoutRef.current = setTimeout(() => {
-      setShowControls(false);
-    }, 2000);
+    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    controlsTimeoutRef.current = setTimeout(() => setShowControls(false), 2000);
   }, []);
-
-  /*
-   * -------------------------------------------------------
-   * MOUSE
-   * -------------------------------------------------------
-   */
 
   useEffect(() => {
     if (!isOpen) return;
-
     const handleMouseMove = (event: MouseEvent) => {
       const video = videoRef.current;
-
-      /*
-       * Always synchronize the custom cursor with
-       * the actual video playback state.
-       */
-      if (video) {
-        setIsPlaying(!video.paused);
-      }
-
-      setCursor({
-        x: event.clientX,
-        y: event.clientY,
-      });
-
+      if (video) setIsPlaying(!video.paused);
+      setCursor({ x: event.clientX, y: event.clientY });
       setCursorVisible(true);
-
       revealControls();
     };
-
-    const handleMouseLeave = () => {
-      setCursorVisible(false);
-    };
-
+    const handleMouseLeave = () => setCursorVisible(false);
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseleave", handleMouseLeave);
-
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseleave", handleMouseLeave);
@@ -128,10 +84,36 @@ export default function FullscreenVideo({
    * -------------------------------------------------------
    */
 
+  const handleLoadedMetadata = () => {
+    const video = videoRef.current;
+
+    if (video) {
+      setDuration(Number.isFinite(video.duration) ? video.duration : 0);
+      setCurrentTime(video.currentTime);
+    }
+  };
+
+  const handleDurationChange = () => {
+    const video = videoRef.current;
+
+    if (video && Number.isFinite(video.duration)) {
+      setDuration(video.duration);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    const video = videoRef.current;
+
+    if (video) setCurrentTime(video.currentTime);
+  };
+
   useEffect(() => {
     const video = videoRef.current;
 
     if (!video || !isOpen) return;
+
+    setDuration(0);
+    setCurrentTime(startTime);
 
     const start = async () => {
       try {
@@ -139,27 +121,18 @@ export default function FullscreenVideo({
 
         if (wasPlaying) {
           await video.play();
-
-          // Explicitly sync cursor state
           setIsPlaying(true);
         } else {
           video.pause();
 
-          // Explicitly sync cursor state
           setIsPlaying(false);
         }
       } catch {
-        /*
-         * Browser autoplay restriction.
-         * If playback failed, the video is not playing,
-         * so the cursor should show PLAY.
-         */
         setIsPlaying(false);
       }
     };
 
-    start();
-
+    void start();
     revealControls();
   }, [isOpen, startTime, wasPlaying, revealControls]);
 
@@ -367,6 +340,11 @@ export default function FullscreenVideo({
         playsInline
         loop
         preload="auto"
+        onLoadedMetadata={handleLoadedMetadata}
+        onDurationChange={handleDurationChange}
+        onTimeUpdate={handleTimeUpdate}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
         className="
           absolute
           inset-0
