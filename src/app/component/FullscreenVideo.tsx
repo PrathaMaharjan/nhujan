@@ -22,10 +22,10 @@ export default function FullscreenVideo({
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(wasPlaying);
-  const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [showControls, setShowControls] = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
 
   const [cursor, setCursor] = useState({
     x: 0,
@@ -66,7 +66,7 @@ export default function FullscreenVideo({
 
       /*
        * Always synchronize the custom cursor with
-       * the ACTUAL video playback state.
+       * the actual video playback state.
        */
       if (video) {
         setIsPlaying(!video.paused);
@@ -179,9 +179,7 @@ export default function FullscreenVideo({
     };
 
     const handleTimeUpdate = () => {
-      if (!video.duration) return;
-
-      setProgress(video.currentTime / video.duration);
+      setCurrentTime(video.currentTime);
     };
 
     const handlePlay = () => {
@@ -249,7 +247,7 @@ export default function FullscreenVideo({
 
     video.currentTime = value * video.duration;
 
-    setProgress(value);
+    setCurrentTime(video.currentTime);
 
     revealControls();
   };
@@ -262,9 +260,7 @@ export default function FullscreenVideo({
 
   const changeVolume = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = Number(event.target.value) / 100;
-
     setVolume(value);
-
     const video = videoRef.current;
 
     if (video) {
@@ -511,7 +507,12 @@ export default function FullscreenVideo({
           min="0"
           max="1000"
           step="1"
-          value={Math.round(progress * 1000)}
+          value={duration ? Math.round((currentTime / duration) * 1000) : 0}
+          style={
+            {
+              "--progress": `${duration ? (currentTime / duration) * 100 : 0}%`,
+            } as React.CSSProperties
+          }
           onChange={seekVideo}
           className="fullscreen-progress"
           aria-label="Video progress"
@@ -607,7 +608,7 @@ export default function FullscreenVideo({
                 text-white/70
               "
             >
-              {formatTime(progress * duration)}
+              {formatTime(currentTime)}
               {" / "}
               {formatTime(duration)}
             </span>

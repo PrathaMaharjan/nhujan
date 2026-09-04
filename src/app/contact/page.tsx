@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { showreelPreviewIsImage, showreelPreviewUrl } from "@/lib/showreel";
 
 export default function ContactPage() {
   const [copied, setCopied] = useState(false);
@@ -25,8 +26,9 @@ export default function ContactPage() {
 
   const playMeow = () => {
     if (!audioCtxRef.current) {
-      audioCtxRef.current = new (window.AudioContext ||
-        (window as any).webkitAudioContext)();
+      audioCtxRef.current = new (
+        window.AudioContext || (window as any).webkitAudioContext
+      )();
     }
     const ctx = audioCtxRef.current;
     if (ctx.state === "suspended") ctx.resume();
@@ -97,7 +99,7 @@ export default function ContactPage() {
 
       const updatePupil = (
         eyeEl: SVGGElement | null,
-        pupilEl: SVGGElement | null
+        pupilEl: SVGGElement | null,
       ) => {
         if (!eyeEl || !pupilEl) return;
         const rect = eyeEl.getBoundingClientRect();
@@ -133,15 +135,23 @@ export default function ContactPage() {
     <main className="relative min-h-[100dvh] h-screen h-[100dvh] w-full bg-black text-white flex flex-col items-center justify-center select-none px-4 pt-16 pb-28 sm:pt-20 sm:pb-32 overflow-hidden">
       {/* Translucent Frosted Glass Background Video */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <video
-          src="/showreel/showreel_preview.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          className="absolute inset-0 w-full h-full object-cover scale-110 filter blur-[22px] sm:blur-[28px] brightness-[0.5] contrast-[1.15] opacity-55 transform-gpu pointer-events-none"
-        />
+        {showreelPreviewIsImage ? (
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full scale-110 bg-cover bg-center bg-no-repeat blur-[22px] brightness-[0.5] contrast-[1.15] opacity-55 transform-gpu sm:blur-[28px]"
+            style={{ backgroundImage: `url(${showreelPreviewUrl})` }}
+          />
+        ) : (
+          <video
+            src={showreelPreviewUrl}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            className="absolute inset-0 w-full h-full object-cover scale-110 filter blur-[22px] sm:blur-[28px] brightness-[0.5] contrast-[1.15] opacity-55 transform-gpu pointer-events-none"
+          />
+        )}
         {/* Deep Frosted Translucent Glass Overlay */}
         <div className="absolute inset-0 bg-black/60 backdrop-blur-[16px]" />
       </div>
@@ -206,7 +216,9 @@ export default function ContactPage() {
           {/* Meow speech bubble */}
           <span
             className={`pointer-events-none absolute -top-5 sm:-top-6 left-1/2 -translate-x-1/2 font-mono text-[9px] sm:text-xs tracking-widest text-white transition-all duration-300 ${
-              showMeow ? "opacity-100 -translate-y-1" : "opacity-0 translate-y-0"
+              showMeow
+                ? "opacity-100 -translate-y-1"
+                : "opacity-0 translate-y-0"
             }`}
           >
             meow

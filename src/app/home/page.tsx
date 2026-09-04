@@ -1,6 +1,11 @@
 "use client";
 
 import FullscreenVideo from "@/app/component/FullscreenVideo";
+import {
+  showreelPreviewIsImage,
+  showreelPreviewUrl,
+  showreelUrl,
+} from "@/lib/showreel";
 import { useEffect, useRef, useState } from "react";
 
 export default function HomePage() {
@@ -85,23 +90,22 @@ export default function HomePage() {
               VIDEO
           ================================================= */}
 
-          <video
-            src="/showreel/showreel_preview.mp4"
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="
-              absolute
-              inset-0
-              h-full
-              w-full
-              object-cover
-              grayscale-[0.0]
-              saturate-[0.8]
-              opacity-90
-            "
-          />
+          {showreelPreviewIsImage ? (
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 h-full w-full bg-cover bg-center bg-no-repeat grayscale-[0.0] saturate-[0.8] opacity-90"
+              style={{ backgroundImage: `url(${showreelPreviewUrl})` }}
+            />
+          ) : (
+            <video
+              src={showreelPreviewUrl}
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="absolute inset-0 h-full w-full object-cover grayscale-[0.0] saturate-[0.8] opacity-90"
+            />
+          )}
 
           <div
             className="
@@ -310,7 +314,7 @@ export default function HomePage() {
       ================================================= */}
 
       <FullscreenVideo
-        src="/showreel/sample-5s.webm"
+        src={showreelUrl}
         isOpen={isFullscreen}
         startTime={videoTime}
         wasPlaying={wasPlaying}

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import MeshText from "@/app/component/MeshText";
 import { getOptimizedImageUrl } from "@/lib/media";
+import { showreelPreviewIsImage, showreelPreviewUrl } from "@/lib/showreel";
 
 interface BrandItem {
   id?: string;
@@ -207,15 +208,23 @@ export default function BrandsPage() {
     <main className="relative min-h-[100dvh] h-screen h-[100dvh] w-full overflow-hidden bg-black text-white select-none">
       {/* Translucent Frosted Glass Background Video */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <video
-          src="/showreel/showreel_preview.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          className="absolute inset-0 w-full h-full object-cover scale-110 filter blur-[22px] sm:blur-[28px] brightness-[0.5] contrast-[1.15] opacity-55 transform-gpu pointer-events-none"
-        />
+        {showreelPreviewIsImage ? (
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full scale-110 bg-cover bg-center bg-no-repeat blur-[22px] brightness-[0.5] contrast-[1.15] opacity-55 transform-gpu sm:blur-[28px]"
+            style={{ backgroundImage: `url(${showreelPreviewUrl})` }}
+          />
+        ) : (
+          <video
+            src={showreelPreviewUrl}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            className="absolute inset-0 w-full h-full object-cover scale-110 filter blur-[22px] sm:blur-[28px] brightness-[0.5] contrast-[1.15] opacity-55 transform-gpu pointer-events-none"
+          />
+        )}
         {/* Deep Frosted Translucent Glass Overlay */}
         <div className="absolute inset-0 bg-black/60 backdrop-blur-[16px]" />
       </div>
