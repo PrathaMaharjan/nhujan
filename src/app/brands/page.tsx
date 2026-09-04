@@ -206,7 +206,7 @@ export default function BrandsPage() {
 
   return (
     <main className="relative min-h-[100dvh] h-screen h-[100dvh] w-full overflow-hidden bg-black text-white select-none">
-      {/* Translucent Frosted Glass Background Video */}
+      {/* Translucent Frosted Glass Background Video (Grayscale / No Red Tint) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         {showreelPreviewIsImage ? (
           <div
