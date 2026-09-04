@@ -10,7 +10,9 @@ export const showreelPreviewUrl = isUsableMediaUrl(
   ? process.env.NEXT_PUBLIC_SHOWREEL_PREVIEW_URL!
   : cloudflarePreviewUrl;
 
-export const showreelUrl = isUsableMediaUrl(process.env.NEXT_PUBLIC_SHOWREEL_URL)
+export const showreelUrl = isUsableMediaUrl(
+  process.env.NEXT_PUBLIC_SHOWREEL_URL,
+)
   ? process.env.NEXT_PUBLIC_SHOWREEL_URL!
   : cloudflareShowreelUrl;
 
