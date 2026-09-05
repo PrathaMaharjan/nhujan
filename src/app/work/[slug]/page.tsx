@@ -1,11 +1,21 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import MeshText from "@/app/component/MeshText";
-import { isVideoUrl, getOptimizedImageUrl, getOptimizedVideoUrl } from "@/lib/media";
+import {
+  isVideoUrl,
+  getOptimizedImageUrl,
+  getOptimizedVideoUrl,
+} from "@/lib/media";
 import { slugify } from "@/lib/slug";
 
 interface Project {
@@ -19,6 +29,25 @@ interface Project {
 
 const SIDEBAR_COPIES = 5;
 const TRANSITION_MS = 700;
+
+function wrapTitle(title: string, maxCharacters = 18) {
+  const words = title.trim().split(/\s+/);
+  const lines: string[] = [];
+  let currentLine = "";
+
+  for (const word of words) {
+    const nextLine = currentLine ? `${currentLine} ${word}` : word;
+    if (currentLine && nextLine.length > maxCharacters) {
+      lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = nextLine;
+    }
+  }
+
+  if (currentLine) lines.push(currentLine);
+  return lines.length > 0 ? lines : [title];
+}
 
 export default function WorkCategoryPage() {
   const params = useParams<{ slug: string }>();
@@ -46,7 +75,7 @@ export default function WorkCategoryPage() {
       .then((cat) => {
         if (cat?.title) setCategoryTitle(cat.title);
       })
-      .catch(() => { });
+      .catch(() => {});
 
     fetch(`/api/work-projects/${slug}`)
       .then((res) => res.json())
@@ -69,8 +98,12 @@ export default function WorkCategoryPage() {
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isProgrammaticScrollRef = useRef(false);
   const isInitialMountRef = useRef(true);
-  const programmaticTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const sidebarDebounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const programmaticTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const sidebarDebounceTimeoutRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
   const lastScrollTimeRef = useRef<number>(0);
 
   const N = projects.length;
@@ -87,11 +120,12 @@ export default function WorkCategoryPage() {
 
   const SIDEBAR_MIDDLE_START = useMemo(
     () => Math.floor(SIDEBAR_COPIES / 2) * N,
-    [N]
+    [N],
   );
 
   const selectedIndex = N === 0 ? 0 : (((trackIndex - 1) % N) + N) % N;
   const activeProject = projects[selectedIndex];
+  const activePreview = activeProject?.gif || activeProject?.thumbnail;
 
   /*
    * --------------------------------------------------------
@@ -149,7 +183,10 @@ export default function WorkCategoryPage() {
         };
 
         if (ctx.state === "suspended") {
-          ctx.resume().then(fire).catch(() => { });
+          ctx
+            .resume()
+            .then(fire)
+            .catch(() => {});
         } else {
           fire();
         }
@@ -164,7 +201,7 @@ export default function WorkCategoryPage() {
     const unlock = () => {
       const ctx = getAudioCtx();
       if (ctx.state === "suspended") {
-        ctx.resume().catch(() => { });
+        ctx.resume().catch(() => {});
       }
     };
     window.addEventListener("pointerdown", unlock, { passive: true });
@@ -270,7 +307,9 @@ export default function WorkCategoryPage() {
       if (!element) return;
 
       const targetScrollTop =
-        element.offsetTop + element.offsetHeight / 2 - container.clientHeight / 2;
+        element.offsetTop +
+        element.offsetHeight / 2 -
+        container.clientHeight / 2;
 
       if (Math.abs(container.scrollTop - targetScrollTop) < 1) return;
 
@@ -281,15 +320,16 @@ export default function WorkCategoryPage() {
         container.scrollTop = targetScrollTop;
       }
 
-      if (programmaticTimeoutRef.current) clearTimeout(programmaticTimeoutRef.current);
+      if (programmaticTimeoutRef.current)
+        clearTimeout(programmaticTimeoutRef.current);
       programmaticTimeoutRef.current = setTimeout(
         () => {
           isProgrammaticScrollRef.current = false;
         },
-        smooth ? TRANSITION_MS : 50
+        smooth ? TRANSITION_MS : 50,
       );
     },
-    [sidebarPos, N]
+    [sidebarPos, N],
   );
 
   useEffect(() => {
@@ -343,7 +383,8 @@ export default function WorkCategoryPage() {
     if (scrollTop < threshold) {
       isProgrammaticScrollRef.current = true;
       container.scrollTop += singleSetHeight * 2;
-      if (programmaticTimeoutRef.current) clearTimeout(programmaticTimeoutRef.current);
+      if (programmaticTimeoutRef.current)
+        clearTimeout(programmaticTimeoutRef.current);
       programmaticTimeoutRef.current = setTimeout(() => {
         isProgrammaticScrollRef.current = false;
       }, 50);
@@ -351,7 +392,8 @@ export default function WorkCategoryPage() {
     } else if (scrollTop + clientHeight > scrollHeight - threshold) {
       isProgrammaticScrollRef.current = true;
       container.scrollTop -= singleSetHeight * 2;
-      if (programmaticTimeoutRef.current) clearTimeout(programmaticTimeoutRef.current);
+      if (programmaticTimeoutRef.current)
+        clearTimeout(programmaticTimeoutRef.current);
       programmaticTimeoutRef.current = setTimeout(() => {
         isProgrammaticScrollRef.current = false;
       }, 50);
@@ -360,7 +402,8 @@ export default function WorkCategoryPage() {
 
     if (isProgrammaticScrollRef.current) return;
 
-    if (sidebarDebounceTimeoutRef.current) clearTimeout(sidebarDebounceTimeoutRef.current);
+    if (sidebarDebounceTimeoutRef.current)
+      clearTimeout(sidebarDebounceTimeoutRef.current);
 
     sidebarDebounceTimeoutRef.current = setTimeout(() => {
       const containerCenter =
@@ -442,7 +485,9 @@ export default function WorkCategoryPage() {
     return (
       <main className="h-screen h-[100dvh] w-full bg-black text-white flex items-center justify-center">
         <p className="text-xs tracking-[0.3em] text-white/30 uppercase">
-          {categoryTitle ? `No projects yet in ${categoryTitle}` : "No projects yet"}
+          {categoryTitle
+            ? `No projects yet in ${categoryTitle}`
+            : "No projects yet"}
         </p>
       </main>
     );
@@ -454,12 +499,42 @@ export default function WorkCategoryPage() {
       onTouchEnd={handleTouchEnd}
       className="relative h-screen h-[100dvh] w-full overflow-hidden bg-black text-white select-none"
     >
+      {/* Current project preview as a blurred frosted background */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        {activePreview && isVideoUrl(activePreview) ? (
+          <video
+            key={activePreview}
+            src={getOptimizedVideoUrl(activePreview, { width: 1280 })}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            className="absolute inset-0 h-full w-full scale-110 object-cover blur-[22px] brightness-[0.5] contrast-[1.15] opacity-55 transform-gpu sm:blur-[28px]"
+          />
+        ) : activePreview ? (
+          <Image
+            key={activePreview}
+            src={getOptimizedImageUrl(activePreview, {
+              width: 1600,
+              quality: 80,
+            })}
+            alt=""
+            fill
+            sizes="100vw"
+            priority
+            className="absolute inset-0 h-full w-full scale-110 object-cover blur-[22px] brightness-[0.5] contrast-[1.15] opacity-55 transform-gpu sm:blur-[28px]"
+          />
+        ) : null}
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-[16px]" />
+      </div>
+
       {/* ==================================================
           MAIN CENTER TRACK — GIFs play directly, no video layer
           ================================================== */}
       <div className="absolute inset-0 flex justify-center items-center pointer-events-none z-10 overflow-hidden">
         <div
-          className={`w-full max-w-xl md:max-w-2xl h-screen h-[100dvh] flex flex-col items-center origin-center relative overflow-hidden ${
+          className={`w-full max-w-xl md:max-w-3xl h-screen h-[100dvh] flex flex-col items-center origin-center relative overflow-hidden ${
             mounted ? "animate-slit-open" : "opacity-0"
           }`}
         >
@@ -477,7 +552,7 @@ export default function WorkCategoryPage() {
             {EXTENDED_PROJECTS.map((project, idx) => (
               <div
                 key={`main-track-${project.id}-${idx}`}
-                className="w-full h-screen h-[100dvh] flex-shrink-0 flex items-center justify-center p-4 sm:p-6 md:p-8"
+                className="w-full h-screen h-[100dvh] flex-shrink-0 flex items-center justify-center p-4 sm:p-6 md:p-4"
               >
                 <Link
                   href={`/work/${slug}/${project.slug || slugify(project.title) || project.id}`}
@@ -525,7 +600,10 @@ export default function WorkCategoryPage() {
                         />
                       ) : (
                         <Image
-                          src={getOptimizedImageUrl(mediaUrl, { width: 1200, quality: 80 })}
+                          src={getOptimizedImageUrl(mediaUrl, {
+                            width: 1200,
+                            quality: 80,
+                          })}
                           alt={project.title}
                           fill
                           sizes="(max-width: 768px) 95vw, 65vw"
@@ -554,7 +632,10 @@ export default function WorkCategoryPage() {
         {/* Top Info Bar: Title & Category + Counter */}
         <div className="flex items-start justify-between gap-4 pointer-events-auto animate-signal-ui">
           <div className="max-w-[70%]">
-            <div key={`mobile-title-${activeProject.id}`} className="animate-title-in">
+            <div
+              key={`mobile-title-${activeProject.id}`}
+              className="animate-title-in"
+            >
               <MeshText
                 text={activeProject.title}
                 color="#ffffff"
@@ -584,7 +665,9 @@ export default function WorkCategoryPage() {
 
           <div className="flex items-center gap-1.5 font-mono text-zinc-400">
             <span className="text-xl font-bold text-white tracking-tighter">
-              {selectedIndex + 1 < 10 ? `0${selectedIndex + 1}` : selectedIndex + 1}
+              {selectedIndex + 1 < 10
+                ? `0${selectedIndex + 1}`
+                : selectedIndex + 1}
             </span>
             <span className="text-xs text-red-500 font-bold">/</span>
             <span className="text-xs text-zinc-500">
@@ -604,8 +687,6 @@ export default function WorkCategoryPage() {
             <span>↑</span>
             <span>PREV</span>
           </button>
-
-
 
           <button
             type="button"
@@ -632,26 +713,29 @@ export default function WorkCategoryPage() {
         >
           <div />
 
-          <div className="max-w-xs md:max-w-sm w-full overflow-hidden">
-            <div key={activeProject.id} className="animate-title-in">
-              <MeshText
-                text={activeProject.title}
-                color="#ffffff"
-                font={{
-                  fontFamily: "Inter",
-                  fontWeight: 900,
-                  fontSize: 26,
-                  lineHeight: "1.05em",
-                  letterSpacing: "0.01em",
-                  textAlign: "left",
-                }}
-                glitchMode={false}
-                enableHover={true}
-                hoverIntensity={2.5}
-                baseIntensity={0}
-                fuzzRange={12}
-                fps={60}
-              />
+          <div className="w-full max-w-xs md:max-w-sm">
+            <div key={activeProject.id} className="animate-title-in space-y-0">
+              {wrapTitle(activeProject.title).map((line, index) => (
+                <MeshText
+                  key={`${activeProject.id}-title-line-${index}`}
+                  text={line}
+                  color="#ffffff"
+                  font={{
+                    fontFamily: "Inter",
+                    fontWeight: 900,
+                    fontSize: 26,
+                    lineHeight: "1.05em",
+                    letterSpacing: "0.01em",
+                    textAlign: "left",
+                  }}
+                  glitchMode={false}
+                  enableHover={true}
+                  hoverIntensity={2.5}
+                  baseIntensity={0}
+                  fuzzRange={12}
+                  fps={60}
+                />
+              ))}
             </div>
 
             <p
@@ -675,7 +759,7 @@ export default function WorkCategoryPage() {
 
         <div className="col-span-6" />
 
-        <div className="col-span-3 h-full flex items-center justify-end gap-6 pointer-events-auto animate-signal-ui">
+        <div className="col-span-3 h-full flex items-center justify-end gap-3 pointer-events-auto animate-signal-ui">
           <div className="flex flex-col items-center font-mono text-zinc-400 select-none">
             <span className="text-3xl md:text-4xl font-bold text-white tracking-tighter transition-all duration-300">
               {selectedIndex + 1 < 10
@@ -734,15 +818,18 @@ export default function WorkCategoryPage() {
                     cursor-pointer
                     outline-none
                     border-none
-                    ${isSelected
-                      ? "opacity-100 scale-135 z-10 shadow-[0_10px_30px_rgba(0,0,0,0.9)]"
-                      : "opacity-35 scale-90 hover:opacity-75 hover:scale-95 grayscale-[30%]"
+                    ${
+                      isSelected
+                        ? "opacity-100 scale-135 z-10 shadow-[0_10px_30px_rgba(0,0,0,0.9)]"
+                        : "opacity-35 scale-90 hover:opacity-75 hover:scale-95 grayscale-[30%]"
                     }
                   `}
                 >
                   {isVideoUrl(project.thumbnail) ? (
                     <video
-                      src={getOptimizedVideoUrl(project.thumbnail, { width: 320 })}
+                      src={getOptimizedVideoUrl(project.thumbnail, {
+                        width: 320,
+                      })}
                       autoPlay={isSelected}
                       loop
                       muted
@@ -757,7 +844,10 @@ export default function WorkCategoryPage() {
                     />
                   ) : project.thumbnail ? (
                     <Image
-                      src={getOptimizedImageUrl(project.thumbnail, { width: 250, quality: 75 })}
+                      src={getOptimizedImageUrl(project.thumbnail, {
+                        width: 250,
+                        quality: 75,
+                      })}
                       alt={project.title}
                       fill
                       sizes="120px"

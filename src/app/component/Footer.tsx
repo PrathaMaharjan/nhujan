@@ -26,7 +26,7 @@ export default function Footer() {
     return null;
   }
 
-  const isContactPage = pathname === "/contact";
+  const isWorkDetailPage = /^\/work\/[^/]+\/[^/]+$/.test(pathname);
 
   const toggleExpanded = () => {
     if (isHoverDevice) return;
@@ -35,8 +35,10 @@ export default function Footer() {
 
   return (
     <footer className="site-footer fixed inset-x-0 bottom-0 z-[100] pointer-events-none px-3 pb-3 pt-4 sm:px-6 sm:pb-4 md:px-8 md:pb-5">
-      <div className="relative mx-auto flex max-w-[1600px] flex-col items-center justify-between gap-2 sm:flex-row sm:items-end sm:gap-3 md:gap-4">
-
+      {isWorkDetailPage && (
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0b0b0b] from-60% to-transparent opacity-95" />
+      )}
+      <div className="relative z-10 mx-auto flex max-w-[1600px] flex-col items-center justify-between gap-2 sm:flex-row sm:items-end sm:gap-3 md:gap-4">
         {/* DEVELOPERS (LEFT ON DESKTOP, BOTTOM ON MOBILE) */}
         <div
           onClick={toggleExpanded}
@@ -53,8 +55,9 @@ export default function Footer() {
 
           {/* Animated Expandable Links Container */}
           <div
-            className={`inline-flex items-center gap-1 overflow-hidden transition-all duration-700 ease-in-out ${expanded ? "max-w-[40rem] opacity-100" : "max-w-0 opacity-0"
-              }`}
+            className={`inline-flex items-center gap-1 overflow-hidden transition-all duration-700 ease-in-out ${
+              expanded ? "max-w-[40rem] opacity-100" : "max-w-0 opacity-0"
+            }`}
           >
             <a
               href="https://www.linkedin.com/in/pratha-maharjan-252461342/"
@@ -79,8 +82,6 @@ export default function Footer() {
 
           <span className="shrink-0 text-white/75">]</span>
         </div>
-
-
 
         {/* SOCIAL LINKS (RIGHT ON DESKTOP, MIDDLE ON MOBILE) */}
         <div className="order-2 sm:order-3 pointer-events-auto flex items-center gap-3 sm:gap-4 md:gap-5">
@@ -126,7 +127,6 @@ export default function Footer() {
             </svg>
           </a>
         </div>
-
       </div>
     </footer>
   );

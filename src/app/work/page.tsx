@@ -1,8 +1,12 @@
-'use client';
+"use client";
 
-import React, { useRef, useState, useEffect } from 'react';
-import Link from 'next/link';
-import { isVideoUrl, getOptimizedImageUrl, getOptimizedVideoUrl } from '@/lib/media';
+import React, { useRef, useState, useEffect } from "react";
+import Link from "next/link";
+import {
+  isVideoUrl,
+  getOptimizedImageUrl,
+  getOptimizedVideoUrl,
+} from "@/lib/media";
 
 interface WorkCategory {
   id: string;
@@ -13,7 +17,7 @@ interface WorkCategory {
 }
 
 const FALLBACK_DEFAULT_BG =
-  'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=2000&auto=format&fit=crop';
+  "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=2000&auto=format&fit=crop";
 
 export default function WorkSection() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -31,7 +35,7 @@ export default function WorkSection() {
   const [workCategories, setWorkCategories] = useState<WorkCategory[]>([]);
 
   useEffect(() => {
-    fetch('/api/work-categories')
+    fetch("/api/work-categories")
       .then((res) => res.json())
       .then((data: { defaultImage: string | null; categories: any[] }) => {
         if (data.defaultImage) setDefaultBgImage(data.defaultImage);
@@ -45,13 +49,13 @@ export default function WorkSection() {
                 slug: `/work/${c.slug}`,
                 subtext: c.subtext
                   ? c.subtext
-                      .split('\n')
+                      .split("\n")
                       .map((l: string) => l.trim())
                       .filter(Boolean)
-                      .join('\n')
-                  : '',
+                      .join("\n")
+                  : "",
                 image: c.image,
-              }))
+              })),
           );
         }
       })
@@ -82,7 +86,7 @@ export default function WorkSection() {
       boxHeight = dims.boxHeight;
     };
 
-    window.addEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
 
     let isRunning = false;
 
@@ -127,11 +131,11 @@ export default function WorkSection() {
 
     // Attach trigger to window mousemove
     const onMove = () => triggerRender();
-    window.addEventListener('mousemove', onMove, { passive: true });
+    window.addEventListener("mousemove", onMove, { passive: true });
 
     return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("mousemove", onMove);
       if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
     };
   }, []);
@@ -161,8 +165,10 @@ export default function WorkSection() {
       }
     };
 
-    window.addEventListener('mousemove', handleGlobalMouseMove, { once: false });
-    return () => window.removeEventListener('mousemove', handleGlobalMouseMove);
+    window.addEventListener("mousemove", handleGlobalMouseMove, {
+      once: false,
+    });
+    return () => window.removeEventListener("mousemove", handleGlobalMouseMove);
   }, []);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -197,13 +203,13 @@ export default function WorkSection() {
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={() => setIsHovered(false)}
-      className="relative flex min-h-[100dvh] w-full flex-col justify-center overflow-x-hidden overflow-y-auto bg-black px-4 sm:px-8 md:px-16 pt-20 sm:pt-24 pb-20 sm:pb-24 uppercase selection:bg-white selection:text-black"
+      className="relative flex h-[100dvh] w-full flex-col justify-center overflow-hidden bg-black px-4 pt-20 pb-20 uppercase selection:bg-white selection:text-black sm:px-8 sm:pt-24 sm:pb-24 md:px-16"
     >
       {/* Background Layers */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
           className={`absolute inset-0 transition-opacity duration-[1800ms] ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden ${
-            activeIdx === null ? 'opacity-100' : 'opacity-0'
+            activeIdx === null ? "opacity-100" : "opacity-0"
           }`}
         >
           {isVideoUrl(defaultBgImage) ? (
@@ -219,7 +225,9 @@ export default function WorkSection() {
           ) : (
             <div
               className="w-full h-full bg-cover bg-center"
-              style={{ backgroundImage: `url('${getOptimizedImageUrl(defaultBgImage, { width: 1920 })}')` }}
+              style={{
+                backgroundImage: `url('${getOptimizedImageUrl(defaultBgImage, { width: 1920 })}')`,
+              }}
             />
           )}
         </div>
@@ -232,10 +240,10 @@ export default function WorkSection() {
               key={cat.id}
               className={`absolute inset-0 transition-all duration-[1800ms] ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden ${
                 isActive
-                  ? 'opacity-100 translate-x-0'
+                  ? "opacity-100 translate-x-0"
                   : activeIdx !== null && index < activeIdx
-                  ? '-translate-x-full opacity-0'
-                  : 'translate-x-full opacity-0'
+                    ? "-translate-x-full opacity-0"
+                    : "translate-x-full opacity-0"
               }`}
             >
               {isVideoUrl(cat.image) ? (
@@ -251,7 +259,9 @@ export default function WorkSection() {
               ) : (
                 <div
                   className="w-full h-full bg-cover bg-center"
-                  style={{ backgroundImage: `url('${getOptimizedImageUrl(cat.image, { width: 1920 })}')` }}
+                  style={{
+                    backgroundImage: `url('${getOptimizedImageUrl(cat.image, { width: 1920 })}')`,
+                  }}
                 />
               )}
             </div>
@@ -265,16 +275,19 @@ export default function WorkSection() {
       <div
         ref={hudFrameRef}
         className={`pointer-events-none absolute left-0 top-0 z-20 overflow-hidden rounded border border-white/20 transition-opacity duration-300 ease-out hidden md:block ${
-          isHovered && currentPos.current ? 'opacity-100' : 'opacity-0'
+          isHovered && currentPos.current ? "opacity-100" : "opacity-0"
         }`}
       >
-        <div ref={spotlightInnerRef} className="absolute inset-0 h-screen w-screen">
+        <div
+          ref={spotlightInnerRef}
+          className="absolute inset-0 h-screen w-screen"
+        >
           <div
             className={`absolute inset-0 h-full w-full transition-opacity duration-[1800ms] ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden ${
-              activeIdx === null ? 'opacity-100' : 'opacity-0'
+              activeIdx === null ? "opacity-100" : "opacity-0"
             }`}
             style={{
-              filter: 'brightness(1.2) contrast(1.05)',
+              filter: "brightness(1.2) contrast(1.05)",
             }}
           >
             {isVideoUrl(defaultBgImage) ? (
@@ -290,7 +303,9 @@ export default function WorkSection() {
             ) : (
               <div
                 className="w-full h-full bg-cover bg-center"
-                style={{ backgroundImage: `url('${getOptimizedImageUrl(defaultBgImage, { width: 1920 })}')` }}
+                style={{
+                  backgroundImage: `url('${getOptimizedImageUrl(defaultBgImage, { width: 1920 })}')`,
+                }}
               />
             )}
           </div>
@@ -303,13 +318,13 @@ export default function WorkSection() {
                 key={`spotlight-${cat.id}`}
                 className={`absolute inset-0 h-full w-full transition-all duration-[1800ms] ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden ${
                   isActive
-                    ? 'opacity-100 translate-x-0'
+                    ? "opacity-100 translate-x-0"
                     : activeIdx !== null && index < activeIdx
-                    ? '-translate-x-full opacity-0'
-                    : 'translate-x-full opacity-0'
+                      ? "-translate-x-full opacity-0"
+                      : "translate-x-full opacity-0"
                 }`}
                 style={{
-                  filter: 'brightness(1.2) contrast(1.05)',
+                  filter: "brightness(1.2) contrast(1.05)",
                 }}
               >
                 {isVideoUrl(cat.image) ? (
@@ -325,7 +340,9 @@ export default function WorkSection() {
                 ) : (
                   <div
                     className="w-full h-full bg-cover bg-center"
-                    style={{ backgroundImage: `url('${getOptimizedImageUrl(cat.image, { width: 1920 })}')` }}
+                    style={{
+                      backgroundImage: `url('${getOptimizedImageUrl(cat.image, { width: 1920 })}')`,
+                    }}
                   />
                 )}
               </div>
@@ -347,7 +364,7 @@ export default function WorkSection() {
 
         <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-[10px] font-mono tracking-widest text-white drop-shadow-md z-10">
           <span className="text-white/90">
-            {activeIdx !== null ? 'CLICK TO OPEN' : 'HOVER CATEGORY'}
+            {activeIdx !== null ? "CLICK TO OPEN" : "HOVER CATEGORY"}
           </span>
         </div>
       </div>
@@ -370,11 +387,12 @@ export default function WorkSection() {
                 <h2
                   className={`m-0 mb-1.5 sm:mb-2 p-0 text-center tracking-tight text-white drop-shadow-lg transition-all duration-500 ease-out ${
                     isSelected
-                      ? 'font-normal text-2xl sm:text-3xl md:text-4xl opacity-100'
-                      : 'font-extralight text-xl sm:text-2xl md:text-3xl opacity-40 hover:opacity-75 sm:opacity-50'
+                      ? "font-normal text-2xl sm:text-3xl md:text-4xl opacity-100"
+                      : "font-extralight text-xl sm:text-2xl md:text-3xl opacity-40 hover:opacity-75 sm:opacity-50"
                   }`}
                   style={{
-                    fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+                    fontFamily:
+                      '"Helvetica Neue", Helvetica, Arial, sans-serif',
                   }}
                 >
                   {item.title}
@@ -383,8 +401,8 @@ export default function WorkSection() {
                 <p
                   className={`m-0 p-0 text-center max-w-xs sm:max-w-sm whitespace-pre-line text-[9px] sm:text-[10px] font-semibold tracking-widest leading-relaxed text-slate-300 transition-all duration-500 ${
                     isSelected
-                      ? 'opacity-100 translate-y-0'
-                      : 'opacity-0 translate-y-2 pointer-events-none'
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-2 pointer-events-none"
                   }`}
                 >
                   {item.subtext}
@@ -397,7 +415,7 @@ export default function WorkSection() {
         {/* DESKTOP (≥ lg): Horizontal Rows with Spotlight */}
         <div className="hidden lg:flex lg:flex-col lg:gap-8 lg:w-full">
           {/* Top Row / Main Grid for Categories */}
-          <div className="flex w-full items-center justify-between gap-8">
+          <div className="grid w-full grid-cols-4 items-start justify-items-center gap-8">
             {topRowCategories.map((item, index) => {
               const isSelected = activeIdx === index;
 
@@ -407,26 +425,27 @@ export default function WorkSection() {
                   href={item.slug}
                   onMouseEnter={() => handleCategoryHover(index)}
                   onTouchStart={() => handleCategoryHover(index)}
-                  className="group flex flex-col items-start text-left py-4 transition-transform duration-300"
+                  className="group mx-auto flex w-full max-w-[18rem] min-w-0 flex-col items-start overflow-visible py-4 text-left transition-colors duration-300"
                 >
                   <h2
-                    className={`m-0 mb-3 p-0 text-left tracking-tight text-white drop-shadow-lg transition-all duration-500 ease-out ${
+                    className={`m-0 mb-3 min-h-[3.75rem] w-full origin-left break-words p-0 text-left text-4xl leading-[1.05] tracking-tight text-white drop-shadow-lg transition-all duration-500 ease-out ${
                       isSelected
-                        ? 'font-normal text-5xl opacity-100'
-                        : 'font-extralight text-4xl opacity-40 hover:opacity-75'
+                        ? "z-10 scale-110 font-normal opacity-100"
+                        : "font-extralight opacity-40 hover:scale-105 hover:opacity-75"
                     }`}
                     style={{
-                      fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+                      fontFamily:
+                        '"Helvetica Neue", Helvetica, Arial, sans-serif',
                     }}
                   >
                     {item.title}
                   </h2>
 
                   <p
-                    className={`m-0 p-0 text-left w-full whitespace-pre-line text-[10px] font-semibold tracking-widest leading-relaxed text-slate-300 transition-all duration-500 ${
+                    className={`m-0 min-h-[2.5rem] w-full whitespace-pre-line p-0 text-left text-[10px] font-semibold tracking-widest leading-relaxed text-slate-300 transition-all duration-500 ${
                       isSelected
-                        ? 'opacity-100 translate-y-0'
-                        : 'opacity-0 translate-y-2 pointer-events-none'
+                        ? "opacity-100 translate-y-0"
+                        : "opacity-0 translate-y-2 pointer-events-none"
                     }`}
                   >
                     {item.subtext}
@@ -438,7 +457,7 @@ export default function WorkSection() {
 
           {/* Bottom Row: Additional Items (5+) */}
           {bottomRowCategories.length > 0 && (
-            <div className="flex w-full items-center justify-center gap-16">
+            <div className="grid w-full grid-cols-2 items-start justify-items-center gap-16">
               {bottomRowCategories.map((item, idx) => {
                 const globalIdx = idx + 4;
                 const isSelected = activeIdx === globalIdx;
@@ -449,26 +468,27 @@ export default function WorkSection() {
                     href={item.slug}
                     onMouseEnter={() => handleCategoryHover(globalIdx)}
                     onTouchStart={() => handleCategoryHover(globalIdx)}
-                    className="group flex flex-col items-start text-left py-4 transition-transform duration-300"
+                    className="group mx-auto flex w-full max-w-[18rem] min-w-0 flex-col items-start overflow-visible py-4 text-left transition-colors duration-300"
                   >
                     <h2
-                      className={`m-0 mb-3 p-0 text-left tracking-tight text-white drop-shadow-lg transition-all duration-500 ease-out ${
+                      className={`m-0 mb-3 min-h-[3.75rem] w-full origin-left break-words p-0 text-left text-4xl leading-[1.05] tracking-tight text-white drop-shadow-lg transition-all duration-500 ease-out ${
                         isSelected
-                          ? 'font-normal text-5xl opacity-100'
-                          : 'font-extralight text-4xl opacity-40 hover:opacity-75'
+                          ? "z-10 scale-110 font-normal opacity-100"
+                          : "font-extralight opacity-40 hover:scale-105 hover:opacity-75"
                       }`}
                       style={{
-                        fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+                        fontFamily:
+                          '"Helvetica Neue", Helvetica, Arial, sans-serif',
                       }}
                     >
                       {item.title}
                     </h2>
 
                     <p
-                      className={`m-0 p-0 text-left w-full whitespace-pre-line text-[10px] font-semibold tracking-widest leading-relaxed text-slate-300 transition-all duration-500 ${
+                      className={`m-0 min-h-[2.5rem] w-full whitespace-pre-line p-0 text-left text-[10px] font-semibold tracking-widest leading-relaxed text-slate-300 transition-all duration-500 ${
                         isSelected
-                          ? 'opacity-100 translate-y-0'
-                          : 'opacity-0 translate-y-2 pointer-events-none'
+                          ? "opacity-100 translate-y-0"
+                          : "opacity-0 translate-y-2 pointer-events-none"
                       }`}
                     >
                       {item.subtext}

@@ -24,6 +24,7 @@ export default function Nav() {
   const pawIndexRef = useRef(0);
   const hideNav =
     pathname.startsWith("/admin") || pathname.startsWith("/login");
+  const isWorkDetailPage = /^\/work\/[^/]+\/[^/]+$/.test(pathname);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -175,7 +176,10 @@ export default function Nav() {
 
       {/* GLOBAL NAV */}
       <header className="site-nav fixed inset-x-0 top-0 z-[100] pointer-events-none px-3 py-4 sm:px-6 sm:py-5 md:px-8 md:py-6">
-        <div className="relative mx-auto flex max-w-[1600px] items-center justify-between gap-3">
+        {isWorkDetailPage && (
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#0b0b0b] from-60% to-transparent opacity-95" />
+        )}
+        <div className="relative z-10 mx-auto flex max-w-[1600px] items-center justify-between gap-3">
           <Link
             href="/"
             className="pointer-events-auto inline-block opacity-90 transition-opacity duration-300 hover:opacity-100"

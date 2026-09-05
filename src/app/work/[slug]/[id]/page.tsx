@@ -4,7 +4,12 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import { isVideoUrl, parseYouTubeId, getOptimizedImageUrl, getOptimizedVideoUrl } from "@/lib/media";
+import {
+  isVideoUrl,
+  parseYouTubeId,
+  getOptimizedImageUrl,
+  getOptimizedVideoUrl,
+} from "@/lib/media";
 
 interface GalleryItem {
   id: string;
@@ -89,7 +94,8 @@ export default function ProjectDetailPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const W = "w-full max-w-[1650px] 2xl:max-w-[1850px] mx-auto px-2 sm:px-5 md:px-8 lg:px-12";
+  const W =
+    "w-full max-w-[1650px] 2xl:max-w-[1850px] mx-auto px-2 sm:px-5 md:px-8 lg:px-12";
 
   if (loading) {
     return <div className="min-h-[100dvh] w-full bg-black" />;
@@ -98,7 +104,9 @@ export default function ProjectDetailPage() {
   if (!project) {
     return (
       <div className="min-h-[100dvh] w-full bg-black text-white flex flex-col items-center justify-center gap-4">
-        <p className="text-xs tracking-[0.3em] text-white/40 uppercase">Project not found</p>
+        <p className="text-xs tracking-[0.3em] text-white/40 uppercase">
+          Project not found
+        </p>
         <Link
           href={`/work/${slug || ""}`}
           className="text-xs tracking-[0.2em] text-white underline hover:text-white/70 transition"
@@ -110,7 +118,10 @@ export default function ProjectDetailPage() {
   }
 
   const heroImage =
-    project.heroImageUrl || project.thumbnailUrl || project.gifUrl || "/placeholder.jpg";
+    project.heroImageUrl ||
+    project.thumbnailUrl ||
+    project.gifUrl ||
+    "/placeholder.jpg";
 
   return (
     <div className="min-h-[100dvh] w-full bg-black text-white selection:bg-white selection:text-black overflow-x-hidden">
@@ -124,19 +135,23 @@ export default function ProjectDetailPage() {
             href={`/work/${slug || ""}`}
             className="group inline-flex items-center gap-2 font-mono text-[10px] sm:text-[11px] tracking-[0.25em] text-zinc-400 hover:text-white transition-all uppercase py-1"
           >
-            <span className="text-sm transition-transform duration-300 group-hover:-translate-x-1">←</span>
+            <span className="text-sm transition-transform duration-300 group-hover:-translate-x-1">
+              ←
+            </span>
             <span>BACK</span>
           </Link>
         </div>
 
         <section
           onClick={() => setVideoModalOpen(true)}
-          className={`relative w-full mx-auto aspect-video max-h-[92vh] bg-black overflow-hidden rounded-sm origin-center cursor-pointer group/hero ${revealed ? "animate-slit-open" : "opacity-0"
-            }`}
+          className={`relative w-full mx-auto aspect-video max-h-[92vh] bg-black overflow-hidden rounded-sm origin-center cursor-pointer group/hero ${
+            revealed ? "animate-slit-open" : "opacity-0"
+          }`}
         >
-
           {(() => {
-            const ytId = parseYouTubeId(project.vimeoId || project.heroImageUrl);
+            const ytId = parseYouTubeId(
+              project.vimeoId || project.heroImageUrl,
+            );
             if (ytId) {
               return (
                 <div className="absolute inset-0 w-full h-full pointer-events-none">
@@ -166,7 +181,10 @@ export default function ProjectDetailPage() {
             if (heroImage) {
               return (
                 <Image
-                  src={getOptimizedImageUrl(heroImage, { width: 1920, quality: 85 })}
+                  src={getOptimizedImageUrl(heroImage, {
+                    width: 1920,
+                    quality: 85,
+                  })}
                   alt={project.title}
                   fill
                   priority
@@ -206,13 +224,18 @@ export default function ProjectDetailPage() {
           <div className="absolute inset-0 z-10 flex items-end p-4 sm:p-8 md:p-12 pointer-events-none">
             <div
               onClick={(e) => e.stopPropagation()}
-              className={`w-full max-w-3xl pointer-events-auto transition-all duration-1000 ease-out ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
-                }`}
+              className={`w-full max-w-3xl pointer-events-auto transition-all duration-1000 ease-out ${
+                showContent
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 translate-y-12"
+              }`}
             >
               {(project.categoryLabel || project.year) && (
                 <p
                   className={`font-mono m-1 text-[8px] sm:text-[9px] tracking-[0.4em] text-zinc-400 uppercase mb-2 sm:mb-3 transition-all duration-1000 delay-100 ease-out ${
-                    showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+                    showContent
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-6"
                   }`}
                 >
                   {project.categoryLabel}
@@ -223,15 +246,21 @@ export default function ProjectDetailPage() {
                 </p>
               )}
               <h1
-                className={`font-sans font-black text-[clamp(1.5rem,4vw,3rem)] leading-[1.05] tracking-tight text-white mb-3 sm:mb-4 transition-all duration-1000 delay-200 ease-out ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-                  }`}
+                className={`font-sans font-black text-[clamp(1.5rem,4vw,3rem)] leading-[1.05] tracking-tight text-white mb-3 sm:mb-4 transition-all duration-1000 delay-200 ease-out ${
+                  showContent
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-8"
+                }`}
               >
                 {project.title}
               </h1>
               {project.description && (
                 <p
-                  className={`font-sans text-[12px] sm:text-[14px] leading-[1.6] text-zinc-300 max-w-2xl mb-4 sm:mb-6 font-normal transition-all duration-1000 delay-300 ease-out ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-                    }`}
+                  className={`font-sans text-[12px] sm:text-[14px] leading-[1.6] text-zinc-300 max-w-2xl mb-4 sm:mb-6 font-normal transition-all duration-1000 delay-300 ease-out ${
+                    showContent
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-8"
+                  }`}
                 >
                   {project.description}
                 </p>
@@ -239,8 +268,11 @@ export default function ProjectDetailPage() {
 
               {(project.director || project.client) && (
                 <div
-                  className={`flex flex-wrap gap-x-6 sm:gap-x-12 gap-y-3 sm:gap-y-4 transition-all duration-1000 delay-500 ease-out ${showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-                    }`}
+                  className={`flex flex-wrap gap-x-6 sm:gap-x-12 gap-y-3 sm:gap-y-4 transition-all duration-1000 delay-500 ease-out ${
+                    showContent
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-8"
+                  }`}
                 >
                   {project.director && (
                     <div>
@@ -271,7 +303,9 @@ export default function ProjectDetailPage() {
 
       {/* BENTO BOX GALLERY */}
       {project.gallery && project.gallery.length > 0 && (
-        <section className={`${W} pb-20 sm:pb-28 md:pb-36 pt-4 sm:pt-8 md:pt-12`}>
+        <section
+          className={`${W} pb-20 sm:pb-28 md:pb-36 pt-4 sm:pt-8 md:pt-12`}
+        >
           <div className="w-full h-[1px] bg-white/[0.08] mb-4 sm:mb-8" />
 
           <div className="grid grid-cols-12 auto-rows-auto gap-2 sm:gap-3">
@@ -349,7 +383,9 @@ export default function ProjectDetailPage() {
             onClick={(e) => e.stopPropagation()}
           >
             {(() => {
-              const ytId = parseYouTubeId(project.vimeoId || project.heroImageUrl);
+              const ytId = parseYouTubeId(
+                project.vimeoId || project.heroImageUrl,
+              );
               if (ytId) {
                 return (
                   <iframe
@@ -375,7 +411,10 @@ export default function ProjectDetailPage() {
               if (heroImage) {
                 return (
                   <img
-                    src={getOptimizedImageUrl(heroImage, { width: 1920, quality: 90 })}
+                    src={getOptimizedImageUrl(heroImage, {
+                      width: 1920,
+                      quality: 90,
+                    })}
                     alt={project.title}
                     className="w-full h-full object-contain"
                   />
@@ -438,7 +477,7 @@ function GalleryCell({
           obs.disconnect();
         }
       },
-      { threshold: 0.15 }
+      { threshold: 0.15 },
     );
     obs.observe(el);
     return () => obs.disconnect();
@@ -449,8 +488,11 @@ function GalleryCell({
       ref={ref}
       onClick={onClick}
       style={{ transitionDelay: visible ? `${(index % 4) * 90}ms` : "0ms" }}
-      className={`relative overflow-hidden group cursor-pointer bg-zinc-900 ${aspect} ${className} transition-all duration-700 ease-out ${visible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-8 scale-[0.97]"
-        }`}
+      className={`relative overflow-hidden group cursor-pointer bg-zinc-900 ${aspect} ${className} transition-all duration-700 ease-out ${
+        visible
+          ? "opacity-100 translate-y-0 scale-100"
+          : "opacity-0 translate-y-8 scale-[0.97]"
+      }`}
     >
       {isVideoUrl(src) ? (
         <video
