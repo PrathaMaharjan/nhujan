@@ -150,8 +150,9 @@ export default function Nav() {
               style={{
                 left: `${paw.x}px`,
                 top: `${paw.y}px`,
-                transform: `translate(-50%, -50%) rotate(${paw.angle}deg) scale(${paw.isLeft ? 1 : -1
-                  }, 1)`,
+                transform: `translate(-50%, -50%) rotate(${paw.angle}deg) scale(${
+                  paw.isLeft ? 1 : -1
+                }, 1)`,
               }}
             >
               <svg
@@ -231,6 +232,8 @@ export default function Nav() {
                   key={link.href}
                   href={link.href}
                   className={`
+                    px-2
+                    py-2
                     relative
                     font-mono
                     text-[9px]
@@ -270,15 +273,14 @@ export default function Nav() {
           </nav>
 
           <div
-            className={`fixed inset-0 z-[110] bg-[#0b0b0b] transition-all duration-300 ease-out md:hidden flex flex-col justify-between ${mobileOpen
-              ? "translate-x-0 opacity-100 pointer-events-auto"
-              : "-translate-x-full opacity-0 pointer-events-none"
-              }`}
+            className={`fixed inset-0 z-[110] bg-[#0b0b0b] transition-all duration-300 ease-out md:hidden flex flex-col justify-between ${
+              mobileOpen
+                ? "translate-x-0 opacity-100 pointer-events-auto"
+                : "-translate-x-full opacity-0 pointer-events-none"
+            }`}
             aria-hidden={!mobileOpen}
           >
             <div className="flex h-full w-full flex-col px-6 py-6 sm:px-8">
-
-
               <nav className="flex flex-1 flex-col items-center justify-center gap-6 text-center my-auto">
                 {mainNavLinks.map((link) => {
                   const isActive =
@@ -292,6 +294,8 @@ export default function Nav() {
                       href={link.href}
                       onClick={() => setMobileOpen(false)}
                       className={`
+                        px-4
+                        py-2
                         group
                         relative
                         font-sans
@@ -309,17 +313,16 @@ export default function Nav() {
                     >
                       <span>{link.name}</span>
                       <span
-                        className={`block h-0.5 bg-white transition-all duration-300 ${isActive ? "w-full" : "w-0 group-hover:w-full"
-                          }`}
+                        className={`block h-0.5 bg-white transition-all duration-300 ${
+                          isActive ? "w-full" : "w-0 group-hover:w-full"
+                        }`}
                       />
                     </Link>
                   );
                 })}
               </nav>
 
-              <div className="flex items-center justify-center pb-6 pt-2">
-
-              </div>
+              <div className="flex items-center justify-center pb-6 pt-2"></div>
             </div>
           </div>
         </div>

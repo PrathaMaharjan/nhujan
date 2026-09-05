@@ -7,7 +7,7 @@ export default function ContactPage() {
   const [copied, setCopied] = useState(false);
   const [catLoaded, setCatLoaded] = useState(false);
   const [showMeow, setShowMeow] = useState(false);
-  const email = "nhujandongol@gmail.com";
+  const email = "nhujan99@gmail.com";
 
   const leftEyeRef = useRef<SVGGElement>(null);
   const rightEyeRef = useRef<SVGGElement>(null);

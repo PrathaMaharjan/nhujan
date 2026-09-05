@@ -16,7 +16,7 @@ export function AdminShell({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col md:flex-row">
+    <div className="min-h-screen bg-black text-white flex flex-col md:block">
       {/* Mobile Top Navigation Bar */}
       <header className="md:hidden flex items-center justify-between border-b border-white/10 px-4 py-3 bg-zinc-950/90 backdrop-blur-md sticky top-0 z-40">
         <div className="flex items-center gap-3">
@@ -90,7 +90,7 @@ export function AdminShell({
       </div>
 
       {/* Desktop Persistent Sidebar */}
-      <aside className="hidden md:flex w-60 shrink-0 border-r border-white/10 p-4 flex-col justify-between sticky top-0 h-screen overflow-y-auto">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col justify-between overflow-y-auto border-r border-white/10 p-4 md:flex">
         <div>
           <div className="flex items-center gap-3 px-2 mb-3">
             <div className="min-w-0">
@@ -115,7 +115,7 @@ export function AdminShell({
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 min-w-0 p-4 sm:p-6 md:p-8 lg:p-10 overflow-x-hidden">
+      <main className="min-w-0 overflow-x-hidden p-4 sm:p-6 md:ml-60 md:p-8 lg:p-10">
         {children}
       </main>
     </div>

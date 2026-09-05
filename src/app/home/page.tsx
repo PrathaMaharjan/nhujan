@@ -1,18 +1,11 @@
 "use client";
 
 import FullscreenVideo from "@/app/component/FullscreenVideo";
-import {
-  showreelPreviewIsImage,
-  showreelPreviewUrl,
-  showreelUrl,
-} from "@/lib/showreel";
+import { showreelPreviewIsImage, showreelPreviewUrl } from "@/lib/showreel";
 import { useEffect, useRef, useState } from "react";
 
 export default function HomePage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
-
-  const [videoTime, setVideoTime] = useState(0);
-  const [wasPlaying, setWasPlaying] = useState(true);
 
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<HTMLDivElement>(null);
@@ -26,7 +19,7 @@ export default function HomePage() {
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
       if (cursorRef.current) {
-        cursorRef.current.style.transform = `translate3d(${event.clientX}px, ${event.clientY}px, 0) translate(-50%, -50%)`;
+        cursorRef.current.style.transform = `translate3d(${event.clientX}px, ${event.clientY}px, 0) translate(-50%, calc(-50% + 14px))`;
       }
     };
 
@@ -53,9 +46,7 @@ export default function HomePage() {
    * -------------------------------------------------------
    */
 
-  const closeFullscreen = (currentTime: number, playing: boolean) => {
-    setVideoTime(currentTime);
-    setWasPlaying(playing);
+  const closeFullscreen = () => {
     setIsFullscreen(false);
   };
 
@@ -313,13 +304,7 @@ export default function HomePage() {
           FULLSCREEN VIDEO
       ================================================= */}
 
-      <FullscreenVideo
-        src={showreelUrl}
-        isOpen={isFullscreen}
-        startTime={videoTime}
-        wasPlaying={wasPlaying}
-        onClose={closeFullscreen}
-      />
+      <FullscreenVideo isOpen={isFullscreen} onClose={closeFullscreen} />
     </main>
   );
 }

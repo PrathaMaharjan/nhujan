@@ -1,748 +1,240 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Minimize2, Pause, Play, Volume2, VolumeX } from "lucide-react";
+import ShowreelPlayer from "./ShowreelPlayer";
 
 interface FullscreenVideoProps {
-  src: string;
   isOpen: boolean;
-  startTime?: number;
-  wasPlaying?: boolean;
-  onClose: (currentTime: number, playing: boolean) => void;
+  onClose: () => void;
 }
 
 export default function FullscreenVideo({
-  src,
   isOpen,
-  startTime = 0,
-  wasPlaying = true,
   onClose,
 }: FullscreenVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [isPlaying, setIsPlaying] = useState(wasPlaying);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(1);
-  const [showControls, setShowControls] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
-  const [cursor, setCursor] = useState({ x: 0, y: 0 });
-  const [cursorVisible, setCursorVisible] = useState(false);
-
-  const revealControls = useCallback(() => {
-    setShowControls(true);
-    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-    controlsTimeoutRef.current = setTimeout(() => setShowControls(false), 2000);
-  }, []);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleMouseMove = (event: MouseEvent) => {
-      const video = videoRef.current;
-      if (video) setIsPlaying(!video.paused);
-      setCursor({ x: event.clientX, y: event.clientY });
-      setCursorVisible(true);
-      revealControls();
-    };
-    const handleMouseLeave = () => setCursorVisible(false);
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseleave", handleMouseLeave);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseleave", handleMouseLeave);
-    };
-  }, [isOpen, revealControls]);
-
-  /*
-   * -------------------------------------------------------
-   * HIDE REAL CURSOR
-   * -------------------------------------------------------
-   */
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const previousCursor = document.body.style.cursor;
-    const previousFullscreenState = document.body.dataset.fullscreen;
-
-    if (window.innerWidth >= 768) {
-      document.body.style.cursor = "none";
-    }
-    document.body.dataset.fullscreen = "true";
-
-    return () => {
-      document.body.style.cursor = previousCursor;
-      if (previousFullscreenState === undefined) {
-        delete document.body.dataset.fullscreen;
-      } else {
-        document.body.dataset.fullscreen = previousFullscreenState;
-      }
-    };
-  }, [isOpen]);
-
-  /*
-   * -------------------------------------------------------
-   * VIDEO OPEN
-   * -------------------------------------------------------
-   */
-
-  const handleLoadedMetadata = () => {
-    const video = videoRef.current;
-
-    if (video) {
-      setDuration(Number.isFinite(video.duration) ? video.duration : 0);
-      setCurrentTime(video.currentTime);
-    }
-  };
-
-  const handleDurationChange = () => {
-    const video = videoRef.current;
-
-    if (video && Number.isFinite(video.duration)) {
-      setDuration(video.duration);
-    }
-  };
-
-  const handleTimeUpdate = () => {
-    const video = videoRef.current;
-
-    if (video) setCurrentTime(video.currentTime);
-  };
-
-  useEffect(() => {
-    const video = videoRef.current;
-
-    if (!video || !isOpen) return;
-
-    setDuration(0);
-    setCurrentTime(startTime);
-
-    const start = async () => {
-      try {
-        video.currentTime = startTime;
-
-        if (wasPlaying) {
-          await video.play();
-          setIsPlaying(true);
-        } else {
-          video.pause();
-
-          setIsPlaying(false);
-        }
-      } catch {
-        setIsPlaying(false);
-      }
-    };
-
-    void start();
-    revealControls();
-  }, [isOpen, startTime, wasPlaying, revealControls]);
-
-  /*
-   * -------------------------------------------------------
-   * VIDEO EVENTS
-   * -------------------------------------------------------
-   */
-
-  useEffect(() => {
-    const video = videoRef.current;
-
-    if (!video) return;
-
-    const handleMetadata = () => {
-      setDuration(video.duration || 0);
-    };
-
-    const handleTimeUpdate = () => {
-      setCurrentTime(video.currentTime);
-    };
-
-    const handlePlay = () => {
-      setIsPlaying(true);
-    };
-
-    const handlePause = () => {
-      setIsPlaying(false);
-    };
-
-    video.addEventListener("loadedmetadata", handleMetadata);
-    video.addEventListener("timeupdate", handleTimeUpdate);
-    video.addEventListener("play", handlePlay);
-    video.addEventListener("pause", handlePause);
-
-    return () => {
-      video.removeEventListener("loadedmetadata", handleMetadata);
-      video.removeEventListener("timeupdate", handleTimeUpdate);
-      video.removeEventListener("play", handlePlay);
-      video.removeEventListener("pause", handlePause);
-    };
-  }, []);
-
-  /*
-   * -------------------------------------------------------
-   * PLAY / PAUSE
-   * -------------------------------------------------------
-   */
+  const [volume, setVolume] = useState(1);
 
   const togglePlayback = useCallback(() => {
     const video = videoRef.current;
-
     if (!video) return;
 
     if (video.paused) {
-      void video
-        .play()
-        .then(() => {
-          setIsPlaying(true);
-        })
-        .catch(() => {
-          setIsPlaying(false);
-        });
+      void video.play().catch(() => setIsPlaying(false));
     } else {
       video.pause();
-
-      setIsPlaying(false);
     }
-
-    revealControls();
-  }, [revealControls]);
-
-  /*
-   * -------------------------------------------------------
-   * SEEK
-   * -------------------------------------------------------
-   */
-
-  const seekVideo = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const video = videoRef.current;
-
-    if (!video || !video.duration) return;
-
-    const value = Number(event.target.value) / 1000;
-
-    video.currentTime = value * video.duration;
-
-    setCurrentTime(video.currentTime);
-
-    revealControls();
-  };
-
-  /*
-   * -------------------------------------------------------
-   * VOLUME
-   * -------------------------------------------------------
-   */
-
-  const changeVolume = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Number(event.target.value) / 100;
-    setVolume(value);
-    const video = videoRef.current;
-
-    if (video) {
-      video.volume = value;
-    }
-
-    revealControls();
-  };
-
-  /*
-   * -------------------------------------------------------
-   * MUTE
-   * -------------------------------------------------------
-   */
+  }, []);
 
   const toggleMute = useCallback(() => {
     const video = videoRef.current;
-
     if (!video) return;
 
-    if (video.volume > 0) {
-      video.volume = 0;
-      setVolume(0);
-    } else {
-      video.volume = 1;
-      setVolume(1);
-    }
+    const nextVolume = video.volume > 0 ? 0 : 1;
+    video.volume = nextVolume;
+    setVolume(nextVolume);
+  }, []);
 
-    revealControls();
-  }, [revealControls]);
-
-  /*
-   * -------------------------------------------------------
-   * CLOSE
-   * -------------------------------------------------------
-   */
-
-  const close = useCallback(() => {
+  useEffect(() => {
     const video = videoRef.current;
+    if (!video || !isOpen) return;
 
-    if (!video) return;
+    video.currentTime = 0;
+    void video.play().catch(() => setIsPlaying(false));
+  }, [isOpen]);
 
-    if (controlsTimeoutRef.current) {
-      clearTimeout(controlsTimeoutRef.current);
-    }
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.volume = volume;
+  }, [volume]);
 
-    onClose(video.currentTime, !video.paused);
-  }, [onClose]);
+  useEffect(() => {
+    if (!isOpen) return;
 
-  /*
-   * -------------------------------------------------------
-   * KEYBOARD
-   * -------------------------------------------------------
-   */
+    document.body.dataset.fullscreen = "true";
+
+    return () => {
+      delete document.body.dataset.fullscreen;
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+      if (event.key === "m") toggleMute();
       if (event.code === "Space") {
         event.preventDefault();
         togglePlayback();
       }
-
-      if (event.key === "Escape") {
-        close();
-      }
-
-      if (event.key === "m") {
-        toggleMute();
-      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen, togglePlayback, close, toggleMute]);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose, toggleMute, togglePlayback]);
 
   if (!isOpen) return null;
 
-  return (
-    <div
-      className="
-        fixed
-        inset-0
-        z-[9999]
-        h-[100dvh]
-        w-[100dvw]
-        overflow-hidden
-        bg-black
-        md:cursor-none
-      "
-      onMouseMove={revealControls}
-    >
-      {/* =================================================
-          VIDEO
-      ================================================= */}
+  const seekVideo = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const video = videoRef.current;
+    if (!video || !duration) return;
 
-      <video
+    video.currentTime = Number(event.target.value);
+    setCurrentTime(video.currentTime);
+  };
+
+  const changeVolume = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const nextVolume = Number(event.target.value);
+    setVolume(nextVolume);
+    if (videoRef.current) videoRef.current.volume = nextVolume;
+  };
+
+  return (
+    <div className="fixed inset-0 z-[9999] h-[100dvh] w-[100dvw] overflow-hidden bg-black">
+      <ShowreelPlayer
         ref={videoRef}
-        src={src}
-        playsInline
+        controls={false}
+        autoPlay
         loop
-        preload="metadata"
-        onLoadedMetadata={handleLoadedMetadata}
-        onDurationChange={handleDurationChange}
-        onTimeUpdate={handleTimeUpdate}
+        muted={volume === 0}
+        playsInline
+        onClick={togglePlayback}
+        onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)}
+        onTimeUpdate={(event) =>
+          setCurrentTime(event.currentTarget.currentTime)
+        }
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
-        className="
-          absolute
-          inset-0
-          h-[100dvh]
-          w-[100dvw]
-          cursor-pointer
-          md:cursor-none
-        "
-        onClick={togglePlayback}
+        className="absolute inset-0 h-full w-full cursor-pointer object-contain"
       />
 
-      {/* =================================================
-          STRONG VIGNETTE
-      ================================================= */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_10%,rgba(0,0,0,0.12)_40%,rgba(0,0,0,0.65)_100%)]" />
 
-      <div
-        className="
-          pointer-events-none
-          absolute
-          inset-0
-          z-10
-        "
-        style={{
-          background: `
-            radial-gradient(
-              ellipse at center,
-              transparent 10%,
-              rgba(0,0,0,0.12) 35%,
-              rgba(0,0,0,0.42) 68%,
-              rgba(0,0,0,0.78) 100%
-            )
-          `,
-        }}
-      />
-
-      {/* =================================================
-          CUSTOM PLAY / PAUSE CURSOR
-      ================================================= */}
-
-      <div
-        className={`
-          pointer-events-none
-          fixed
-          z-[10000]
-          flex
-          flex-col
-          items-center
-          gap-2
-          text-white
-          mix-blend-difference
-          transition-opacity
-          duration-200
-          ${cursorVisible ? "opacity-100" : "opacity-0"}
-        `}
-        style={{
-          left: cursor.x,
-          top: cursor.y,
-          transform: "translate(-50%, -50%)",
-        }}
-      >
-        <div
-          className="
-            flex
-            h-12
-            w-12
-            items-center
-            justify-center
-            rounded-full
-            border
-            border-white/80
-            bg-black/10
-            backdrop-blur-sm
-          "
-        >
-          {isPlaying ? (
-            <svg
-              viewBox="0 0 24 24"
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-            >
-              <path d="M8 5v14" />
-              <path d="M16 5v14" />
-            </svg>
-          ) : (
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          )}
-        </div>
-
-        {/* TEXT BELOW ICON */}
-
-        <span
-          className="
-            whitespace-nowrap
-            font-mono
-            text-[8px]
-            tracking-[0.28em]
-            uppercase
-            text-white/90
-          "
-        >
-          {isPlaying ? "Pause" : "Play"}
-        </span>
-      </div>
-
-      {/* =================================================
-          CONTROLS
-      ================================================= */}
-
-      <div
-        className={`
-          absolute
-          bottom-0
-          left-0
-          right-0
-          z-[10001]
-          px-4
-          sm:px-7
-          pb-6
-          sm:pb-6
-          pt-16
-          transition-opacity
-          duration-300
-          ${showControls ? "opacity-100" : "pointer-events-none opacity-0"}
-        `}
-        onClick={(event) => event.stopPropagation()}
-        onMouseMove={revealControls}
-      >
-        {/* =================================================
-            PROGRESS
-        ================================================= */}
-
+      <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-black/80 to-transparent px-4 pb-6 pt-16 sm:px-7">
         <input
           type="range"
           min="0"
-          max="1000"
-          step="1"
-          value={duration ? Math.round((currentTime / duration) * 1000) : 0}
-          style={
-            {
-              "--progress": `${duration ? (currentTime / duration) * 100 : 0}%`,
-            } as React.CSSProperties
-          }
+          max={duration || 0}
+          step="0.1"
+          value={currentTime}
           onChange={seekVideo}
           className="fullscreen-progress"
           aria-label="Video progress"
         />
 
-        {/* =================================================
-            CONTROL ROW
-        ================================================= */}
-
-        <div className="mt-3 sm:mt-4 flex items-center justify-between gap-3">
-          {/* LEFT */}
-
+        <div className="mt-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 sm:gap-5">
-            {/* PLAY */}
-
             <button
               type="button"
               onClick={togglePlayback}
               className="fullscreen-control"
               aria-label={isPlaying ? "Pause video" : "Play video"}
+              title={isPlaying ? "Pause video" : "Play video"}
             >
-              {isPlaying ? (
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.7"
-                >
-                  <path d="M8 5v14" />
-                  <path d="M16 5v14" />
-                </svg>
-              ) : (
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              )}
+              {isPlaying ? <Pause size={18} /> : <Play size={18} />}
             </button>
-
-            {/* VOLUME */}
 
             <button
               type="button"
               onClick={toggleMute}
               className="fullscreen-control"
-              aria-label="Toggle sound"
+              aria-label={volume === 0 ? "Unmute video" : "Mute video"}
+              title={volume === 0 ? "Unmute video" : "Mute video"}
             >
-              {volume === 0 ? (
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                >
-                  <path d="M4 9v6h4l5 4V5L8 9H4z" />
-                  <path d="M17 9l4 6" />
-                  <path d="M21 9l-4 6" />
-                </svg>
-              ) : (
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                >
-                  <path d="M4 9v6h4l5 4V5L8 9H4z" />
-                  <path d="M17 9c1.5 1.5 1.5 4.5 0 6" />
-                  <path d="M19.5 6.5c3 3 3 8 0 11" />
-                </svg>
-              )}
+              {volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
             </button>
-
-            {/* VOLUME SLIDER */}
 
             <input
               type="range"
               min="0"
-              max="100"
-              value={volume * 100}
+              max="1"
+              step="0.01"
+              value={volume}
               onChange={changeVolume}
               className="fullscreen-volume hidden sm:block"
               aria-label="Volume"
             />
 
-            {/* TIME */}
-
-            <span
-              className="
-                font-mono
-                text-[8px]
-                sm:text-[9px]
-                tracking-[0.12em]
-                sm:tracking-[0.15em]
-                text-white/70
-              "
-            >
-              {formatTime(currentTime)}
-              {" / "}
-              {formatTime(duration)}
+            <span className="font-mono text-[9px] tracking-[0.12em] text-white/70">
+              {formatTime(currentTime)} / {formatTime(duration)}
             </span>
           </div>
 
-          {/* =================================================
-              CLOSE
-          ================================================= */}
-
           <button
             type="button"
-            onClick={close}
-            className="
-              font-mono
-              text-[9px]
-              tracking-[0.25em]
-              uppercase
-              text-white/70
-              transition-colors
-              hover:text-white
-              px-2
-              py-1
-            "
+            onClick={onClose}
+            className="font-mono px-2 py-1 text-[9px] uppercase tracking-[0.25em] text-white/70 transition-colors hover:text-white"
+            aria-label="Minimize video"
+            title="Minimize video"
           >
-            Close
+            <Minimize2 size={18} />
           </button>
         </div>
       </div>
 
-      {/* =================================================
-          STYLES
-      ================================================= */}
-
       <style>{`
-        .fullscreen-progress {
-          width: 100%;
-          height: 3px;
+        .fullscreen-progress,
+        .fullscreen-volume {
           appearance: none;
           -webkit-appearance: none;
-          background: #555;
-          border-radius: 999px;
           outline: none;
           cursor: pointer;
+        }
+
+        .fullscreen-progress {
           display: block;
-        }
-
-        .fullscreen-progress::-webkit-slider-runnable-track {
+          width: 100%;
           height: 3px;
-          background: linear-gradient(
-            to right,
-            #fff 0%,
-            #fff var(--progress, 0%),
-            #555 var(--progress, 0%),
-            #555 100%
-          );
-          border-radius: 999px;
-        }
-
-        .fullscreen-progress::-moz-range-track {
-          height: 3px;
-          background: #555;
-          border-radius: 999px;
-        }
-
-        .fullscreen-progress::-moz-range-progress {
-          height: 3px;
-          background: #fff;
-          border-radius: 999px;
-        }
-
-        .fullscreen-progress::-webkit-slider-thumb {
-          appearance: none;
-          -webkit-appearance: none;
-          width: 8px;
-          height: 8px;
-          margin-top: -2.5px;
-          border-radius: 50%;
-          background: #fff;
-          border: none;
-          cursor: pointer;
-        }
-
-        .fullscreen-progress::-moz-range-thumb {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: #fff;
-          border: none;
-          cursor: pointer;
+          background: rgba(255, 255, 255, 0.35);
         }
 
         .fullscreen-volume {
           width: 60px;
           height: 2px;
-          appearance: none;
-          -webkit-appearance: none;
-          background: #555;
-          border-radius: 999px;
-          outline: none;
-          cursor: pointer;
+          background: rgba(255, 255, 255, 0.4);
         }
 
+        .fullscreen-progress::-webkit-slider-thumb,
         .fullscreen-volume::-webkit-slider-thumb {
           appearance: none;
           -webkit-appearance: none;
-          width: 7px;
-          height: 7px;
+          width: 8px;
+          height: 8px;
+          border: 0;
           border-radius: 50%;
-          background: #fff;
-          border: none;
+          background: white;
         }
 
+        .fullscreen-progress::-moz-range-thumb,
         .fullscreen-volume::-moz-range-thumb {
-          width: 7px;
-          height: 7px;
+          width: 8px;
+          height: 8px;
+          border: 0;
           border-radius: 50%;
-          background: #fff;
-          border: none;
+          background: white;
         }
 
         .fullscreen-control {
-          width: 24px;
-          height: 24px;
-          padding: 0;
-          border: 0;
-          background: transparent;
-          color: white;
-          cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          opacity: 0.8;
-          transition:
-            opacity 150ms ease,
-            transform 150ms ease;
-        }
-
-        @media (min-width: 768px) {
-          .fullscreen-progress,
-          .fullscreen-progress::-webkit-slider-thumb,
-          .fullscreen-progress::-moz-range-thumb,
-          .fullscreen-volume,
-          .fullscreen-control {
-            cursor: none;
-          }
+          width: 28px;
+          height: 28px;
+          padding: 0;
+          border: 0;
+          background: transparent;
+          color: rgba(255, 255, 255, 0.7);
+          font: 9px monospace;
+          letter-spacing: 0.15em;
+          cursor: pointer;
         }
 
         .fullscreen-control:hover {
-          opacity: 1;
-          transform: scale(1.08);
-        }
-
-        .fullscreen-control svg {
-          width: 18px;
-          height: 18px;
-          display: block;
+          color: white;
         }
       `}</style>
     </div>
@@ -750,15 +242,12 @@ export default function FullscreenVideo({
 }
 
 function formatTime(seconds: number) {
-  if (!Number.isFinite(seconds)) {
-    return "0:00";
-  }
+  if (!Number.isFinite(seconds)) return "0:00";
 
   const minutes = Math.floor(seconds / 60);
-
-  const secs = Math.floor(seconds % 60)
+  const remainingSeconds = Math.floor(seconds % 60)
     .toString()
     .padStart(2, "0");
 
-  return `${minutes}:${secs}`;
+  return `${minutes}:${remainingSeconds}`;
 }

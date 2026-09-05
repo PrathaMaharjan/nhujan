@@ -6,8 +6,8 @@ import PageTransition from "./component/PageTransition";
 import RightClickDisabler from "./component/RightClickDisabler";
 
 export const metadata = {
-  title: "Portfolio",
-  description: "Cinematography & Directing Portfolio",
+  title: "Nhujan Dongol - Portfolio",
+  description: "Filmmaker and Editor",
 };
 
 export default function RootLayout({
